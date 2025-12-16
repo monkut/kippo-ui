@@ -1,0 +1,5310 @@
+openapi: 3.0.3
+info:
+  title: Kippo Project Management API
+  version: 1.1.0
+  description: REST API for managing Kippo projects, tasks, and effort tracking
+paths:
+  /api/assignment-rates/:
+    get:
+      operationId: assignment_rates_list
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - assignment-rates
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectAssignmentRateList'
+          description: ''
+    post:
+      operationId: assignment_rates_create
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      tags:
+      - assignment-rates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssignmentRate'
+          description: ''
+  /api/assignment-rates/{id}/:
+    get:
+      operationId: assignment_rates_retrieve
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Project Assignment Rate.
+        required: true
+      tags:
+      - assignment-rates
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssignmentRate'
+          description: ''
+    put:
+      operationId: assignment_rates_update
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Project Assignment Rate.
+        required: true
+      tags:
+      - assignment-rates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectAssignmentRateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssignmentRate'
+          description: ''
+    patch:
+      operationId: assignment_rates_partial_update
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Project Assignment Rate.
+        required: true
+      tags:
+      - assignment-rates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssignmentRateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssignmentRateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssignmentRateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssignmentRate'
+          description: ''
+    delete:
+      operationId: assignment_rates_destroy
+      description: |-
+        ViewSet for ProjectAssignmentRate model.
+
+        Manages daily rates per role for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignment rates for projects in organizations they belong to
+        - Superusers can access assignment rates from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage rates for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Project Assignment Rate.
+        required: true
+      tags:
+      - assignment-rates
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/projects/:
+    get:
+      operationId: projects_list
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status (display_as_active field)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectList'
+          description: ''
+    post:
+      operationId: projects_create
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProject'
+          description: ''
+  /api/projects/{id}/:
+    get:
+      operationId: projects_retrieve
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProject'
+          description: ''
+    put:
+      operationId: projects_update
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProject'
+          description: ''
+    patch:
+      operationId: projects_partial_update
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProject'
+          description: ''
+    delete:
+      operationId: projects_destroy
+      description: |-
+        ViewSet for KippoProject model.
+
+        **Organization Scoping:**
+        - Regular users can only access projects from organizations they belong to
+        - If a user belongs to multiple organizations, they can access projects from ALL of them
+        - Superusers can access projects from all organizations
+
+        **Filtering:**
+        - is_active: Filter by display_as_active field (true/false)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/projects/weeklyeffort/:
+    get:
+      operationId: projects_weeklyeffort_list
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      - in: query
+        name: user
+        schema:
+          type: integer
+        description: Filter by user ID
+      - in: query
+        name: week_start_gte
+        schema:
+          type: string
+        description: Filter by week_start >= date (YYYY-MM-DD format)
+      - in: query
+        name: week_start_lte
+        schema:
+          type: string
+        description: Filter by week_start <= date (YYYY-MM-DD format)
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectWeeklyEffortList'
+          description: ''
+    post:
+      operationId: projects_weeklyeffort_create
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffort'
+          description: ''
+  /api/projects/weeklyeffort/{id}/:
+    get:
+      operationId: projects_weeklyeffort_retrieve
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffort'
+          description: ''
+    put:
+      operationId: projects_weeklyeffort_update
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffort'
+          description: ''
+    patch:
+      operationId: projects_weeklyeffort_partial_update
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectWeeklyEffortRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectWeeklyEffortRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectWeeklyEffortRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffort'
+          description: ''
+    delete:
+      operationId: projects_weeklyeffort_destroy
+      description: |-
+        ViewSet for ProjectWeeklyEffort model.
+
+        **Organization Scoping:**
+        - Regular users can only access weekly effort for projects in organizations they belong to
+        - If a user belongs to multiple organizations, they can access efforts from ALL of them
+        - Superusers can access weekly effort entries from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
+        - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Superusers only
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/assumptions/:
+    get:
+      operationId: requirements_assumptions_list
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - assumption
+          - constraint
+        description: Filter by category (assumption or constraint)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectAssumptionList'
+          description: ''
+    post:
+      operationId: requirements_assumptions_create
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssumption'
+          description: ''
+  /api/requirements/assumptions/{id}/:
+    get:
+      operationId: requirements_assumptions_retrieve
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssumption'
+          description: ''
+    put:
+      operationId: requirements_assumptions_update
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectAssumptionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssumption'
+          description: ''
+    patch:
+      operationId: requirements_assumptions_partial_update
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssumptionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssumptionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectAssumptionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssumption'
+          description: ''
+    delete:
+      operationId: requirements_assumptions_destroy
+      description: |-
+        ViewSet for ProjectAssumption model.
+
+        Assumptions and constraints (前提条件と制約事項) for a project.
+
+        **Organization Scoping:**
+        - Regular users can only access assumptions for projects in their organizations
+        - Superusers can access all assumptions
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - category: Filter by category (assumption or constraint)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/assumptions/categories/:
+    get:
+      operationId: requirements_assumptions_categories_retrieve
+      description: Return available assumption category choices.
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/requirements/business-requirement-categories/:
+    get:
+      operationId: requirements_business_requirement_categories_list
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementCategoryList'
+          description: ''
+    post:
+      operationId: requirements_business_requirement_categories_create
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementCategory'
+          description: ''
+  /api/requirements/business-requirement-categories/{id}/:
+    get:
+      operationId: requirements_business_requirement_categories_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementCategory'
+          description: ''
+    put:
+      operationId: requirements_business_requirement_categories_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCategoryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementCategory'
+          description: ''
+    patch:
+      operationId: requirements_business_requirement_categories_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCategoryRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementCategory'
+          description: ''
+    delete:
+      operationId: requirements_business_requirement_categories_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirementCategory model.
+
+        Categories for organizing business requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/business-requirement-comments/:
+    get:
+      operationId: requirements_business_requirement_comments_list
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: requirement
+        schema:
+          type: integer
+        description: Filter by business requirement ID
+      - in: query
+        name: top_level_only
+        schema:
+          type: boolean
+        description: Return only top-level comments (no replies)
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementCommentList'
+          description: ''
+    post:
+      operationId: requirements_business_requirement_comments_create
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+  /api/requirements/business-requirement-comments/{id}/:
+    get:
+      operationId: requirements_business_requirement_comments_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    put:
+      operationId: requirements_business_requirement_comments_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    patch:
+      operationId: requirements_business_requirement_comments_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    delete:
+      operationId: requirements_business_requirement_comments_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by business requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/business-requirement-comments/{id}/toggle_resolved/:
+    post:
+      operationId: requirements_business_requirement_comments_toggle_resolved_create
+      description: Toggle the is_resolved status for a top-level comment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+  /api/requirements/business-requirements/:
+    get:
+      operationId: requirements_business_requirements_list
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+        description: Filter by category ID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: problem
+        schema:
+          type: integer
+        description: Filter by problem definition ID
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementListList'
+          description: ''
+    post:
+      operationId: requirements_business_requirements_create
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirement'
+          description: ''
+  /api/requirements/business-requirements/{id}/:
+    get:
+      operationId: requirements_business_requirements_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementDetail'
+          description: ''
+    put:
+      operationId: requirements_business_requirements_update
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirement'
+          description: ''
+    patch:
+      operationId: requirements_business_requirements_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirement'
+          description: ''
+    delete:
+      operationId: requirements_business_requirements_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirement model.
+
+        Business requirements define what the project needs to accomplish.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - problem: Filter by problem definition ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List: ProjectBusinessRequirementListSerializer (lightweight)
+        - Retrieve: ProjectBusinessRequirementDetailSerializer (includes technical requirements and comments)
+        - Create/Update: ProjectBusinessRequirementSerializer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/estimates/:
+    get:
+      operationId: requirements_estimates_list
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      - in: query
+        name: requirement
+        schema:
+          type: integer
+        description: Filter by technical requirement ID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementEstimateList'
+          description: ''
+    post:
+      operationId: requirements_estimates_create
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+  /api/requirements/estimates/{id}/:
+    get:
+      operationId: requirements_estimates_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    put:
+      operationId: requirements_estimates_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    patch:
+      operationId: requirements_estimates_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    delete:
+      operationId: requirements_estimates_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/github-issues/:
+    get:
+      operationId: requirements_github_issues_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: technical_requirement
+        schema:
+          type: integer
+        description: Filter by technical requirement ID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementGithubIssueList'
+          description: ''
+    post:
+      operationId: requirements_github_issues_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+  /api/requirements/github-issues/{id}/:
+    get:
+      operationId: requirements_github_issues_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    put:
+      operationId: requirements_github_issues_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    patch:
+      operationId: requirements_github_issues_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    delete:
+      operationId: requirements_github_issues_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+
+        **Filtering:**
+        - technical_requirement: Filter by technical requirement ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/problem-definitions/:
+    get:
+      operationId: requirements_problem_definitions_list
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectProblemDefinitionList'
+          description: ''
+    post:
+      operationId: requirements_problem_definitions_create
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinition'
+          description: ''
+  /api/requirements/problem-definitions/{id}/:
+    get:
+      operationId: requirements_problem_definitions_retrieve
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinition'
+          description: ''
+    put:
+      operationId: requirements_problem_definitions_update
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinition'
+          description: ''
+    patch:
+      operationId: requirements_problem_definitions_partial_update
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinition'
+          description: ''
+    delete:
+      operationId: requirements_problem_definitions_destroy
+      description: |-
+        ViewSet for ProjectProblemDefinition model.
+
+        Problem definitions describe the issues that a project aims to solve.
+
+        **Organization Scoping:**
+        - Regular users can only access problem definitions for projects in their organizations
+        - Superusers can access all problem definitions
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/schedule-estimation/:
+    post:
+      operationId: requirements_schedule_estimation_create
+      description: Schedule technical requirements and calculate estimated completion
+        date.
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleEstimationRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ScheduleEstimationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ScheduleEstimationRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleEstimationResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+  /api/requirements/technical-requirement-categories/:
+    get:
+      operationId: requirements_technical_requirement_categories_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementCategoryList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirement_categories_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementCategory'
+          description: ''
+  /api/requirements/technical-requirement-categories/{id}/:
+    get:
+      operationId: requirements_technical_requirement_categories_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementCategory'
+          description: ''
+    put:
+      operationId: requirements_technical_requirement_categories_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCategoryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementCategory'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirement_categories_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCategoryRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementCategory'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirement_categories_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirementCategory model.
+
+        Categories for organizing technical requirements within a project.
+
+        **Organization Scoping:**
+        - Regular users can only access categories for projects in their organizations
+        - Superusers can access all categories
+
+        **Filtering:**
+        - project: Filter by project UUID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Category.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/technical-requirement-comments/:
+    get:
+      operationId: requirements_technical_requirement_comments_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: requirement
+        schema:
+          type: integer
+        description: Filter by technical requirement ID
+      - in: query
+        name: top_level_only
+        schema:
+          type: boolean
+        description: Return only top-level comments (no replies)
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementCommentList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirement_comments_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+  /api/requirements/technical-requirement-comments/{id}/:
+    get:
+      operationId: requirements_technical_requirement_comments_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    put:
+      operationId: requirements_technical_requirement_comments_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirement_comments_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirement_comments_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - requirement: Filter by technical requirement ID
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/technical-requirements/:
+    get:
+      operationId: requirements_technical_requirements_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      parameters:
+      - in: query
+        name: business_requirement
+        schema:
+          type: integer
+        description: Filter by business requirement ID
+      - in: query
+        name: category
+        schema:
+          type: integer
+        description: Filter by category ID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirements_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirement'
+          description: ''
+  /api/requirements/technical-requirements/{id}/:
+    get:
+      operationId: requirements_technical_requirements_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementDetail'
+          description: ''
+    put:
+      operationId: requirements_technical_requirements_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirement'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirements_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirement'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirements_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirement model.
+
+        Technical requirements (開発要件) linked to business requirements.
+
+        **Organization Scoping:**
+        - Regular users can only access requirements for projects in their organizations
+        - Superusers can access all requirements
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - business_requirement: Filter by business requirement ID
+        - category: Filter by category ID
+
+        **Serializers:**
+        - List/Create/Update: ProjectTechnicalRequirementSerializer
+        - Retrieve: ProjectTechnicalRequirementDetailSerializer (includes comments)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement.
+        required: true
+      tags:
+      - requirements
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/token/:
+    post:
+      operationId: token_create
+      description: Takes username and password credentials and returns an access and
+        refresh JWT token pair.
+      summary: Obtain JWT token pair
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: Takes a refresh token and returns a new access token if the refresh
+        token is valid.
+      summary: Refresh JWT access token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+components:
+  schemas:
+    CategoryEnum:
+      enum:
+      - assumption
+      - constraint
+      type: string
+      description: |-
+        * `assumption` - 前提条件
+        * `constraint` - 制約事項
+    ErrorResponse:
+      type: object
+      description: Serializer for error responses.
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+      required:
+      - error
+    KippoProject:
+      type: object
+      description: Serializer for KippoProject model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+        organization_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: プロジェクト名
+          description: Name of the project
+          maxLength: 256
+        slug:
+          type: string
+          readOnly: true
+        columnset:
+          type: string
+          format: uuid
+          description: ProjectColumnSet to use if/when a related Github project is
+            created through Kippo
+        phase:
+          allOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          description: |-
+            State or phase of the project
+
+            * `anon-project` - Non-Project
+            * `lead-evaluation` - Lead Evaluation
+            * `project-proposal` - Project Proposal Preparation
+            * `project-development` - Project Development
+        confidence:
+          type: integer
+          maximum: 100
+          minimum: 0
+          description: 0-100, Confidence level of the project proceeding to the next
+            phase
+        category:
+          type: string
+          maxLength: 256
+        slack_channel_name:
+          type: string
+          description: If given, updates are sent periodically
+          maxLength: 80
+        project_manager:
+          type: string
+          format: uuid
+          nullable: true
+          description: Project Manager assigned to the project
+        project_manager_username:
+          type: string
+          readOnly: true
+          nullable: true
+        is_closed:
+          type: boolean
+          title: Project is Closed
+          description: Manually set when project is complete
+        display_as_active:
+          type: boolean
+          description: If True, project will be included in the ActiveKippoProject
+            List
+        display_in_project_report:
+          type: boolean
+          title: Display in Project Report Summary (slack)
+          description: If True, project will be included in the Project Report Summary
+        github_project_html_url:
+          type: string
+          format: uri
+          maxLength: 200
+        github_project_api_url:
+          type: string
+          format: uri
+          title: Github Project api URL (needed for webhook event linking to project)
+          maxLength: 200
+        allocated_staff_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Estimated Staff Days needed for Project Completion
+        allocated_effort_hours:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 開始日
+          description: Date the Project requires engineering resources
+        target_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了予定日
+          description: Date the Project is planned to be completed by.
+        actual_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了日
+          description: The date the project was actually completed on (not the initial
+            target)
+        document_url:
+          type: string
+          format: uri
+          title: Documentation Location URL
+          description: URL of where documents for the projects are maintained
+          maxLength: 200
+        problem_definition:
+          type: string
+          title: Project Problem Definition
+          description: Define the problem that the project is set out to solve.
+        survey_issued:
+          type: boolean
+          description: Update when survey is issued!
+        assignment_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAssignmentRateInline'
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - allocated_effort_hours
+      - assignment_rates
+      - columnset
+      - created_datetime
+      - id
+      - name
+      - organization
+      - organization_name
+      - project_manager_username
+      - slug
+      - updated_datetime
+    KippoProjectRequest:
+      type: object
+      description: Serializer for KippoProject model.
+      properties:
+        organization:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          title: プロジェクト名
+          description: Name of the project
+          maxLength: 256
+        columnset:
+          type: string
+          format: uuid
+          description: ProjectColumnSet to use if/when a related Github project is
+            created through Kippo
+        phase:
+          allOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          description: |-
+            State or phase of the project
+
+            * `anon-project` - Non-Project
+            * `lead-evaluation` - Lead Evaluation
+            * `project-proposal` - Project Proposal Preparation
+            * `project-development` - Project Development
+        confidence:
+          type: integer
+          maximum: 100
+          minimum: 0
+          description: 0-100, Confidence level of the project proceeding to the next
+            phase
+        category:
+          type: string
+          minLength: 1
+          maxLength: 256
+        slack_channel_name:
+          type: string
+          description: If given, updates are sent periodically
+          maxLength: 80
+        project_manager:
+          type: string
+          format: uuid
+          nullable: true
+          description: Project Manager assigned to the project
+        is_closed:
+          type: boolean
+          title: Project is Closed
+          description: Manually set when project is complete
+        display_as_active:
+          type: boolean
+          description: If True, project will be included in the ActiveKippoProject
+            List
+        display_in_project_report:
+          type: boolean
+          title: Display in Project Report Summary (slack)
+          description: If True, project will be included in the Project Report Summary
+        github_project_html_url:
+          type: string
+          format: uri
+          maxLength: 200
+        github_project_api_url:
+          type: string
+          format: uri
+          title: Github Project api URL (needed for webhook event linking to project)
+          maxLength: 200
+        allocated_staff_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Estimated Staff Days needed for Project Completion
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 開始日
+          description: Date the Project requires engineering resources
+        target_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了予定日
+          description: Date the Project is planned to be completed by.
+        actual_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了日
+          description: The date the project was actually completed on (not the initial
+            target)
+        document_url:
+          type: string
+          format: uri
+          title: Documentation Location URL
+          description: URL of where documents for the projects are maintained
+          maxLength: 200
+        problem_definition:
+          type: string
+          title: Project Problem Definition
+          description: Define the problem that the project is set out to solve.
+        survey_issued:
+          type: boolean
+          description: Update when survey is issued!
+      required:
+      - columnset
+      - name
+      - organization
+    PaginatedKippoProjectList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProject'
+    PaginatedProjectAssignmentRateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAssignmentRate'
+    PaginatedProjectAssumptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAssumption'
+    PaginatedProjectBusinessRequirementCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBusinessRequirementCategory'
+    PaginatedProjectBusinessRequirementCommentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+    PaginatedProjectBusinessRequirementEstimateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+    PaginatedProjectBusinessRequirementListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBusinessRequirementList'
+    PaginatedProjectProblemDefinitionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectProblemDefinition'
+    PaginatedProjectTechnicalRequirementCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementCategory'
+    PaginatedProjectTechnicalRequirementCommentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+    PaginatedProjectTechnicalRequirementGithubIssueList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+    PaginatedProjectTechnicalRequirementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirement'
+    PaginatedProjectWeeklyEffortList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectWeeklyEffort'
+    PatchedKippoProjectRequest:
+      type: object
+      description: Serializer for KippoProject model.
+      properties:
+        organization:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          title: プロジェクト名
+          description: Name of the project
+          maxLength: 256
+        columnset:
+          type: string
+          format: uuid
+          description: ProjectColumnSet to use if/when a related Github project is
+            created through Kippo
+        phase:
+          allOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          description: |-
+            State or phase of the project
+
+            * `anon-project` - Non-Project
+            * `lead-evaluation` - Lead Evaluation
+            * `project-proposal` - Project Proposal Preparation
+            * `project-development` - Project Development
+        confidence:
+          type: integer
+          maximum: 100
+          minimum: 0
+          description: 0-100, Confidence level of the project proceeding to the next
+            phase
+        category:
+          type: string
+          minLength: 1
+          maxLength: 256
+        slack_channel_name:
+          type: string
+          description: If given, updates are sent periodically
+          maxLength: 80
+        project_manager:
+          type: string
+          format: uuid
+          nullable: true
+          description: Project Manager assigned to the project
+        is_closed:
+          type: boolean
+          title: Project is Closed
+          description: Manually set when project is complete
+        display_as_active:
+          type: boolean
+          description: If True, project will be included in the ActiveKippoProject
+            List
+        display_in_project_report:
+          type: boolean
+          title: Display in Project Report Summary (slack)
+          description: If True, project will be included in the Project Report Summary
+        github_project_html_url:
+          type: string
+          format: uri
+          maxLength: 200
+        github_project_api_url:
+          type: string
+          format: uri
+          title: Github Project api URL (needed for webhook event linking to project)
+          maxLength: 200
+        allocated_staff_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Estimated Staff Days needed for Project Completion
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 開始日
+          description: Date the Project requires engineering resources
+        target_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了予定日
+          description: Date the Project is planned to be completed by.
+        actual_date:
+          type: string
+          format: date
+          nullable: true
+          title: 完了日
+          description: The date the project was actually completed on (not the initial
+            target)
+        document_url:
+          type: string
+          format: uri
+          title: Documentation Location URL
+          description: URL of where documents for the projects are maintained
+          maxLength: 200
+        problem_definition:
+          type: string
+          title: Project Problem Definition
+          description: Define the problem that the project is set out to solve.
+        survey_issued:
+          type: boolean
+          description: Update when survey is issued!
+    PatchedProjectAssignmentRateRequest:
+      type: object
+      description: Serializer for ProjectAssignmentRate model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        rate_per_day:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    PatchedProjectAssumptionRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        is_internal:
+          type: boolean
+          description: 社内のみの場合設定
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+    PatchedProjectBusinessRequirementCategoryRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    PatchedProjectBusinessRequirementCommentRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
+    PatchedProjectBusinessRequirementEstimateRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        days:
+          type: number
+          format: double
+          maximum: 30.0
+          minimum: 0.5
+        confidence:
+          type: number
+          format: double
+          maximum: 1.0
+          minimum: 0.1
+    PatchedProjectBusinessRequirementRequest:
+      type: object
+      description: Full serializer for creating/updating business requirements.
+      properties:
+        project:
+          type: string
+          format: uuid
+        problems:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+    PatchedProjectProblemDefinitionRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+    PatchedProjectTechnicalRequirementCategoryRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    PatchedProjectTechnicalRequirementCommentRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+    PatchedProjectTechnicalRequirementGithubIssueRequest:
+      type: object
+      properties:
+        technical_requirement:
+          type: integer
+        url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 200
+    PatchedProjectTechnicalRequirementRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        business_requirements:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+    PatchedProjectWeeklyEffortRequest:
+      type: object
+      description: Serializer for ProjectWeeklyEffort model.
+      properties:
+        week_start:
+          type: string
+          format: date
+          description: Effort Week Start (MONDAY)
+        project:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        hours:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Actual effort in hours performed on the project for the given
+            'week start'
+    PhaseEnum:
+      enum:
+      - anon-project
+      - lead-evaluation
+      - project-proposal
+      - project-development
+      type: string
+      description: |-
+        * `anon-project` - Non-Project
+        * `lead-evaluation` - Lead Evaluation
+        * `project-proposal` - Project Proposal Preparation
+        * `project-development` - Project Development
+    ProjectAssignmentRate:
+      type: object
+      description: Serializer for ProjectAssignmentRate model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        project_name:
+          type: string
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        rate_per_day:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - project
+      - project_name
+      - role
+      - updated_datetime
+    ProjectAssignmentRateInline:
+      type: object
+      description: Inline serializer for assignment rate response in OpenAPI schema.
+      properties:
+        role:
+          type: string
+        rate_per_day:
+          type: integer
+        is_default:
+          type: boolean
+      required:
+      - is_default
+      - rate_per_day
+      - role
+    ProjectAssignmentRateRequest:
+      type: object
+      description: Serializer for ProjectAssignmentRate model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        rate_per_day:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - project
+      - role
+    ProjectAssumption:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        category_display:
+          type: string
+          readOnly: true
+        is_internal:
+          type: boolean
+          description: 社内のみの場合設定
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category_display
+      - created_datetime
+      - display_id
+      - id
+      - project
+      - title
+      - updated_datetime
+    ProjectAssumptionRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        is_internal:
+          type: boolean
+          description: 社内のみの場合設定
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+      required:
+      - project
+      - title
+    ProjectBusinessRequirement:
+      type: object
+      description: Full serializer for creating/updating business requirements.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        problems:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_datetime
+      - display_id
+      - id
+      - project
+      - title
+      - updated_datetime
+    ProjectBusinessRequirementCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - name
+      - project
+      - updated_datetime
+    ProjectBusinessRequirementCategoryRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+      - project
+    ProjectBusinessRequirementComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        replies:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - comment
+      - created_by
+      - created_by_name
+      - created_datetime
+      - id
+      - replies
+      - requirement
+      - updated_by
+      - updated_datetime
+    ProjectBusinessRequirementCommentRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
+      required:
+      - comment
+      - requirement
+    ProjectBusinessRequirementDetail:
+      type: object
+      description: Detailed serializer for business requirement detail view.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        problems:
+          type: array
+          items:
+            type: integer
+        problems_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectProblemDefinition'
+          readOnly: true
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        technical_requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirement'
+          readOnly: true
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          readOnly: true
+        total_estimate:
+          allOf:
+          - $ref: '#/components/schemas/TotalEstimateInline'
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - category_name
+      - comments
+      - created_datetime
+      - display_id
+      - id
+      - problems_data
+      - project
+      - technical_requirements
+      - title
+      - total_estimate
+      - updated_datetime
+    ProjectBusinessRequirementEstimate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        days:
+          type: number
+          format: double
+          maximum: 30.0
+          minimum: 0.5
+        confidence:
+          type: number
+          format: double
+          maximum: 1.0
+          minimum: 0.1
+        confidence_adjusted_days:
+          type: number
+          format: double
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - confidence
+      - confidence_adjusted_days
+      - created_by
+      - created_by_name
+      - created_datetime
+      - days
+      - id
+      - requirement
+      - updated_by
+      - updated_datetime
+    ProjectBusinessRequirementEstimateRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        days:
+          type: number
+          format: double
+          maximum: 30.0
+          minimum: 0.5
+        confidence:
+          type: number
+          format: double
+          maximum: 1.0
+          minimum: 0.1
+      required:
+      - confidence
+      - days
+      - requirement
+    ProjectBusinessRequirementList:
+      type: object
+      description: Lightweight serializer for listing business requirements.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        problems:
+          type: array
+          items:
+            type: integer
+        problems_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectProblemDefinition'
+          readOnly: true
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        technical_requirements_count:
+          type: integer
+          readOnly: true
+        total_estimate_days:
+          type: number
+          format: double
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - category_name
+      - created_datetime
+      - display_id
+      - id
+      - problems_data
+      - project
+      - technical_requirements_count
+      - title
+      - total_estimate_days
+      - updated_datetime
+    ProjectBusinessRequirementRequest:
+      type: object
+      description: Full serializer for creating/updating business requirements.
+      properties:
+        project:
+          type: string
+          format: uuid
+        problems:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+      required:
+      - category
+      - project
+      - title
+    ProjectProblemDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - display_id
+      - id
+      - project
+      - title
+      - updated_datetime
+    ProjectProblemDefinitionRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+      required:
+      - project
+      - title
+    ProjectTechnicalRequirement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        business_requirements:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        estimate:
+          allOf:
+          - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          readOnly: true
+        github_issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - category_name
+      - created_datetime
+      - display_id
+      - estimate
+      - github_issues
+      - id
+      - project
+      - title
+      - updated_datetime
+    ProjectTechnicalRequirementCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - name
+      - project
+      - updated_datetime
+    ProjectTechnicalRequirementCategoryRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+      - project
+    ProjectTechnicalRequirementComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        replies:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - comment
+      - created_by
+      - created_by_name
+      - created_datetime
+      - id
+      - replies
+      - requirement
+      - updated_by
+      - updated_datetime
+    ProjectTechnicalRequirementCommentRequest:
+      type: object
+      properties:
+        requirement:
+          type: integer
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+      required:
+      - comment
+      - requirement
+    ProjectTechnicalRequirementDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        display_id:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        business_requirements:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        category_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        details:
+          type: string
+        estimate:
+          allOf:
+          - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          readOnly: true
+        github_issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          readOnly: true
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - category_name
+      - comments
+      - created_datetime
+      - display_id
+      - estimate
+      - github_issues
+      - id
+      - project
+      - title
+      - updated_datetime
+    ProjectTechnicalRequirementGithubIssue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        technical_requirement:
+          type: integer
+        url:
+          type: string
+          format: uri
+          maxLength: 200
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - technical_requirement
+      - updated_datetime
+      - url
+    ProjectTechnicalRequirementGithubIssueRequest:
+      type: object
+      properties:
+        technical_requirement:
+          type: integer
+        url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 200
+      required:
+      - technical_requirement
+      - url
+    ProjectTechnicalRequirementRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        business_requirements:
+          type: array
+          items:
+            type: integer
+        category:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        details:
+          type: string
+      required:
+      - category
+      - project
+      - title
+    ProjectWeeklyEffort:
+      type: object
+      description: Serializer for ProjectWeeklyEffort model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        week_start:
+          type: string
+          format: date
+          description: Effort Week Start (MONDAY)
+        project:
+          type: string
+          format: uuid
+        project_name:
+          type: string
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        user_username:
+          type: string
+          readOnly: true
+        user_display_name:
+          type: string
+          readOnly: true
+        hours:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Actual effort in hours performed on the project for the given
+            'week start'
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - hours
+      - id
+      - project
+      - project_name
+      - updated_datetime
+      - user
+      - user_display_name
+      - user_username
+    ProjectWeeklyEffortRequest:
+      type: object
+      description: Serializer for ProjectWeeklyEffort model.
+      properties:
+        week_start:
+          type: string
+          format: date
+          description: Effort Week Start (MONDAY)
+        project:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        hours:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Actual effort in hours performed on the project for the given
+            'week start'
+      required:
+      - hours
+      - project
+      - user
+    RoleEnum:
+      enum:
+      - developer
+      - project_manager
+      - tester
+      type: string
+      description: |-
+        * `developer` - developer
+        * `project_manager` - project_manager
+        * `tester` - tester
+    ScheduleEstimationRequestRequest:
+      type: object
+      description: Serializer for schedule estimation request.
+      properties:
+        project:
+          type: string
+          format: uuid
+          description: Project UUID to schedule requirements for
+        developer_count:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Number of developers available for the work
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Schedule start date (defaults to today)
+      required:
+      - developer_count
+      - project
+    ScheduleEstimationResponse:
+      type: object
+      description: Serializer for schedule estimation response.
+      properties:
+        estimated_completion_date:
+          type: string
+          description: ISO format date when all work is expected to complete
+        total_estimate_days:
+          type: number
+          format: double
+          description: Sum of all requirement estimates in days
+        total_confidence_adjusted_days:
+          type: number
+          format: double
+          description: Sum of confidence-adjusted estimates
+        requirements_count:
+          type: integer
+          description: Number of requirements scheduled
+        schedule_start_date:
+          type: string
+          description: ISO format date used as scheduling start
+        developer_count:
+          type: integer
+          description: Number of developers used for scheduling
+        scheduled_requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduledRequirement'
+          description: List of scheduled requirements
+      required:
+      - developer_count
+      - estimated_completion_date
+      - requirements_count
+      - schedule_start_date
+      - scheduled_requirements
+      - total_confidence_adjusted_days
+      - total_estimate_days
+    ScheduledRequirement:
+      type: object
+      description: Serializer for individual scheduled requirement in the response.
+      properties:
+        id:
+          type: integer
+          description: Technical requirement database ID
+        display_id:
+          type: string
+          description: Human-readable display ID (e.g., TR-001)
+        title:
+          type: string
+          description: Title of the technical requirement
+        category:
+          type: string
+          description: Category name of the requirement
+        estimate_days:
+          type: number
+          format: double
+          description: Original estimate in days
+        confidence:
+          type: number
+          format: double
+          description: Confidence level (0.1-1.0)
+        confidence_adjusted_days:
+          type: number
+          format: double
+          description: Estimate adjusted by confidence factor
+        assigned_developer:
+          type: string
+          description: Developer assignment identifier (e.g., Developer 1)
+        priority:
+          type: integer
+          description: Scheduling priority (lower = higher priority)
+        scheduled_start_date:
+          type: string
+          nullable: true
+          description: ISO format start date (null if unscheduled)
+        scheduled_end_date:
+          type: string
+          nullable: true
+          description: ISO format end date (null if unscheduled)
+        is_scheduled:
+          type: boolean
+          description: Whether this requirement was successfully scheduled
+      required:
+      - assigned_developer
+      - category
+      - confidence
+      - confidence_adjusted_days
+      - display_id
+      - estimate_days
+      - id
+      - is_scheduled
+      - priority
+      - scheduled_end_date
+      - scheduled_start_date
+      - title
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TotalEstimateInline:
+      type: object
+      description: Inline serializer for total estimate response in OpenAPI schema.
+      properties:
+        total_days:
+          type: number
+          format: double
+        daily_rate:
+          type: integer
+        total_cost:
+          type: number
+          format: double
+      required:
+      - daily_rate
+      - total_cost
+      - total_days
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+- url: http://localhost:8000
+  description: Local development server
