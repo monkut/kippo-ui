@@ -22,12 +22,20 @@ const getBody = <T>(c: Response | Request): Promise<T> => {
 
 // NOTE: Update just base url
 const getUrl = (contextUrl: string): string => {
-  const baseUrl = (import.meta.env.VITE_BASE_URL || "http://localhost:8000").replace(/\/$/, ""); // Remove trailing slash
-  const url = new URL(contextUrl, baseUrl);
-  const pathname = url.pathname;
-  const search = url.search;
+  // Use relative URLs when served from same origin (no VITE_BASE_URL set)
+  // This avoids CORS issues when UI is served from Django
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
-  const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
+  if (!baseUrl) {
+    // No base URL - use relative path (same origin)
+    const url = new URL(contextUrl, "http://placeholder");
+    return `${url.pathname}${url.search}`;
+  }
+
+  // Base URL specified - use absolute URL (for development with separate servers)
+  const cleanBaseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash
+  const url = new URL(contextUrl, cleanBaseUrl);
+  const requestUrl = new URL(`${cleanBaseUrl}${url.pathname}${url.search}`);
 
   return requestUrl.toString();
 };
@@ -68,11 +76,16 @@ const refreshToken = async (): Promise<string | null> => {
   }
 
   try {
-    const baseUrl = (import.meta.env.VITE_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
-    const response = await fetch(`${baseUrl}/api/token/refresh/`, {
+    // Use relative URL when no base URL specified (same origin)
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const refreshUrl = baseUrl
+      ? `${baseUrl.replace(/\/$/, "")}/api/token/refresh/`
+      : "/api/token/refresh/";
+    const response = await fetch(refreshUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: refreshTokenValue }),
+      credentials: "include",
     });
 
     if (response.ok) {
