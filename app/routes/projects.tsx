@@ -5,6 +5,9 @@ import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated";
 import type { KippoProject } from "~/lib/api/generated";
 
+// Categories to exclude from the project list
+const EXCLUDED_CATEGORIES = ["PAO", "r&d", "講師", "maintenance", "保守運用"];
+
 export function meta() {
   return [{ title: "プロジェクト一覧 - Kippo要件管理" }];
 }
@@ -35,7 +38,15 @@ export default function Projects() {
     try {
       const response = await projectsList({ is_active: true });
       if (response.data?.results) {
-        setProjects(response.data.results);
+        const filteredProjects = response.data.results
+          .filter((project) => !project.category || !EXCLUDED_CATEGORIES.includes(project.category))
+          .sort((a, b) => {
+            if (!a.start_date && !b.start_date) return 0;
+            if (!a.start_date) return 1;
+            if (!b.start_date) return -1;
+            return a.start_date.localeCompare(b.start_date);
+          });
+        setProjects(filteredProjects);
       }
     } catch (err) {
       console.error("Failed to load projects:", err);
@@ -115,9 +126,18 @@ export default function Projects() {
                             組織: {project.organization_name}
                           </p>
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 gap-4">
                           <p>
-                            作成日: {new Date(project.created_datetime).toLocaleDateString("ja-JP")}
+                            開始日:{" "}
+                            {project.start_date
+                              ? new Date(project.start_date).toLocaleDateString("ja-JP")
+                              : "-"}
+                          </p>
+                          <p>
+                            完了予定日:{" "}
+                            {project.target_date
+                              ? new Date(project.target_date).toLocaleDateString("ja-JP")
+                              : "-"}
                           </p>
                         </div>
                       </div>
