@@ -4,7 +4,8 @@ import type { TokenObtainPairRequest } from "./api/generated/models";
 
 interface User {
   username: string;
-  token: string;
+  token?: string;
+  isSessionAuth?: boolean;
 }
 
 interface AuthContextType {
@@ -21,14 +22,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on mount
-    const token = localStorage.getItem("authToken");
-    const username = localStorage.getItem("username");
-    if (token && username) {
-      // Token exists - restore user state
-      setUser({ username, token });
-    }
-    setIsLoading(false);
+    // Check for session auth first (Django admin login), then fall back to JWT token
+    const checkAuth = async () => {
+      try {
+        // Try to get current user via session auth
+        const response = await fetch("/api/auth/me/", {
+          credentials: "include", // Include cookies for session auth
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser({
+            username: userData.username,
+            isSessionAuth: true,
+          });
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Session auth failed, try JWT
+      }
+
+      // Fall back to JWT token from localStorage
+      const token = localStorage.getItem("authToken");
+      const username = localStorage.getItem("username");
+      if (token && username) {
+        setUser({ username, token });
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (username: string, password: string) => {

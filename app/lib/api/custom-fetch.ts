@@ -118,6 +118,7 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
   const requestInit: RequestInit = {
     ...options,
     headers: requestHeaders,
+    credentials: "include", // Include cookies for Django session auth
   };
 
   const response = await fetch(requestUrl, requestInit);
