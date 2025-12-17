@@ -31,9 +31,12 @@
       "**",
       "!node_modules/**",
       "!dist/**",
+      "!build/**",
       "!coverage/**",
       "!**/*.min.js",
-      "!pnpm-lock.yaml"
+      "!pnpm-lock.yaml",
+      "!.react-router/**",
+      "!app/lib/api/generated/**"
     ]
   }
 }

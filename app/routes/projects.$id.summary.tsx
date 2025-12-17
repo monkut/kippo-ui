@@ -384,9 +384,7 @@ export default function ProjectSummary() {
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="p-4 bg-gray-50 rounded-lg text-center">
               <p className="text-sm text-gray-500">開始日</p>
-              <p className="text-2xl font-bold text-gray-600">
-                {project.start_date || "未設定"}
-              </p>
+              <p className="text-2xl font-bold text-gray-600">{project.start_date || "未設定"}</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg text-center">
               <p className="text-sm text-gray-500">技術要件数</p>
@@ -457,15 +455,11 @@ export default function ProjectSummary() {
                       key={devCount}
                       className="p-4 bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        開発者 {devCount}名
-                      </p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">開発者 {devCount}名</p>
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">作業日数</span>
-                          <span className="font-medium text-gray-900">
-                            {calendarDays} 日
-                          </span>
+                          <span className="font-medium text-gray-900">{calendarDays} 日</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">完了予定日</span>
