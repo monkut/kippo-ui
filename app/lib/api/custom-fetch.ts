@@ -5,6 +5,9 @@
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
+// URL prefix for deployments with a stage prefix (e.g., /prod)
+const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
+
 // NOTE: Supports cases where `content-type` is other than `json`
 const getBody = <T>(c: Response | Request): Promise<T> => {
   const contentType = c.headers.get("content-type");
@@ -28,8 +31,9 @@ const getUrl = (contextUrl: string): string => {
 
   if (!baseUrl) {
     // No base URL - use relative path (same origin)
+    // Include URL prefix for deployments with stage prefix (e.g., /prod)
     const url = new URL(contextUrl, "http://placeholder");
-    return `${url.pathname}${url.search}`;
+    return `${urlPrefix}${url.pathname}${url.search}`;
   }
 
   // Base URL specified - use absolute URL (for development with separate servers)
@@ -77,10 +81,11 @@ const refreshToken = async (): Promise<string | null> => {
 
   try {
     // Use relative URL when no base URL specified (same origin)
+    // Include URL prefix for deployments with stage prefix (e.g., /prod)
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const refreshUrl = baseUrl
       ? `${baseUrl.replace(/\/$/, "")}/api/token/refresh/`
-      : "/api/token/refresh/";
+      : `${urlPrefix}/api/token/refresh/`;
     const response = await fetch(refreshUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

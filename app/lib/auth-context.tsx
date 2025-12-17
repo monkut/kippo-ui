@@ -2,6 +2,9 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { tokenCreate } from "./api/generated/token/token";
 import type { TokenObtainPairRequest } from "./api/generated/models";
 
+// URL prefix for deployments with a stage prefix (e.g., /prod)
+const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
+
 interface User {
   username: string;
   token?: string;
@@ -26,7 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         // Try to get current user via session auth
-        const response = await fetch("/api/auth/me/", {
+        // Include URL prefix for deployments with stage prefix (e.g., /prod)
+        const response = await fetch(`${urlPrefix}/api/auth/me/`, {
           credentials: "include", // Include cookies for session auth
         });
 
