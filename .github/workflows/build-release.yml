@@ -43,14 +43,25 @@ jobs:
       - name: Run format check
         run: pnpm format:check
 
-      - name: Build application
+      - name: Build application (default - no prefix)
         run: pnpm build
 
-      - name: Create release tarball
+      - name: Create release tarball (default)
         run: |
-          cd build
-          tar -czvf ../kippo-ui-build.tar.gz .
-          cd ..
+          cd build/client
+          tar -czvf ../../kippo-ui-build.tar.gz .
+          cd ../..
+
+      - name: Build application (production with /prod prefix)
+        run: |
+          rm -rf build
+          VITE_URL_PREFIX=/prod pnpm build
+
+      - name: Create release tarball (production)
+        run: |
+          cd build/client
+          tar -czvf ../../kippo-ui-build-prod.tar.gz .
+          cd ../..
 
       - name: Generate version tag
         id: version
@@ -64,6 +75,7 @@ jobs:
           generate_release_notes: true
           files: |
             kippo-ui-build.tar.gz
+            kippo-ui-build-prod.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload build artifact
