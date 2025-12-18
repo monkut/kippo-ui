@@ -251,6 +251,356 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Returns the currently authenticated user's information. Works with
+        both session and JWT auth.
+      summary: Get current user
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  first_name:
+                    type: string
+                  last_name:
+                    type: string
+                  is_staff:
+                    type: boolean
+          description: ''
+  /api/monthly-assignments/:
+    get:
+      operationId: monthly_assignments_list
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      parameters:
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: Filter by exact month (YYYY-MM-DD format)
+      - in: query
+        name: month_gte
+        schema:
+          type: string
+        description: Filter by month >= date (YYYY-MM-DD format)
+      - in: query
+        name: month_lte
+        schema:
+          type: string
+        description: Filter by month <= date (YYYY-MM-DD format)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      - in: query
+        name: user
+        schema:
+          type: integer
+        description: Filter by user ID
+      tags:
+      - monthly-assignments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectMonthlyAssignmentList'
+          description: ''
+    post:
+      operationId: monthly_assignments_create
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      tags:
+      - monthly-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyAssignment'
+          description: ''
+  /api/monthly-assignments/{id}/:
+    get:
+      operationId: monthly_assignments_retrieve
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly assignment.
+        required: true
+      tags:
+      - monthly-assignments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyAssignment'
+          description: ''
+    put:
+      operationId: monthly_assignments_update
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly assignment.
+        required: true
+      tags:
+      - monthly-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyAssignmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyAssignment'
+          description: ''
+    patch:
+      operationId: monthly_assignments_partial_update
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly assignment.
+        required: true
+      tags:
+      - monthly-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyAssignmentRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyAssignment'
+          description: ''
+    delete:
+      operationId: monthly_assignments_destroy
+      description: |-
+        ViewSet for ProjectMonthlyAssignment model.
+
+        Manages monthly workload percentage assignments for users on projects.
+
+        **Organization Scoping:**
+        - Regular users can only access assignments for projects in organizations they belong to
+        - Superusers can access assignments from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Validation:**
+        - User must be a member of the project's organization
+        - Month defaults to the project's start_date month if not provided
+        - A warning is logged if total assignment percentage for a user exceeds 100% in an organization
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage assignments for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly assignment.
+        required: true
+      tags:
+      - monthly-assignments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/projects/:
     get:
       operationId: projects_list
@@ -3789,6 +4139,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectBusinessRequirementList'
+    PaginatedProjectMonthlyAssignmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectMonthlyAssignment'
     PaginatedProjectProblemDefinitionList:
       type: object
       required:
@@ -4121,6 +4494,30 @@ components:
           maxLength: 100
         details:
           type: string
+    PatchedProjectMonthlyAssignmentRequest:
+      type: object
+      description: Serializer for ProjectMonthlyAssignment model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: Assignment month (defaults to project start_date month)
+        percentage:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Workload percentage assigned to project from available workload
+            available for project organization
+        is_confirmed:
+          type: boolean
+          description: Assignment is confirmed or not
     PatchedProjectProblemDefinitionRequest:
       type: object
       properties:
@@ -4710,6 +5107,102 @@ components:
       - category
       - project
       - title
+    ProjectMonthlyAssignment:
+      type: object
+      description: Serializer for ProjectMonthlyAssignment model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        project_name:
+          type: string
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        user_username:
+          type: string
+          readOnly: true
+        user_display_name:
+          type: string
+          readOnly: true
+        user_github_login:
+          type: string
+          readOnly: true
+        user_slack_username:
+          type: string
+          nullable: true
+          readOnly: true
+        user_slack_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: Assignment month (defaults to project start_date month)
+        percentage:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Workload percentage assigned to project from available workload
+            available for project organization
+        is_confirmed:
+          type: boolean
+          description: Assignment is confirmed or not
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - percentage
+      - project
+      - project_name
+      - updated_datetime
+      - user
+      - user_display_name
+      - user_github_login
+      - user_slack_image_url
+      - user_slack_username
+      - user_username
+    ProjectMonthlyAssignmentRequest:
+      type: object
+      description: Serializer for ProjectMonthlyAssignment model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: Assignment month (defaults to project start_date month)
+        percentage:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Workload percentage assigned to project from available workload
+            available for project organization
+        is_confirmed:
+          type: boolean
+          description: Assignment is confirmed or not
+      required:
+      - percentage
+      - project
+      - user
     ProjectProblemDefinition:
       type: object
       properties:

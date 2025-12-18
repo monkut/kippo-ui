@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 
 interface LayoutProps {
@@ -8,16 +8,12 @@ interface LayoutProps {
   projectId?: string;
 }
 
+const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
+
 export function Layout({ children, projectName, projectId }: LayoutProps) {
-  const { user, logout, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -85,13 +81,6 @@ export function Layout({ children, projectName, projectId }: LayoutProps) {
                     </Link>
                   )}
                   <span className="text-sm text-gray-600">{user.username}</span>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    ログアウト
-                  </button>
                 </div>
               ) : (
                 <Link
@@ -109,6 +98,13 @@ export function Layout({ children, projectName, projectId }: LayoutProps) {
           <nav className="border-t border-gray-200 bg-white">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <div className="flex flex-col space-y-1">
+                <a
+                  href={`${urlPrefix}/admin/`}
+                  onClick={() => setMenuOpen(false)}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  KIPPO
+                </a>
                 <Link
                   to="/projects"
                   onClick={() => setMenuOpen(false)}

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 import type {
+  AuthMeRetrieve200,
   TokenObtainPair,
   TokenObtainPairRequest,
   TokenRefresh,
@@ -13,6 +14,42 @@ import type {
 } from '.././models';
 
 import { customFetch } from '../../custom-fetch';
+
+/**
+ * Returns the currently authenticated user's information. Works with both session and JWT auth.
+ * @summary Get current user
+ */
+export type authMeRetrieveResponse200 = {
+  data: AuthMeRetrieve200
+  status: 200
+}
+    
+export type authMeRetrieveResponseSuccess = (authMeRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authMeRetrieveResponse = (authMeRetrieveResponseSuccess)
+
+export const getAuthMeRetrieveUrl = () => {
+
+
+  
+
+  return `/api/auth/me/`
+}
+
+export const authMeRetrieve = async ( options?: RequestInit): Promise<authMeRetrieveResponse> => {
+  
+  return customFetch<authMeRetrieveResponse>(getAuthMeRetrieveUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
 
 /**
  * Takes username and password credentials and returns an access and refresh JWT token pair.
