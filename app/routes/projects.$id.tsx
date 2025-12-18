@@ -1775,6 +1775,7 @@ function BusinessRequirementInlineForm({
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
                     placeholder="新規カテゴリ名"
                     disabled={isSubmitting}
+                    autoFocus
                   />
                   {categories.length > 0 && (
                     <button
@@ -2106,6 +2107,7 @@ function TechnicalRequirementInlineForm({
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
                     placeholder="新規カテゴリ名"
                     disabled={isSubmitting}
+                    autoFocus
                   />
                   {categories.length > 0 && (
                     <button

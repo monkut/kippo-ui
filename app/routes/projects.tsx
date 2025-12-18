@@ -169,9 +169,6 @@ function ProjectListItem({ project }: { project: KippoProject }) {
                   カテゴリ: {project.category}
                 </p>
               )}
-              <p className="flex items-center text-sm text-gray-500">
-                組織: {project.organization_name}
-              </p>
             </div>
             <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 gap-4">
               <p>

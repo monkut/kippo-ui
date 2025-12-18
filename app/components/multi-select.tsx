@@ -47,6 +47,11 @@ export function MultiSelect({
 
   const handleSelect = (selected: MultiSelectOption[]) => {
     onChange(selected.map((s) => s.id));
+    setQuery(""); // Reset search query after selection
+  };
+
+  const handleClose = () => {
+    setQuery(""); // Reset search query when dropdown closes
   };
 
   const handleRemove = (idToRemove: number) => {
@@ -63,6 +68,7 @@ export function MultiSelect({
       <Combobox
         value={selectedOptions}
         onChange={handleSelect}
+        onClose={handleClose}
         multiple
         disabled={disabled}
         immediate
@@ -105,6 +111,7 @@ export function MultiSelect({
                 id={id}
                 className="w-full border-none p-0 text-sm text-gray-900 placeholder-gray-400 focus:ring-0 focus:outline-none bg-transparent pr-8"
                 placeholder={selectedOptions.length === 0 ? placeholder : "検索..."}
+                value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 displayValue={() => ""}
               />
