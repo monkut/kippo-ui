@@ -533,9 +533,12 @@ export default function ProjectDetails() {
               {assumptions?.length === 0 && !showAssumptionForm ? (
                 <p className="text-gray-500 text-center py-4">前提条件がありません</p>
               ) : assumptionsCompact ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 justify-items-start">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
                   {assumptions?.map((assumption) => (
-                    <div key={assumption.id} className="flex items-center gap-2 py-1 min-w-0">
+                    <div
+                      key={assumption.id}
+                      className="flex items-center gap-2 py-1 min-w-0 overflow-hidden"
+                    >
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {assumption.display_id}
                       </span>
@@ -677,11 +680,11 @@ export default function ProjectDetails() {
               {problems?.length === 0 && !showProblemForm ? (
                 <p className="text-gray-500 text-center py-4">課題定義がありません</p>
               ) : problemsCompact ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 justify-items-start">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
                   {problems?.map((problem) => (
                     <div
                       key={problem.id}
-                      className={`flex items-center gap-2 py-1 px-1 -mx-1 rounded transition-colors min-w-0 ${
+                      className={`flex items-center gap-2 py-1 px-1 -mx-1 rounded transition-colors min-w-0 overflow-hidden ${
                         highlightedProblemIds.has(problem.id)
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : ""
@@ -823,12 +826,12 @@ export default function ProjectDetails() {
               {businessRequirements?.length === 0 && !showBusinessReqForm ? (
                 <p className="text-gray-500 text-center py-4">ビジネス要件がありません</p>
               ) : businessReqsCompact ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1 justify-items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1">
                   {businessRequirements?.map((req) => (
                     <Link
                       key={req.id}
                       to={`/projects/${projectId}/requirements/${req.id}`}
-                      className={`flex items-center gap-2 py-1 rounded px-1 -mx-1 transition-colors min-w-0 ${
+                      className={`flex items-center gap-2 py-1 rounded px-1 -mx-1 transition-colors min-w-0 overflow-hidden ${
                         highlightedBusinessReqIds.has(req.id)
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : "hover:bg-gray-50"
@@ -1068,11 +1071,11 @@ export default function ProjectDetails() {
               {technicalRequirements?.length === 0 && !showTechReqForm ? (
                 <p className="text-gray-500 text-center py-4">技術要件がありません</p>
               ) : techReqsCompact ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1 justify-items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1">
                   {technicalRequirements?.map((req) => (
                     <div
                       key={req.id}
-                      className="flex items-center gap-2 py-1 px-1 -mx-1 w-full min-w-0 rounded transition-colors cursor-default"
+                      className="flex items-center gap-2 py-1 px-1 -mx-1 min-w-0 overflow-hidden rounded transition-colors cursor-default"
                       onMouseEnter={() => setHoveredTechReqId(req.id)}
                       onMouseLeave={() => setHoveredTechReqId(null)}
                     >
