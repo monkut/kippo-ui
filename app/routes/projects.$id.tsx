@@ -538,6 +538,7 @@ export default function ProjectDetails() {
                     <div
                       key={assumption.id}
                       className="flex items-center gap-2 py-1 min-w-0 overflow-hidden"
+                      title={assumption.title}
                     >
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {assumption.display_id}
@@ -547,10 +548,7 @@ export default function ProjectDetails() {
                       >
                         {assumption.category_display}
                       </span>
-                      <span
-                        className="text-sm text-gray-900 truncate min-w-0"
-                        title={assumption.title}
-                      >
+                      <span className="text-sm text-gray-900 truncate min-w-0">
                         {assumption.title}
                       </span>
                     </div>
@@ -689,14 +687,12 @@ export default function ProjectDetails() {
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : ""
                       }`}
+                      title={problem.title}
                     >
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {problem.display_id}
                       </span>
-                      <span
-                        className="text-sm text-gray-900 truncate min-w-0"
-                        title={problem.title}
-                      >
+                      <span className="text-sm text-gray-900 truncate min-w-0">
                         {problem.title}
                       </span>
                     </div>
@@ -836,7 +832,7 @@ export default function ProjectDetails() {
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : "hover:bg-gray-50"
                       }`}
-                      title="開発要件を定義"
+                      title={req.title}
                       onMouseEnter={() => setHoveredBusinessReqId(req.id)}
                       onMouseLeave={() => setHoveredBusinessReqId(null)}
                     >
@@ -848,9 +844,7 @@ export default function ProjectDetails() {
                       >
                         {getBusinessReqCategoryName(req.category, businessRequirementCategories)}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0" title={req.title}>
-                        {req.title}
-                      </span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.problems && req.problems.length > 0 && (
                         <span className="text-xs text-gray-500 shrink-0">
                           ({getProblemDisplayIds(req.problems, problemDefinitions)})
@@ -1076,6 +1070,7 @@ export default function ProjectDetails() {
                     <div
                       key={req.id}
                       className="flex items-center gap-2 py-1 px-1 -mx-1 min-w-0 overflow-hidden rounded transition-colors cursor-default"
+                      title={req.title}
                       onMouseEnter={() => setHoveredTechReqId(req.id)}
                       onMouseLeave={() => setHoveredTechReqId(null)}
                     >
@@ -1087,9 +1082,7 @@ export default function ProjectDetails() {
                       >
                         {req.category_name}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0" title={req.title}>
-                        {req.title}
-                      </span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.estimate && (
                         <span className="text-xs text-gray-500 ml-auto shrink-0">
                           {req.estimate.days}日
