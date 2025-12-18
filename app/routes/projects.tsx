@@ -110,7 +110,7 @@ export default function Projects() {
             {/* Projects WITH requirements defined */}
             {projectsWithRequirements.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">要件定義済み</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">要件定義あり</h2>
                 <div className="bg-white shadow overflow-hidden sm:rounded-md">
                   <ul className="divide-y divide-gray-200">
                     {projectsWithRequirements.map((project) => (
