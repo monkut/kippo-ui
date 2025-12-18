@@ -8,11 +8,6 @@ import type { KippoProject } from "~/lib/api/generated";
 // Categories to exclude from the project list
 const EXCLUDED_CATEGORIES = ["PAO", "r&d", "講師", "maintenance", "保守運用"];
 
-// Check if a project has requirements defined (using problem_definition as a proxy)
-const hasRequirementsDefined = (project: KippoProject): boolean => {
-  return Boolean(project.problem_definition && project.problem_definition.trim().length > 0);
-};
-
 export function meta() {
   return [{ title: "プロジェクト一覧 - Kippo要件管理" }];
 }
@@ -66,7 +61,7 @@ export default function Projects() {
     const withReqs: KippoProject[] = [];
     const withoutReqs: KippoProject[] = [];
     for (const project of projects) {
-      if (hasRequirementsDefined(project)) {
+      if (project.has_requirements) {
         withReqs.push(project);
       } else {
         withoutReqs.push(project);

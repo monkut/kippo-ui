@@ -94,6 +94,7 @@ export interface KippoProject {
   /** Update when survey is issued! */
   survey_issued?: boolean;
   readonly assignment_rates: readonly ProjectAssignmentRateInline[];
+  readonly has_requirements: boolean;
   readonly created_datetime: string;
   readonly updated_datetime: string;
 }

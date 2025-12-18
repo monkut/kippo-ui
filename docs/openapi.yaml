@@ -3848,6 +3848,9 @@ components:
           items:
             $ref: '#/components/schemas/ProjectAssignmentRateInline'
           readOnly: true
+        has_requirements:
+          type: boolean
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -3861,6 +3864,7 @@ components:
       - assignment_rates
       - columnset
       - created_datetime
+      - has_requirements
       - id
       - name
       - organization
