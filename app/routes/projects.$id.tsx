@@ -544,7 +544,10 @@ export default function ProjectDetails() {
                       >
                         {assumption.category_display}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">
+                      <span
+                        className="text-sm text-gray-900 truncate min-w-0"
+                        title={assumption.title}
+                      >
                         {assumption.title}
                       </span>
                     </div>
@@ -687,7 +690,10 @@ export default function ProjectDetails() {
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {problem.display_id}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">
+                      <span
+                        className="text-sm text-gray-900 truncate min-w-0"
+                        title={problem.title}
+                      >
                         {problem.title}
                       </span>
                     </div>
@@ -839,7 +845,9 @@ export default function ProjectDetails() {
                       >
                         {getBusinessReqCategoryName(req.category, businessRequirementCategories)}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0" title={req.title}>
+                        {req.title}
+                      </span>
                       {req.problems && req.problems.length > 0 && (
                         <span className="text-xs text-gray-500 shrink-0">
                           ({getProblemDisplayIds(req.problems, problemDefinitions)})
@@ -1076,7 +1084,9 @@ export default function ProjectDetails() {
                       >
                         {req.category_name}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0" title={req.title}>
+                        {req.title}
+                      </span>
                       {req.estimate && (
                         <span className="text-xs text-gray-500 ml-auto shrink-0">
                           {req.estimate.days}日
