@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.status === 200 && response.data.username) {
           const username = response.data.username;
 
-          // Session auth valid - get JWT tokens for API calls (avoids CSRF issues)
+          // Try to get JWT tokens for API calls (avoids CSRF issues)
           try {
             const tokenResponse = await tokenFromSessionRetrieve();
 
@@ -53,9 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return;
             }
           } catch {
-            // Token fetch failed, continue with session-only auth
+            // Token fetch failed, check for existing tokens
           }
 
+          // Fallback: use existing JWT tokens from localStorage if available
+          const existingToken = localStorage.getItem("authToken");
+          if (existingToken) {
+            setUser({
+              username,
+              token: existingToken,
+              isSessionAuth: true,
+            });
+            setIsLoading(false);
+            return;
+          }
+
+          // No JWT tokens available - session-only auth (limited functionality)
           setUser({
             username,
             isSessionAuth: true,
