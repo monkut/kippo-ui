@@ -137,4 +137,5 @@ export * from './roleEnum';
 export * from './scheduleEstimationRequestRequest';
 export * from './scheduleEstimationResponse';
 export * from './scheduledRequirement';
+export * from './tokenFromSessionRetrieve200';
 export * from './totalEstimateInline';

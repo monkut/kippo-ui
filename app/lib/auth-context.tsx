@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { tokenCreate } from "./api/generated/token/token";
+import { authMeRetrieve, tokenCreate, tokenFromSessionRetrieve } from "./api/generated/auth/auth";
 import type { TokenObtainPairRequest } from "./api/generated/models";
-
-// URL prefix for deployments with a stage prefix (e.g., /prod)
-const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 interface User {
   username: string;
@@ -29,15 +26,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         // Try to get current user via session auth
-        // Include URL prefix for deployments with stage prefix (e.g., /prod)
-        const response = await fetch(`${urlPrefix}/api/auth/me/`, {
-          credentials: "include", // Include cookies for session auth
-        });
+        const response = await authMeRetrieve();
 
-        if (response.ok) {
-          const userData = await response.json();
+        if (response.status === 200 && response.data.username) {
+          const username = response.data.username;
+
+          // Session auth valid - get JWT tokens for API calls (avoids CSRF issues)
+          try {
+            const tokenResponse = await tokenFromSessionRetrieve();
+
+            if (
+              tokenResponse.status === 200 &&
+              tokenResponse.data.access &&
+              tokenResponse.data.refresh
+            ) {
+              localStorage.setItem("authToken", tokenResponse.data.access);
+              localStorage.setItem("refreshToken", tokenResponse.data.refresh);
+              localStorage.setItem("username", username);
+
+              setUser({
+                username,
+                token: tokenResponse.data.access,
+                isSessionAuth: true,
+              });
+              setIsLoading(false);
+              return;
+            }
+          } catch {
+            // Token fetch failed, continue with session-only auth
+          }
+
           setUser({
-            username: userData.username,
+            username,
             isSessionAuth: true,
           });
           setIsLoading(false);

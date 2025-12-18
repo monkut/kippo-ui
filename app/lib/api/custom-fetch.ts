@@ -157,6 +157,7 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
       const retryInit: RequestInit = {
         ...options,
         headers: retryHeaders,
+        credentials: "include", // Include cookies for session auth
       };
 
       const retryResponse = await fetch(requestUrl, retryInit);

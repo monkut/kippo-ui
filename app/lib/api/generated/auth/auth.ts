@@ -7,6 +7,7 @@
  */
 import type {
   AuthMeRetrieve200,
+  TokenFromSessionRetrieve200,
   TokenObtainPair,
   TokenObtainPairRequest,
   TokenRefresh,
@@ -84,6 +85,42 @@ export const tokenCreate = async (tokenObtainPairRequest: TokenObtainPairRequest
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       tokenObtainPairRequest,)
+  }
+);}
+
+
+/**
+ * Issues JWT access and refresh tokens to users authenticated via Django session (SSO login).
+ * @summary Get JWT tokens from session
+ */
+export type tokenFromSessionRetrieveResponse200 = {
+  data: TokenFromSessionRetrieve200
+  status: 200
+}
+    
+export type tokenFromSessionRetrieveResponseSuccess = (tokenFromSessionRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type tokenFromSessionRetrieveResponse = (tokenFromSessionRetrieveResponseSuccess)
+
+export const getTokenFromSessionRetrieveUrl = () => {
+
+
+  
+
+  return `/api/token/from-session/`
+}
+
+export const tokenFromSessionRetrieve = async ( options?: RequestInit): Promise<tokenFromSessionRetrieveResponse> => {
+  
+  return customFetch<tokenFromSessionRetrieveResponse>(getTokenFromSessionRetrieveUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 

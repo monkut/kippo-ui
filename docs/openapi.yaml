@@ -3674,6 +3674,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenObtainPair'
           description: ''
+  /api/token/from-session/:
+    get:
+      operationId: token_from_session_retrieve
+      description: Issues JWT access and refresh tokens to users authenticated via
+        Django session (SSO login).
+      summary: Get JWT tokens from session
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    description: JWT access token
+                  refresh:
+                    type: string
+                    description: JWT refresh token
+          description: ''
   /api/token/refresh/:
     post:
       operationId: token_refresh_create
