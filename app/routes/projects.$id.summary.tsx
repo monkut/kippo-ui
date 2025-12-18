@@ -8,6 +8,7 @@ import {
   requirementsTechnicalRequirementCategoriesList,
   requirementsBusinessRequirementsList,
   requirementsProblemDefinitionsList,
+  requirementsTechnicalRequirementsPartialUpdate,
   assignmentRatesList,
   assignmentRatesCreate,
   assignmentRatesPartialUpdate,
@@ -136,8 +137,10 @@ export default function ProjectSummary() {
       if (techReqsResponse.data?.results) {
         const reqs = techReqsResponse.data.results;
         setTechnicalRequirements(reqs);
-        // Initialize all requirements as selected
-        setSelectedIds(new Set(reqs.map((r) => r.id)));
+        // Initialize selected based on include_in_estimate from API (default to true if undefined)
+        setSelectedIds(
+          new Set(reqs.filter((r) => r.include_in_estimate !== false).map((r) => r.id)),
+        );
       }
 
       if (categoriesResponse.data?.results) {
@@ -165,25 +168,65 @@ export default function ProjectSummary() {
     }
   }, [user, projectId, loadData]);
 
-  const toggleSelection = (id: number) => {
+  const toggleSelection = async (id: number) => {
+    const newValue = !selectedIds.has(id);
+
+    // Optimistically update UI
     setSelectedIds((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
+      if (newValue) {
         newSet.add(id);
+      } else {
+        newSet.delete(id);
       }
       return newSet;
     });
+
+    // Update API
+    try {
+      await requirementsTechnicalRequirementsPartialUpdate(id, {
+        include_in_estimate: newValue,
+      });
+    } catch (err) {
+      // Revert on error
+      setSelectedIds((prev) => {
+        const newSet = new Set(prev);
+        if (newValue) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
+        return newSet;
+      });
+      console.error("Failed to update include_in_estimate:", err);
+    }
   };
 
-  const toggleAllSelection = () => {
-    if (selectedIds.size === technicalRequirements.length) {
-      // All selected, deselect all
-      setSelectedIds(new Set());
-    } else {
-      // Select all
+  const toggleAllSelection = async () => {
+    const selectAll = selectedIds.size !== technicalRequirements.length;
+    const newValue = selectAll;
+
+    // Optimistically update UI
+    const previousSelectedIds = new Set(selectedIds);
+    if (selectAll) {
       setSelectedIds(new Set(technicalRequirements.map((r) => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+
+    // Update all requirements via API
+    try {
+      await Promise.all(
+        technicalRequirements.map((req) =>
+          requirementsTechnicalRequirementsPartialUpdate(req.id, {
+            include_in_estimate: newValue,
+          }),
+        ),
+      );
+    } catch (err) {
+      // Revert on error
+      setSelectedIds(previousSelectedIds);
+      console.error("Failed to update include_in_estimate:", err);
     }
   };
 

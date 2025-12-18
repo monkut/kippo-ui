@@ -18,6 +18,8 @@ export interface ProjectTechnicalRequirement {
   /** @maxLength 100 */
   title: string;
   details?: string;
+  /** 見積もり計算には、含むかどうか */
+  include_in_estimate?: boolean;
   readonly estimate: ProjectBusinessRequirementEstimate;
   readonly github_issues: readonly ProjectTechnicalRequirementGithubIssue[];
   readonly created_datetime: string;

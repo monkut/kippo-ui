@@ -4583,6 +4583,9 @@ components:
           maxLength: 100
         details:
           type: string
+        include_in_estimate:
+          type: boolean
+          description: 見積もり計算には、含むかどうか
     PatchedProjectWeeklyEffortRequest:
       type: object
       description: Serializer for ProjectWeeklyEffort model.
@@ -5280,6 +5283,9 @@ components:
           maxLength: 100
         details:
           type: string
+        include_in_estimate:
+          type: boolean
+          description: 見積もり計算には、含むかどうか
         estimate:
           allOf:
           - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
@@ -5437,6 +5443,9 @@ components:
           maxLength: 100
         details:
           type: string
+        include_in_estimate:
+          type: boolean
+          description: 見積もり計算には、含むかどうか
         estimate:
           allOf:
           - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
@@ -5528,6 +5537,9 @@ components:
           maxLength: 100
         details:
           type: string
+        include_in_estimate:
+          type: boolean
+          description: 見積もり計算には、含むかどうか
       required:
       - category
       - project

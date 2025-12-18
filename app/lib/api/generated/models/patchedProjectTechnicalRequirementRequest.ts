@@ -16,4 +16,6 @@ export interface PatchedProjectTechnicalRequirementRequest {
    */
   title?: string;
   details?: string;
+  /** 見積もり計算には、含むかどうか */
+  include_in_estimate?: boolean;
 }
