@@ -535,16 +535,18 @@ export default function ProjectDetails() {
               ) : assumptionsCompact ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 justify-items-start">
                   {assumptions?.map((assumption) => (
-                    <div key={assumption.id} className="flex items-center gap-2 py-1">
-                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                    <div key={assumption.id} className="flex items-center gap-2 py-1 min-w-0">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {assumption.display_id}
                       </span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded ${getAssumptionCategoryColor(assumption.category)}`}
+                        className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${getAssumptionCategoryColor(assumption.category)}`}
                       >
                         {assumption.category_display}
                       </span>
-                      <span className="text-sm text-gray-900 truncate">{assumption.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">
+                        {assumption.title}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -676,16 +678,18 @@ export default function ProjectDetails() {
                   {problems?.map((problem) => (
                     <div
                       key={problem.id}
-                      className={`flex items-center gap-2 py-1 px-1 -mx-1 rounded transition-colors ${
+                      className={`flex items-center gap-2 py-1 px-1 -mx-1 rounded transition-colors min-w-0 ${
                         highlightedProblemIds.has(problem.id)
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : ""
                       }`}
                     >
-                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {problem.display_id}
                       </span>
-                      <span className="text-sm text-gray-900 truncate">{problem.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">
+                        {problem.title}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -818,7 +822,7 @@ export default function ProjectDetails() {
                     <Link
                       key={req.id}
                       to={`/projects/${projectId}/requirements/${req.id}`}
-                      className={`flex items-center gap-2 py-1 rounded px-1 -mx-1 transition-colors ${
+                      className={`flex items-center gap-2 py-1 rounded px-1 -mx-1 transition-colors min-w-0 ${
                         highlightedBusinessReqIds.has(req.id)
                           ? "bg-indigo-100 ring-2 ring-indigo-400"
                           : "hover:bg-gray-50"
@@ -827,17 +831,17 @@ export default function ProjectDetails() {
                       onMouseEnter={() => setHoveredBusinessReqId(req.id)}
                       onMouseLeave={() => setHoveredBusinessReqId(null)}
                     >
-                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {req.display_id}
                       </span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded ${getBusinessReqCategoryColor(req.category)}`}
+                        className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${getBusinessReqCategoryColor(req.category)}`}
                       >
                         {getBusinessReqCategoryName(req.category, businessRequirementCategories)}
                       </span>
-                      <span className="text-sm text-gray-900 truncate">{req.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.problems && req.problems.length > 0 && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 shrink-0">
                           ({getProblemDisplayIds(req.problems, problemDefinitions)})
                         </span>
                       )}
@@ -1060,21 +1064,23 @@ export default function ProjectDetails() {
                   {technicalRequirements?.map((req) => (
                     <div
                       key={req.id}
-                      className="flex items-center gap-2 py-1 px-1 -mx-1 w-full rounded transition-colors cursor-default"
+                      className="flex items-center gap-2 py-1 px-1 -mx-1 w-full min-w-0 rounded transition-colors cursor-default"
                       onMouseEnter={() => setHoveredTechReqId(req.id)}
                       onMouseLeave={() => setHoveredTechReqId(null)}
                     >
-                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {req.display_id}
                       </span>
                       <span
-                        className={`text-xs px-1.5 py-0.5 rounded ${getBusinessReqCategoryColor(req.category)}`}
+                        className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${getBusinessReqCategoryColor(req.category)}`}
                       >
                         {req.category_name}
                       </span>
-                      <span className="text-sm text-gray-900 truncate">{req.title}</span>
+                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.estimate && (
-                        <span className="text-xs text-gray-500 ml-auto">{req.estimate.days}日</span>
+                        <span className="text-xs text-gray-500 ml-auto shrink-0">
+                          {req.estimate.days}日
+                        </span>
                       )}
                     </div>
                   ))}
