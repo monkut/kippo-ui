@@ -748,7 +748,9 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {problem.details && (
-                          <p className="mt-1 text-sm text-gray-500 ml-16">{problem.details}</p>
+                          <p className="mt-1 text-sm text-gray-500 ml-16 whitespace-pre-line">
+                            {problem.details}
+                          </p>
                         )}
                       </li>
                     ),
