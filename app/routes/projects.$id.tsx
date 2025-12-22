@@ -610,7 +610,9 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {assumption.details && (
-                          <p className="mt-1 text-sm text-gray-500 ml-16">{assumption.details}</p>
+                          <p className="mt-1 text-sm text-gray-500 ml-16 whitespace-pre-line">
+                            {assumption.details}
+                          </p>
                         )}
                       </li>
                     ),
