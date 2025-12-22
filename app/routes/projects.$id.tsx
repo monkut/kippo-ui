@@ -904,6 +904,9 @@ export default function ProjectDetails() {
                               <p className="mt-1 text-xs text-gray-500 ml-16">
                                 課題: {getProblemDisplayIds(req.problems, problemDefinitions)}
                               </p>
+                              {req.details && (
+                                <p className="mt-1 text-sm text-gray-600 ml-16">{req.details}</p>
+                              )}
                             </Link>
                             <div className="flex items-center gap-1 ml-2">
                               <button
@@ -1142,6 +1145,9 @@ export default function ProjectDetails() {
                                     .join(", ") || "-"
                                 : "-"}
                             </p>
+                            {req.details && (
+                              <p className="mt-1 text-sm text-gray-600 ml-16">{req.details}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-1 ml-2">
                             <button
