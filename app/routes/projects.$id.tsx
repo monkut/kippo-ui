@@ -905,7 +905,9 @@ export default function ProjectDetails() {
                                 課題: {getProblemDisplayIds(req.problems, problemDefinitions)}
                               </p>
                               {req.details && (
-                                <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">{req.details}</p>
+                                <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">
+                                  {req.details}
+                                </p>
                               )}
                             </Link>
                             <div className="flex items-center gap-1 ml-2">
@@ -1146,7 +1148,9 @@ export default function ProjectDetails() {
                                 : "-"}
                             </p>
                             {req.details && (
-                              <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">{req.details}</p>
+                              <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">
+                                {req.details}
+                              </p>
                             )}
                           </div>
                           <div className="flex items-center gap-1 ml-2">
