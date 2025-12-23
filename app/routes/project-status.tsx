@@ -369,26 +369,7 @@ function ProjectSlide({ project }: ProjectSlideProps) {
         {/* Latest Comment */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500">最新コメント</h3>
-          {project.latest_comment ? (
-            <div className="bg-gray-50 rounded-md p-4 text-left">
-              <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
-                <span className="font-medium text-gray-700">
-                  {project.latest_comment.created_by_display_name ||
-                    project.latest_comment.created_by_username ||
-                    "不明"}
-                </span>
-                <span>•</span>
-                <span>
-                  {new Date(project.latest_comment.created_datetime).toLocaleDateString("ja-JP")}
-                </span>
-              </div>
-              <div className="text-gray-700 whitespace-pre-wrap">
-                {project.latest_comment.comment}
-              </div>
-            </div>
-          ) : (
-            <div className="text-gray-400">-</div>
-          )}
+          <LatestCommentDisplay comment={project.latest_comment} />
         </div>
 
         {/* Weekly Effort Users */}
@@ -558,6 +539,34 @@ function ProjectListSidebar({ projects, currentIndex, onSelectProject }: Project
           </ul>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface LatestCommentDisplayProps {
+  comment: {
+    comment: string;
+    created_by_display_name: string | null;
+    created_by_username: string | null;
+    created_datetime: string;
+  } | null;
+}
+
+function LatestCommentDisplay({ comment }: LatestCommentDisplayProps) {
+  if (!comment) {
+    return <div className="text-gray-400">-</div>;
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-md p-4 text-left">
+      <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
+        <span className="font-medium text-gray-700">
+          {comment.created_by_display_name || comment.created_by_username || "不明"}
+        </span>
+        <span>•</span>
+        <span>{new Date(comment.created_datetime).toLocaleDateString("ja-JP")}</span>
+      </div>
+      <div className="text-gray-700 whitespace-pre-wrap">{comment.comment}</div>
     </div>
   );
 }
