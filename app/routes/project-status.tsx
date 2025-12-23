@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { projectsList } from "~/lib/api/generated";
-import type { KippoProject } from "~/lib/api/generated";
+import type { KippoProject, KippoProjectProjectstatusDisplay } from "~/lib/api/generated";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
@@ -158,71 +158,81 @@ export default function ProjectStatus() {
           <p className="text-gray-500">表示するプロジェクトがありません</p>
         </div>
       ) : (
-        <div className="flex flex-col h-full">
-          {/* Navigation */}
-          <div className="flex justify-between items-center px-4 py-2">
-            {/* Previous */}
-            <div className="w-1/3">
-              {previousProject && (
-                <button
-                  type="button"
-                  onClick={goToPrevious}
-                  className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    stroke="currentColor"
+        <div className="flex h-full relative">
+          {/* Collapsible Project List Sidebar */}
+          <ProjectListSidebar
+            projects={projects}
+            currentIndex={currentIndex}
+            onSelectProject={setCurrentIndex}
+          />
+
+          {/* Main Content */}
+          <div className="flex flex-col flex-1 h-full">
+            {/* Navigation */}
+            <div className="flex justify-between items-center px-4 py-2">
+              {/* Previous */}
+              <div className="w-1/3">
+                {previousProject && (
+                  <button
+                    type="button"
+                    onClick={goToPrevious}
+                    className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
                   >
-                    <title>前へ</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 19.5L8.25 12l7.5-7.5"
-                    />
-                  </svg>
-                  <span className="text-sm truncate max-w-[200px]">{previousProject.name}</span>
-                </button>
-              )}
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <title>前へ</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 19.5L8.25 12l7.5-7.5"
+                      />
+                    </svg>
+                    <span className="text-sm truncate max-w-[200px]">{previousProject.name}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Current position */}
+              <div className="text-sm text-gray-500">
+                {currentIndex + 1} / {projects.length}
+              </div>
+
+              {/* Next */}
+              <div className="w-1/3 flex justify-end">
+                {nextProject && (
+                  <button
+                    type="button"
+                    onClick={goToNext}
+                    className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    <span className="text-sm truncate max-w-[200px]">{nextProject.name}</span>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <title>次へ</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Current position */}
-            <div className="text-sm text-gray-500">
-              {currentIndex + 1} / {projects.length}
-            </div>
-
-            {/* Next */}
-            <div className="w-1/3 flex justify-end">
-              {nextProject && (
-                <button
-                  type="button"
-                  onClick={goToNext}
-                  className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
-                >
-                  <span className="text-sm truncate max-w-[200px]">{nextProject.name}</span>
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    stroke="currentColor"
-                  >
-                    <title>次へ</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
+            {/* Project Info Slide */}
+            {currentProject && <ProjectSlide project={currentProject} />}
           </div>
-
-          {/* Project Info Slide */}
-          {currentProject && <ProjectSlide project={currentProject} />}
         </div>
       )}
     </ProjectStatusLayout>
@@ -339,15 +349,6 @@ function ProjectSlide({ project }: ProjectSlideProps) {
     return new Date(dateStr).toLocaleDateString("ja-JP");
   };
 
-  const getStatusColor = (differencePercentage: number | null | undefined) => {
-    if (differencePercentage === null || differencePercentage === undefined) {
-      return "text-gray-600";
-    }
-    if (differencePercentage > 20) return "text-red-600";
-    if (differencePercentage > 0) return "text-yellow-600";
-    return "text-green-600";
-  };
-
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
@@ -362,35 +363,28 @@ function ProjectSlide({ project }: ProjectSlideProps) {
         {/* Project Status Display */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500">稼働状況</h3>
-          {project.projectstatus_display ? (
-            <div className="space-y-1">
-              <div
-                className={`text-2xl font-semibold ${getStatusColor(project.projectstatus_display.difference_percentage)}`}
-              >
-                {project.projectstatus_display.current_effort_hours}h
-                {project.projectstatus_display.allocated_effort_hours &&
-                  ` / ${project.projectstatus_display.allocated_effort_hours}h`}
-              </div>
-              {project.projectstatus_display.difference_percentage !== null && (
-                <div
-                  className={`text-sm ${getStatusColor(project.projectstatus_display.difference_percentage)}`}
-                >
-                  {project.projectstatus_display.difference_percentage > 0 ? "+" : ""}
-                  {project.projectstatus_display.difference_percentage.toFixed(1)}% (予定比)
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-400">-</div>
-          )}
+          <ProjectStatusMeter status={project.projectstatus_display} />
         </div>
 
         {/* Latest Comment */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500">最新コメント</h3>
           {project.latest_comment ? (
-            <div className="text-gray-700 bg-gray-50 rounded-md p-4 text-left whitespace-pre-wrap">
-              {project.latest_comment}
+            <div className="bg-gray-50 rounded-md p-4 text-left">
+              <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
+                <span className="font-medium text-gray-700">
+                  {project.latest_comment.created_by_display_name ||
+                    project.latest_comment.created_by_username ||
+                    "不明"}
+                </span>
+                <span>•</span>
+                <span>
+                  {new Date(project.latest_comment.created_datetime).toLocaleDateString("ja-JP")}
+                </span>
+              </div>
+              <div className="text-gray-700 whitespace-pre-wrap">
+                {project.latest_comment.comment}
+              </div>
             </div>
           ) : (
             <div className="text-gray-400">-</div>
@@ -420,6 +414,148 @@ function ProjectSlide({ project }: ProjectSlideProps) {
         {/* Confidence indicator */}
         <div className="pt-4 border-t border-gray-200">
           <span className="text-sm text-gray-500">確度: {project.confidence ?? 0}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Threshold for "exceeding expected" status (same as backend PROJECT_STATUS_REPORT_EXCEEDING_THRESHOLD)
+const EXCEEDING_THRESHOLD = 15;
+
+interface ProjectStatusMeterProps {
+  status: KippoProjectProjectstatusDisplay;
+}
+
+function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
+  if (!status) {
+    return <div className="text-gray-400">-</div>;
+  }
+
+  const {
+    current_effort_hours,
+    expected_effort_hours,
+    allocated_effort_hours,
+    difference_percentage,
+  } = status;
+
+  // If no expected hours, just show the current hours
+  if (!expected_effort_hours || !allocated_effort_hours) {
+    if (current_effort_hours) {
+      return <div className="text-2xl font-semibold text-gray-600">{current_effort_hours}h</div>;
+    }
+    return <div className="text-gray-400">-</div>;
+  }
+
+  // Calculate meter values (matching admin.py logic)
+  // low = expected_effort_hours + 1 (threshold for "on track")
+  // high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD/100) (threshold for "warning")
+  // optimum = expected_effort_hours (ideal value)
+  // max = allocated_effort_hours (or current if current > allocated)
+  const low = expected_effort_hours + 1;
+  const high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD / 100);
+  const maxValue = Math.max(allocated_effort_hours, current_effort_hours);
+  const optimum = expected_effort_hours;
+
+  // Determine color based on difference percentage
+  const getTextColor = () => {
+    if (difference_percentage === null || difference_percentage === undefined) {
+      return "text-gray-600";
+    }
+    if (difference_percentage > EXCEEDING_THRESHOLD) return "text-red-600";
+    if (difference_percentage > 0) return "text-yellow-600";
+    return "text-green-600";
+  };
+
+  const formatDifferencePercentage = () => {
+    if (difference_percentage === null || difference_percentage === undefined) {
+      return null;
+    }
+    const sign = difference_percentage > 0 ? "+" : "";
+    return `${sign}${Math.round(difference_percentage)}%`;
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Hours display */}
+      <div className={`text-2xl font-semibold ${getTextColor()}`}>{current_effort_hours}h</div>
+
+      {/* Difference percentage */}
+      {formatDifferencePercentage() && (
+        <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
+      )}
+
+      {/* Meter element */}
+      <div className="flex justify-center">
+        <meter
+          min={0}
+          low={low < maxValue ? low : undefined}
+          optimum={optimum}
+          high={high}
+          max={maxValue}
+          value={current_effort_hours}
+          className="w-48 h-6"
+        />
+      </div>
+
+      {/* Legend */}
+      <div className="text-xs text-gray-500">
+        予定: {expected_effort_hours}h / 予算: {allocated_effort_hours}h
+      </div>
+    </div>
+  );
+}
+
+interface ProjectListSidebarProps {
+  projects: KippoProject[];
+  currentIndex: number;
+  onSelectProject: (index: number) => void;
+}
+
+function ProjectListSidebar({ projects, currentIndex, onSelectProject }: ProjectListSidebarProps) {
+  return (
+    <div className="group absolute left-0 top-0 h-full z-10">
+      {/* Collapsed state - thin bar with icon */}
+      <div className="w-8 h-full bg-gray-100 border-r border-gray-200 flex items-center justify-center group-hover:hidden cursor-pointer">
+        <svg
+          className="w-4 h-4 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="2"
+          stroke="currentColor"
+        >
+          <title>プロジェクト一覧</title>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+          />
+        </svg>
+      </div>
+
+      {/* Expanded state - full project list */}
+      <div className="hidden group-hover:block w-64 h-full bg-white border-r border-gray-200 shadow-lg overflow-hidden">
+        <div className="p-3 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-sm font-medium text-gray-700">プロジェクト一覧</h3>
+        </div>
+        <div className="overflow-y-auto h-[calc(100%-48px)]">
+          <ul className="py-1">
+            {projects.map((project, index) => (
+              <li key={project.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelectProject(index)}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    index === currentIndex
+                      ? "bg-indigo-100 text-indigo-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <span className="block truncate">{project.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
