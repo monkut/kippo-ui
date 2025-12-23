@@ -428,16 +428,6 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
     return <div className="text-gray-400">-</div>;
   }
 
-  // Calculate meter values (matching admin.py logic)
-  // low = expected_effort_hours + 1 (threshold for "on track")
-  // high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD/100) (threshold for "warning")
-  // optimum = expected_effort_hours (ideal value)
-  // max = allocated_effort_hours (or current if current > allocated)
-  const low = expected_effort_hours + 1;
-  const high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD / 100);
-  const maxValue = Math.max(allocated_effort_hours, current_effort_hours);
-  const optimum = expected_effort_hours;
-
   // Determine color based on difference percentage
   const getTextColor = () => {
     if (difference_percentage === null || difference_percentage === undefined) {
@@ -466,22 +456,19 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
         <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
       )}
 
-      {/* Meter element */}
+      {/* Meter element - shows timeline progress (expected vs allocated) */}
       <div className="flex justify-center">
         <meter
           min={0}
-          low={low < maxValue ? low : undefined}
-          optimum={optimum}
-          high={high}
-          max={maxValue}
-          value={current_effort_hours}
+          max={allocated_effort_hours}
+          value={expected_effort_hours}
           className="w-48 h-6"
         />
       </div>
 
       {/* Legend */}
       <div className="text-xs text-gray-500">
-        予定: {expected_effort_hours}h / 予算: {allocated_effort_hours}h
+        予定: {Math.round(expected_effort_hours)}h / 予算: {allocated_effort_hours}h
       </div>
     </div>
   );
