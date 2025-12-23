@@ -481,7 +481,7 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
 
       {/* Legend */}
       <div className="text-xs text-gray-500">
-        予定: {expected_effort_hours}h / 予算: {allocated_effort_hours}h
+        予定: {Math.round(expected_effort_hours)}h / 予算: {allocated_effort_hours}h
       </div>
     </div>
   );
