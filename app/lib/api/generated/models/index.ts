@@ -143,4 +143,7 @@ export * from './scheduleEstimationResponse';
 export * from './scheduledRequirement';
 export * from './tokenFromSessionRetrieve200';
 export * from './totalEstimateInline';
+export * from './weeklyEffortExpectedHoursRetrieve200';
+export * from './weeklyEffortExpectedHoursRetrieve400';
+export * from './weeklyEffortExpectedHoursRetrieveParams';
 export * from './weeklyEffortUserInline';

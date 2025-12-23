@@ -6,11 +6,12 @@ interface LayoutProps {
   children: React.ReactNode;
   projectName?: string;
   projectId?: string;
+  title?: string;
 }
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
-export function Layout({ children, projectName, projectId }: LayoutProps) {
+export function Layout({ children, projectName, projectId, title }: LayoutProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,7 +53,7 @@ export function Layout({ children, projectName, projectId }: LayoutProps) {
 
             <div className="flex-1 flex justify-center items-center gap-2">
               <Link to="/projects" className="text-xl font-bold text-gray-900">
-                Kippo要件管理
+                {title || "Kippo要件管理"}
               </Link>
               {projectName && projectId && (
                 <>
@@ -126,6 +127,17 @@ export function Layout({ children, projectName, projectId }: LayoutProps) {
                   }`}
                 >
                   プロジェクト状況
+                </Link>
+                <Link
+                  to="/weekly-effort"
+                  onClick={() => setMenuOpen(false)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive("/weekly-effort")
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  週間稼働量
                 </Link>
               </div>
             </div>
