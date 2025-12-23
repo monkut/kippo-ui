@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { projectsList } from "~/lib/api/generated";
-import type { KippoProject } from "~/lib/api/generated";
+import type { KippoProject, KippoProjectProjectstatusDisplay } from "~/lib/api/generated";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
@@ -339,15 +339,6 @@ function ProjectSlide({ project }: ProjectSlideProps) {
     return new Date(dateStr).toLocaleDateString("ja-JP");
   };
 
-  const getStatusColor = (differencePercentage: number | null | undefined) => {
-    if (differencePercentage === null || differencePercentage === undefined) {
-      return "text-gray-600";
-    }
-    if (differencePercentage > 20) return "text-red-600";
-    if (differencePercentage > 0) return "text-yellow-600";
-    return "text-green-600";
-  };
-
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
@@ -362,27 +353,7 @@ function ProjectSlide({ project }: ProjectSlideProps) {
         {/* Project Status Display */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500">稼働状況</h3>
-          {project.projectstatus_display ? (
-            <div className="space-y-1">
-              <div
-                className={`text-2xl font-semibold ${getStatusColor(project.projectstatus_display.difference_percentage)}`}
-              >
-                {project.projectstatus_display.current_effort_hours}h
-                {project.projectstatus_display.allocated_effort_hours &&
-                  ` / ${project.projectstatus_display.allocated_effort_hours}h`}
-              </div>
-              {project.projectstatus_display.difference_percentage !== null && (
-                <div
-                  className={`text-sm ${getStatusColor(project.projectstatus_display.difference_percentage)}`}
-                >
-                  {project.projectstatus_display.difference_percentage > 0 ? "+" : ""}
-                  {project.projectstatus_display.difference_percentage.toFixed(1)}% (予定比)
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-400">-</div>
-          )}
+          <ProjectStatusMeter status={project.projectstatus_display} />
         </div>
 
         {/* Latest Comment */}
@@ -421,6 +392,92 @@ function ProjectSlide({ project }: ProjectSlideProps) {
         <div className="pt-4 border-t border-gray-200">
           <span className="text-sm text-gray-500">確度: {project.confidence ?? 0}%</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Threshold for "exceeding expected" status (same as backend PROJECT_STATUS_REPORT_EXCEEDING_THRESHOLD)
+const EXCEEDING_THRESHOLD = 15;
+
+interface ProjectStatusMeterProps {
+  status: KippoProjectProjectstatusDisplay;
+}
+
+function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
+  if (!status) {
+    return <div className="text-gray-400">-</div>;
+  }
+
+  const {
+    current_effort_hours,
+    expected_effort_hours,
+    allocated_effort_hours,
+    difference_percentage,
+  } = status;
+
+  // If no expected hours, just show the current hours
+  if (!expected_effort_hours || !allocated_effort_hours) {
+    if (current_effort_hours) {
+      return <div className="text-2xl font-semibold text-gray-600">{current_effort_hours}h</div>;
+    }
+    return <div className="text-gray-400">-</div>;
+  }
+
+  // Calculate meter values (matching admin.py logic)
+  // low = expected_effort_hours + 1 (threshold for "on track")
+  // high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD/100) (threshold for "warning")
+  // optimum = expected_effort_hours (ideal value)
+  // max = allocated_effort_hours (or current if current > allocated)
+  const low = expected_effort_hours + 1;
+  const high = expected_effort_hours * (1 + EXCEEDING_THRESHOLD / 100);
+  const maxValue = Math.max(allocated_effort_hours, current_effort_hours);
+  const optimum = expected_effort_hours;
+
+  // Determine color based on difference percentage
+  const getTextColor = () => {
+    if (difference_percentage === null || difference_percentage === undefined) {
+      return "text-gray-600";
+    }
+    if (difference_percentage > EXCEEDING_THRESHOLD) return "text-red-600";
+    if (difference_percentage > 0) return "text-yellow-600";
+    return "text-green-600";
+  };
+
+  const formatDifferencePercentage = () => {
+    if (difference_percentage === null || difference_percentage === undefined) {
+      return null;
+    }
+    const sign = difference_percentage > 0 ? "+" : "";
+    return `${sign}${Math.round(difference_percentage)}%`;
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Hours display */}
+      <div className={`text-2xl font-semibold ${getTextColor()}`}>{current_effort_hours}h</div>
+
+      {/* Difference percentage */}
+      {formatDifferencePercentage() && (
+        <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
+      )}
+
+      {/* Meter element */}
+      <div className="flex justify-center">
+        <meter
+          min={0}
+          low={low < maxValue ? low : undefined}
+          optimum={optimum}
+          high={high}
+          max={maxValue}
+          value={current_effort_hours}
+          className="w-48 h-6"
+        />
+      </div>
+
+      {/* Legend */}
+      <div className="text-xs text-gray-500">
+        予定: {expected_effort_hours}h / 予算: {allocated_effort_hours}h
       </div>
     </div>
   );
