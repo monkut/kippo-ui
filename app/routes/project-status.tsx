@@ -353,7 +353,14 @@ function ProjectSlide({ project }: ProjectSlideProps) {
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
         {/* Project Name */}
-        <h2 className="text-3xl font-bold text-gray-900">{project.name}</h2>
+        <h2 className="text-3xl font-bold">
+          <a
+            href={`${urlPrefix}/admin/projects/activekippoproject/${project.id}/change/`}
+            className="text-gray-900 hover:text-indigo-600 hover:underline transition-colors"
+          >
+            {project.name}
+          </a>
+        </h2>
 
         {/* Dates */}
         <div className="text-lg text-gray-600">
