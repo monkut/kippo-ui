@@ -8,6 +8,7 @@
 import type { PhaseEnum } from './phaseEnum';
 import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline';
 import type { KippoProjectProjectstatusDisplay } from './kippoProjectProjectstatusDisplay';
+import type { KippoProjectLatestComment } from './kippoProjectLatestComment';
 import type { WeeklyEffortUserInline } from './weeklyEffortUserInline';
 
 /**
@@ -100,7 +101,7 @@ export interface KippoProject {
   /** @nullable */
   readonly projectstatus_display: KippoProjectProjectstatusDisplay;
   /** @nullable */
-  readonly latest_comment: string | null;
+  readonly latest_comment: KippoProjectLatestComment;
   readonly weekly_effort_users: readonly WeeklyEffortUserInline[];
   readonly created_datetime: string;
   readonly updated_datetime: string;
