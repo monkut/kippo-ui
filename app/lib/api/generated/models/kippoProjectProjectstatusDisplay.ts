@@ -5,8 +5,9 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
+import type { ProjectProgressStatusInline } from './projectProgressStatusInline';
 
-export interface TokenObtainPair {
-  readonly access: string;
-  readonly refresh: string;
-}
+/**
+ * @nullable
+ */
+export type KippoProjectProjectstatusDisplay = ProjectProgressStatusInline | null;

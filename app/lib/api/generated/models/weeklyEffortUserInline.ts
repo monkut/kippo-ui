@@ -6,9 +6,13 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export interface TokenObtainPairRequest {
-  /** @minLength 1 */
+/**
+ * Inline serializer for weekly effort user data in OpenAPI schema.
+ */
+export interface WeeklyEffortUserInline {
+  user_id: number;
   username: string;
-  /** @minLength 1 */
-  password: string;
+  display_name: string;
+  hours: number;
+  percentage: number;
 }
