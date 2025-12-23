@@ -3881,7 +3881,8 @@ components:
           nullable: true
           readOnly: true
         latest_comment:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/LatestCommentInline'
           nullable: true
           readOnly: true
         weekly_effort_users:
@@ -4023,6 +4024,27 @@ components:
       - columnset
       - name
       - organization
+    LatestCommentInline:
+      type: object
+      description: Inline serializer for latest project status comment in OpenAPI
+        schema.
+      properties:
+        comment:
+          type: string
+        created_by_username:
+          type: string
+          nullable: true
+        created_by_display_name:
+          type: string
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+      required:
+      - comment
+      - created_by_display_name
+      - created_by_username
+      - created_datetime
     PaginatedKippoProjectList:
       type: object
       required:
