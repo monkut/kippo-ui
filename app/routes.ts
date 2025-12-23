@@ -7,4 +7,5 @@ export default [
   route("projects/:id", "routes/projects.$id.tsx"),
   route("projects/:id/summary", "routes/projects.$id.summary.tsx"),
   route("projects/:id/requirements/:reqId", "routes/projects.$id.requirements.$reqId.tsx"),
+  route("project-status", "routes/project-status.tsx"),
 ] satisfies RouteConfig;
