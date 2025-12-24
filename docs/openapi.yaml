@@ -3725,6 +3725,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/weekly-effort/expected-hours/:
+    get:
+      operationId: weekly_effort_expected_hours_retrieve
+      description: Calculate expected working hours for the current user for a given
+        week.
+      summary: Get expected hours for a week
+      parameters:
+      - in: query
+        name: week_start
+        schema:
+          type: string
+        description: Start date of week (YYYY-MM-DD format, must be a Monday)
+        required: true
+      tags:
+      - weekly-effort
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expected_hours:
+                    type: number
+                  week_start:
+                    type: string
+                    format: date
+                  organization:
+                    type: string
+                    nullable: true
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: ''
 components:
   schemas:
     CategoryEnum:
