@@ -176,8 +176,8 @@ export default function WeeklyEffort() {
   const addEntry = (filterType: "project" | "anon-project") => {
     const filteredProjects = projects.filter((p) =>
       filterType === "anon-project"
-        ? p.phase === "anon-project" && p.display_as_active && !p.is_closed
-        : p.phase !== "anon-project" && p.display_as_active && !p.is_closed,
+        ? p.phase === "anon-project" && p.display_as_active !== false && !p.is_closed
+        : p.phase !== "anon-project" && p.display_as_active !== false && !p.is_closed,
     );
 
     const firstProject = filteredProjects[0];
@@ -272,11 +272,12 @@ export default function WeeklyEffort() {
   const formTotalHours = entries.reduce((sum, e) => sum + e.hours, 0);
 
   // Filter projects for dropdowns
+  // Use `!== false` to treat undefined as default true (Django model default)
   const projectProjects = projects.filter(
-    (p) => p.phase !== "anon-project" && p.display_as_active && !p.is_closed,
+    (p) => p.phase !== "anon-project" && p.display_as_active !== false && !p.is_closed,
   );
   const nonProjectProjects = projects.filter(
-    (p) => p.phase === "anon-project" && p.display_as_active && !p.is_closed,
+    (p) => p.phase === "anon-project" && p.display_as_active !== false && !p.is_closed,
   );
 
   if (authLoading) {
