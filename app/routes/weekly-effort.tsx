@@ -24,6 +24,7 @@ type FormEntry = {
   projectId: string;
   projectName: string;
   hours: number;
+  filterType: "project" | "anon-project";
 };
 
 function getLatestMonday(): string {
@@ -116,12 +117,19 @@ export default function WeeklyEffort() {
             setPreviousWeekStart(latestWeekStart || null);
 
             // Auto-populate form entries from latest entries
-            const formEntries: FormEntry[] = latestEntries.map((e, idx) => ({
-              id: Date.now() + idx,
-              projectId: e.project,
-              projectName: e.project_name,
-              hours: e.hours,
-            }));
+            const projectsMap = new Map((projectsRes.data?.results || []).map((p) => [p.id, p]));
+            const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
+              const project = projectsMap.get(e.project);
+              const filterType: "project" | "anon-project" =
+                project?.phase === "anon-project" ? "anon-project" : "project";
+              return {
+                id: Date.now() + idx,
+                projectId: e.project,
+                projectName: e.project_name,
+                hours: e.hours,
+                filterType,
+              };
+            });
             setEntries(formEntries.length > 0 ? formEntries : [createEmptyEntry()]);
           } else {
             setEntries([createEmptyEntry()]);
@@ -155,21 +163,22 @@ export default function WeeklyEffort() {
     }
   }, [weekStart, fetchExpectedHours]);
 
-  function createEmptyEntry(): FormEntry {
+  function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
     return {
       id: Date.now(),
       projectId: "",
       projectName: "",
       hours: 0,
+      filterType,
     };
   }
 
-  const addEntry = (filterPhase?: string) => {
-    const filteredProjects = filterPhase
-      ? projects.filter((p) =>
-          filterPhase === "anon-project" ? p.phase === "anon-project" : p.phase !== "anon-project",
-        )
-      : projects;
+  const addEntry = (filterType: "project" | "anon-project") => {
+    const filteredProjects = projects.filter((p) =>
+      filterType === "anon-project"
+        ? p.phase === "anon-project" && p.display_as_active && !p.is_closed
+        : p.phase !== "anon-project" && p.display_as_active && !p.is_closed,
+    );
 
     const firstProject = filteredProjects[0];
     setEntries([
@@ -179,6 +188,7 @@ export default function WeeklyEffort() {
         projectId: firstProject?.id || "",
         projectName: firstProject?.name || "",
         hours: 0,
+        filterType,
       },
     ]);
   };
@@ -390,7 +400,7 @@ export default function WeeklyEffort() {
                           htmlFor={`project-${entry.id}`}
                           className="block text-xs font-medium text-gray-500 mb-1"
                         >
-                          プロジェクト
+                          {entry.filterType === "anon-project" ? "Non-Project" : "プロジェクト"}
                         </label>
                         <select
                           id={`project-${entry.id}`}
@@ -400,20 +410,17 @@ export default function WeeklyEffort() {
                           disabled={isSubmitting}
                         >
                           <option value="">-- 選択してください --</option>
-                          <optgroup label="プロジェクト">
-                            {projectProjects.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="Non-Project">
-                            {nonProjectProjects.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </optgroup>
+                          {entry.filterType === "anon-project"
+                            ? nonProjectProjects.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))
+                            : projectProjects.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
                         </select>
                       </div>
                       <div className="w-24">
@@ -504,7 +511,7 @@ export default function WeeklyEffort() {
                         d="M12 4.5v15m7.5-7.5h-15"
                       />
                     </svg>
-                    +Project
+                    Project
                   </button>
                   <button
                     type="button"
@@ -526,7 +533,7 @@ export default function WeeklyEffort() {
                         d="M12 4.5v15m7.5-7.5h-15"
                       />
                     </svg>
-                    +Non-Project
+                    Non-Project
                   </button>
                 </div>
 
