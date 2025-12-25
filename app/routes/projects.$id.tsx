@@ -29,6 +29,8 @@ import {
   requirementsTechnicalRequirementsList,
   requirementsTechnicalRequirementCategoriesList,
   requirementsTechnicalRequirementCategoriesCreate,
+  requirementsTechnicalRequirementsRetrieve,
+  requirementsTechnicalRequirementCommentsCreate,
   requirementsEstimatesCreate,
   requirementsEstimatesPartialUpdate,
 } from "~/lib/api/generated";
@@ -247,6 +249,11 @@ export default function ProjectDetails() {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [replyToComment, setReplyToComment] = useState<number | null>(null);
 
+  const [expandedTechComments, setExpandedTechComments] = useState<number | null>(null);
+  const [techReqComments, setTechReqComments] = useState<CommentData[]>([]);
+  const [showTechCommentForm, setShowTechCommentForm] = useState(false);
+  const [replyToTechComment, setReplyToTechComment] = useState<number | null>(null);
+
   const [hoveredBusinessReqId, setHoveredBusinessReqId] = useState<number | null>(null);
   const [hoveredTechReqId, setHoveredTechReqId] = useState<number | null>(null);
 
@@ -357,6 +364,34 @@ export default function ProjectDetails() {
       setShowCommentForm(false);
       setReplyToComment(null);
       await loadCommentsForRequirement(reqId);
+    }
+  };
+
+  const loadCommentsForTechRequirement = useCallback(async (reqId: number) => {
+    try {
+      const response = await requirementsTechnicalRequirementsRetrieve(reqId);
+      if (response.data?.comments) {
+        setTechReqComments(response.data.comments as unknown as CommentData[]);
+      } else {
+        setTechReqComments([]);
+      }
+    } catch (err) {
+      console.error("Failed to load tech comments:", err);
+      setTechReqComments([]);
+    }
+  }, []);
+
+  const handleToggleTechComments = async (reqId: number) => {
+    if (expandedTechComments === reqId) {
+      setExpandedTechComments(null);
+      setTechReqComments([]);
+      setShowTechCommentForm(false);
+      setReplyToTechComment(null);
+    } else {
+      setExpandedTechComments(reqId);
+      setShowTechCommentForm(false);
+      setReplyToTechComment(null);
+      await loadCommentsForTechRequirement(reqId);
     }
   };
 
@@ -1160,6 +1195,21 @@ export default function ProjectDetails() {
                           <div className="flex items-center gap-1 ml-2">
                             <button
                               type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleToggleTechComments(req.id);
+                              }}
+                              className={`p-1 transition-opacity ${
+                                expandedTechComments === req.id
+                                  ? "text-indigo-600"
+                                  : "text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100"
+                              }`}
+                              title="コメント"
+                            >
+                              <CommentIcon />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => setEditingTechReq(req)}
                               className="p-1 text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
                               title="編集"
@@ -1176,6 +1226,51 @@ export default function ProjectDetails() {
                             </button>
                           </div>
                         </div>
+                        {expandedTechComments === req.id && (
+                          <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-100">
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="text-sm font-medium text-gray-700">コメント</h4>
+                              {!showTechCommentForm && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyToTechComment(null);
+                                    setShowTechCommentForm(true);
+                                  }}
+                                  className="text-xs text-indigo-600 hover:text-indigo-500"
+                                >
+                                  追加
+                                </button>
+                              )}
+                            </div>
+                            {techReqComments.length === 0 && !showTechCommentForm ? (
+                              <p className="text-xs text-gray-500">コメントがありません</p>
+                            ) : (
+                              <CommentList
+                                comments={techReqComments}
+                                onReply={(commentId) => {
+                                  setReplyToTechComment(commentId);
+                                  setShowTechCommentForm(true);
+                                }}
+                              />
+                            )}
+                            {showTechCommentForm && (
+                              <TechCommentInlineForm
+                                requirementId={req.id}
+                                parentCommentId={replyToTechComment}
+                                onCancel={() => {
+                                  setShowTechCommentForm(false);
+                                  setReplyToTechComment(null);
+                                }}
+                                onCreated={() => {
+                                  setShowTechCommentForm(false);
+                                  setReplyToTechComment(null);
+                                  loadCommentsForTechRequirement(req.id);
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
                       </li>
                     ),
                   )}
@@ -2986,6 +3081,85 @@ function CommentInlineForm({
     setError("");
     try {
       await requirementsBusinessRequirementCommentsCreate({
+        requirement: requirementId,
+        comment: comment.trim(),
+        parent_comment: parentCommentId,
+      });
+      onCreated();
+    } catch (err) {
+      console.error("Failed to create comment:", err);
+      setError("コメントの作成に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      <form onSubmit={handleSubmit} className="space-y-2">
+        {error && (
+          <div className="rounded-md bg-red-50 p-2">
+            <div className="text-xs text-red-800">{error}</div>
+          </div>
+        )}
+        <div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={2}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs border px-2 py-1"
+            placeholder={parentCommentId ? "返信を入力..." : "コメントを入力..."}
+            disabled={isSubmitting}
+            autoFocus
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            className="px-2 py-1 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:opacity-50"
+            disabled={isSubmitting || !comment.trim()}
+          >
+            {isSubmitting ? "送信中..." : "送信"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+interface TechCommentInlineFormProps {
+  requirementId: number;
+  parentCommentId: number | null;
+  onCancel: () => void;
+  onCreated: () => void;
+}
+
+function TechCommentInlineForm({
+  requirementId,
+  parentCommentId,
+  onCancel,
+  onCreated,
+}: TechCommentInlineFormProps) {
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim()) return;
+
+    setIsSubmitting(true);
+    setError("");
+    try {
+      await requirementsTechnicalRequirementCommentsCreate({
         requirement: requirementId,
         comment: comment.trim(),
         parent_comment: parentCommentId,
