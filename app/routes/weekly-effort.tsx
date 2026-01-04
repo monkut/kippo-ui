@@ -27,13 +27,16 @@ type FormEntry = {
   filterType: "project" | "anon-project";
 };
 
-function getLatestMonday(): string {
+function getPreviousWeekStartDate(): string {
+  // Matches kippo's previous_week_startdate() logic from projects/functions.py
   const today = new Date();
-  const dayOfWeek = today.getDay();
-  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - diff);
-  return monday.toISOString().split("T")[0];
+  const lastWeek = new Date(today);
+  lastWeek.setDate(today.getDate() - 5);
+  // Python weekday(): Monday=0, JS getDay(): Monday=1
+  while (lastWeek.getDay() !== 1) {
+    lastWeek.setDate(lastWeek.getDate() - 1);
+  }
+  return lastWeek.toISOString().split("T")[0];
 }
 
 function getCurrentMonthStart(): string {
@@ -50,7 +53,7 @@ export default function WeeklyEffort() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Data states
-  const [weekStart, setWeekStart] = useState(getLatestMonday());
+  const [weekStart, setWeekStart] = useState(getPreviousWeekStartDate());
   const [expectedHours, setExpectedHours] = useState<number | null>(null);
   const [monthlyAssignments, setMonthlyAssignments] = useState<ProjectMonthlyAssignment[]>([]);
   const [previousEntries, setPreviousEntries] = useState<ProjectWeeklyEffort[]>([]);
