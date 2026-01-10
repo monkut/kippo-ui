@@ -290,8 +290,31 @@ export default function WeeklyEffort() {
         });
       }
 
-      // Refresh data after successful submission
-      window.location.reload();
+      // Refresh data after successful submission (without full page reload)
+      const [weeklyEffortRes, missingWeeksRes] = await Promise.all([
+        projectsWeeklyeffortList({}),
+        weeklyEffortMissingWeeksRetrieve(),
+      ]);
+
+      // Update user entries
+      if (weeklyEffortRes.data?.results) {
+        const userEntries = weeklyEffortRes.data.results.filter(
+          (e) => e.user_username === user?.username,
+        );
+        setAllUserEntries(userEntries);
+
+        // Update selected week entries
+        const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
+        setSelectedWeekEntries(entriesForSelectedWeek);
+      }
+
+      // Update missing weeks
+      if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
+        setMissingWeeks(missingWeeksRes.data.missing_weeks);
+      }
+
+      // Clear form entries after successful save
+      setEntries([createEmptyEntry()]);
     } catch {
       setError("エントリの保存に失敗しました");
     } finally {
