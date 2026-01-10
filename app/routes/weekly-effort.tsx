@@ -107,8 +107,18 @@ function WeekCalendar({
   };
 
   const monthNames = [
-    "1月", "2月", "3月", "4月", "5月", "6月",
-    "7月", "8月", "9月", "10月", "11月", "12月",
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月",
   ];
 
   // Day headers starting with Sunday
@@ -149,9 +159,7 @@ function WeekCalendar({
               type="button"
               onClick={() => onWeekSelect(weekMonday)}
               className={`grid grid-cols-7 gap-1 w-full rounded-md transition-colors ${
-                isSelectedWeek
-                  ? "bg-indigo-100 ring-2 ring-indigo-500"
-                  : "hover:bg-gray-50"
+                isSelectedWeek ? "bg-indigo-100 ring-2 ring-indigo-500" : "hover:bg-gray-50"
               }`}
             >
               {week.map((date, dayIdx) => {
@@ -400,9 +408,7 @@ export default function WeeklyEffort() {
               );
               if (sortedEntries.length > 0) {
                 const latestWeekStart = sortedEntries[0].week_start;
-                const latestEntries = sortedEntries.filter(
-                  (e) => e.week_start === latestWeekStart,
-                );
+                const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
                 const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
                   const project = projectsMap.get(e.project);
                   const filterType: "project" | "anon-project" =
