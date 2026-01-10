@@ -90,11 +90,15 @@ function WeekCalendar({
   }
 
   // Check if a date is in the selected week (Monday to Sunday)
+  // Compare by date string to avoid timezone issues
   const isInSelectedWeek = (date: Date): boolean => {
-    const weekStartDate = new Date(weekStart);
-    const weekEndDate = new Date(weekStart);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const weekStartDate = new Date(weekStart + "T00:00:00");
+    const weekEndDate = new Date(weekStart + "T00:00:00");
     weekEndDate.setDate(weekEndDate.getDate() + 6);
-    return date >= weekStartDate && date <= weekEndDate;
+    const weekStartStr = `${weekStartDate.getFullYear()}-${String(weekStartDate.getMonth() + 1).padStart(2, "0")}-${String(weekStartDate.getDate()).padStart(2, "0")}`;
+    const weekEndStr = `${weekEndDate.getFullYear()}-${String(weekEndDate.getMonth() + 1).padStart(2, "0")}-${String(weekEndDate.getDate()).padStart(2, "0")}`;
+    return dateStr >= weekStartStr && dateStr <= weekEndStr;
   };
 
   // Get Monday of the week containing a date (for week selection)
@@ -245,7 +249,7 @@ export default function WeeklyEffort() {
         const [projectsRes, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
           await Promise.all([
             projectsList({ is_active: true }),
-            projectsWeeklyeffortList({}),
+            projectsWeeklyeffortList({ user_username: user?.username }),
             monthlyAssignmentsList({ month: getCurrentMonthStart() }),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
             weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
@@ -266,11 +270,9 @@ export default function WeeklyEffort() {
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
 
-        // Process weekly effort entries for the current user
+        // Process weekly effort entries for the current user (already filtered by user_username)
         if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results.filter(
-            (e) => e.user_username === user.username,
-          );
+          const userEntries = weeklyEffortRes.data.results;
           setAllUserEntries(userEntries);
 
           // Find entries for the selected week
@@ -342,32 +344,72 @@ export default function WeeklyEffort() {
     const updateWeekData = async () => {
       fetchExpectedHours(weekStart);
 
-      // Fetch entries for the selected week and previous week from API
-      const selectedDate = new Date(weekStart);
-      selectedDate.setDate(selectedDate.getDate() - 7);
-      const previousWeekStart = selectedDate.toISOString().split("T")[0];
+      // Fetch entries for the previous week from API (to use as template)
+      // Use Sunday dates for range to properly capture Monday week_start values
+      const selectedDate = new Date(weekStart + "T00:00:00");
+      // Sunday before the previous week's Monday
+      const sundayBeforePrevWeek = new Date(selectedDate);
+      sundayBeforePrevWeek.setDate(sundayBeforePrevWeek.getDate() - 8);
+      const prevWeekGte = `${sundayBeforePrevWeek.getFullYear()}-${String(sundayBeforePrevWeek.getMonth() + 1).padStart(2, "0")}-${String(sundayBeforePrevWeek.getDate()).padStart(2, "0")}`;
+      // Sunday before the selected week's Monday (excludes selected week)
+      const sundayBeforeSelectedWeek = new Date(selectedDate);
+      sundayBeforeSelectedWeek.setDate(sundayBeforeSelectedWeek.getDate() - 1);
+      const prevWeekLte = `${sundayBeforeSelectedWeek.getFullYear()}-${String(sundayBeforeSelectedWeek.getMonth() + 1).padStart(2, "0")}-${String(sundayBeforeSelectedWeek.getDate()).padStart(2, "0")}`;
 
       try {
-        // Fetch both selected week and previous week entries
+        // Fetch previous week entries for the current user (to use as template)
         const weeklyEffortRes = await projectsWeeklyeffortList({
-          week_start_gte: previousWeekStart,
-          week_start_lte: weekStart,
+          user_username: user?.username,
+          week_start_gte: prevWeekGte,
+          week_start_lte: prevWeekLte,
         });
 
         const projectsMap = new Map(projects.map((p) => [p.id, p]));
+        const previousWeekEntries = weeklyEffortRes.data?.results || [];
 
-        if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results.filter(
-            (e) => e.user_username === user?.username,
+        // Get selected week entries from allUserEntries (already loaded)
+        const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
+        setSelectedWeekEntries(entriesForSelectedWeek);
+
+        if (entriesForSelectedWeek.length > 0) {
+          // Selected week has entries - populate form with them
+          const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
+            const project = projectsMap.get(e.project);
+            const filterType: "project" | "anon-project" =
+              project?.phase === "anon-project" ? "anon-project" : "project";
+            return {
+              id: Date.now() + idx,
+              projectId: e.project,
+              projectName: e.project_name,
+              hours: e.hours,
+              filterType,
+            };
+          });
+          setEntries(formEntries);
+        } else if (previousWeekEntries.length > 0) {
+          // Use previous week's entries as template (hours reset to 0)
+          const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
+            const project = projectsMap.get(e.project);
+            const filterType: "project" | "anon-project" =
+              project?.phase === "anon-project" ? "anon-project" : "project";
+            return {
+              id: Date.now() + idx,
+              projectId: e.project,
+              projectName: e.project_name,
+              hours: 0,
+              filterType,
+            };
+          });
+          setEntries(formEntries);
+        } else {
+          // No previous week data - use latest from allUserEntries as fallback
+          const sortedEntries = [...allUserEntries].sort((a, b) =>
+            (b.week_start || "").localeCompare(a.week_start || ""),
           );
-
-          // Update selected week entries (for display section)
-          const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
-          setSelectedWeekEntries(entriesForSelectedWeek);
-
-          if (entriesForSelectedWeek.length > 0) {
-            // Selected week has entries - populate form with them
-            const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
+          if (sortedEntries.length > 0) {
+            const latestWeekStart = sortedEntries[0].week_start;
+            const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
+            const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
               const project = projectsMap.get(e.project);
               const filterType: "project" | "anon-project" =
                 project?.phase === "anon-project" ? "anon-project" : "project";
@@ -375,57 +417,13 @@ export default function WeeklyEffort() {
                 id: Date.now() + idx,
                 projectId: e.project,
                 projectName: e.project_name,
-                hours: e.hours,
+                hours: 0,
                 filterType,
               };
             });
             setEntries(formEntries);
           } else {
-            // Missing week - use previous week's data as template
-            const previousWeekEntries = userEntries.filter(
-              (e) => e.week_start === previousWeekStart,
-            );
-
-            if (previousWeekEntries.length > 0) {
-              // Use previous week's entries as template (hours reset to 0)
-              const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
-                const project = projectsMap.get(e.project);
-                const filterType: "project" | "anon-project" =
-                  project?.phase === "anon-project" ? "anon-project" : "project";
-                return {
-                  id: Date.now() + idx,
-                  projectId: e.project,
-                  projectName: e.project_name,
-                  hours: 0,
-                  filterType,
-                };
-              });
-              setEntries(formEntries);
-            } else {
-              // No previous week data - use latest from allUserEntries as fallback
-              const sortedEntries = [...allUserEntries].sort((a, b) =>
-                (b.week_start || "").localeCompare(a.week_start || ""),
-              );
-              if (sortedEntries.length > 0) {
-                const latestWeekStart = sortedEntries[0].week_start;
-                const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
-                const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
-                  const project = projectsMap.get(e.project);
-                  const filterType: "project" | "anon-project" =
-                    project?.phase === "anon-project" ? "anon-project" : "project";
-                  return {
-                    id: Date.now() + idx,
-                    projectId: e.project,
-                    projectName: e.project_name,
-                    hours: 0,
-                    filterType,
-                  };
-                });
-                setEntries(formEntries);
-              } else {
-                setEntries([createEmptyEntry()]);
-              }
-            }
+            setEntries([createEmptyEntry()]);
           }
         }
       } catch {
@@ -501,14 +499,14 @@ export default function WeeklyEffort() {
         return;
       }
 
-      // Check for duplicates by fetching existing entries for this week
+      // Check for duplicates by fetching existing entries for this week for current user
       const existingRes = await projectsWeeklyeffortList({
+        user_username: user?.username,
         week_start_gte: weekStart,
         week_start_lte: weekStart,
       });
 
-      const existingForUser =
-        existingRes.data?.results?.filter((e) => e.user_username === user?.username) || [];
+      const existingForUser = existingRes.data?.results || [];
 
       // Check if any entry would be a duplicate
       for (const entry of validEntries) {
@@ -531,15 +529,13 @@ export default function WeeklyEffort() {
 
       // Refresh data after successful submission (without full page reload)
       const [weeklyEffortRes, missingWeeksRes] = await Promise.all([
-        projectsWeeklyeffortList({}),
+        projectsWeeklyeffortList({ user_username: user?.username }),
         weeklyEffortMissingWeeksRetrieve(),
       ]);
 
       // Update user entries
       if (weeklyEffortRes.data?.results) {
-        const userEntries = weeklyEffortRes.data.results.filter(
-          (e) => e.user_username === user?.username,
-        );
+        const userEntries = weeklyEffortRes.data.results;
         setAllUserEntries(userEntries);
 
         // Update selected week entries

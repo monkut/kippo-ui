@@ -20,6 +20,10 @@ project?: string;
  */
 user?: number;
 /**
+ * Filter by user's username (must match logged-in user's username for non-superusers)
+ */
+user_username?: string;
+/**
  * Filter by week_start >= date (YYYY-MM-DD format)
  */
 week_start_gte?: string;
