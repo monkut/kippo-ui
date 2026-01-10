@@ -189,21 +189,21 @@ export default function WeeklyEffort() {
     fetchData();
   }, [user]);
 
-  // Refetch expected hours and update selected week entries when week_start changes
+  // Refetch expected hours and update form entries when week_start changes
   useEffect(() => {
     if (!weekStart || allUserEntries.length === 0 || projects.length === 0) return;
 
     fetchExpectedHours(weekStart);
 
-    // Update entries for the selected week
+    // Update selected week entries (for display section)
     const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
     setSelectedWeekEntries(entriesForSelectedWeek);
 
-    // Update form entries based on selected week or fall back to previous week's data
+    // Update form entries based on selected week or previous week's data
     const projectsMap = new Map(projects.map((p) => [p.id, p]));
 
     if (entriesForSelectedWeek.length > 0) {
-      // Selected week has entries - use them
+      // Selected week has entries - populate form with them
       const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
         const project = projectsMap.get(e.project);
         const filterType: "project" | "anon-project" =
@@ -218,16 +218,14 @@ export default function WeeklyEffort() {
       });
       setEntries(formEntries);
     } else {
-      // No entries for selected week - use previous week's data as template
-      // Calculate previous week (7 days before selected week)
+      // Missing week - use previous week's data as template
       const selectedDate = new Date(weekStart);
       selectedDate.setDate(selectedDate.getDate() - 7);
       const previousWeekStart = selectedDate.toISOString().split("T")[0];
-
       const previousWeekEntries = allUserEntries.filter((e) => e.week_start === previousWeekStart);
 
       if (previousWeekEntries.length > 0) {
-        // Use previous week's entries as template (with hours reset to 0)
+        // Use previous week's entries as template (hours reset to 0)
         const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
           const project = projectsMap.get(e.project);
           const filterType: "project" | "anon-project" =
@@ -236,13 +234,13 @@ export default function WeeklyEffort() {
             id: Date.now() + idx,
             projectId: e.project,
             projectName: e.project_name,
-            hours: 0, // Reset hours for new week entry
+            hours: 0,
             filterType,
           };
         });
         setEntries(formEntries);
       } else {
-        // No previous week data either - use latest entries as template
+        // No previous week - fall back to latest entries as template
         const sortedEntries = [...allUserEntries].sort((a, b) =>
           (b.week_start || "").localeCompare(a.week_start || ""),
         );
@@ -257,7 +255,7 @@ export default function WeeklyEffort() {
               id: Date.now() + idx,
               projectId: e.project,
               projectName: e.project_name,
-              hours: 0, // Reset hours for new week entry
+              hours: 0,
               filterType,
             };
           });
