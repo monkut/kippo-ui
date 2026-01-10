@@ -146,4 +146,5 @@ export * from './totalEstimateInline';
 export * from './weeklyEffortExpectedHoursRetrieve200';
 export * from './weeklyEffortExpectedHoursRetrieve400';
 export * from './weeklyEffortExpectedHoursRetrieveParams';
+export * from './weeklyEffortMissingWeeksRetrieve200';
 export * from './weeklyEffortUserInline';
