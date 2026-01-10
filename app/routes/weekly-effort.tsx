@@ -86,7 +86,7 @@ export default function WeeklyEffort() {
     }
   }, []);
 
-  // Fetch initial data
+  // Fetch initial data - all requests in parallel for faster load
   useEffect(() => {
     if (!user) return;
 
@@ -95,16 +95,29 @@ export default function WeeklyEffort() {
       setError("");
 
       try {
-        // Fetch all data in parallel
-        const [projectsRes, weeklyEffortRes, assignmentsRes] = await Promise.all([
-          projectsList({ is_active: true }),
-          projectsWeeklyeffortList({}),
-          monthlyAssignmentsList({ month: getCurrentMonthStart() }),
-        ]);
+        // Fetch ALL data in parallel for faster initial load
+        const [projectsRes, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
+          await Promise.all([
+            projectsList({ is_active: true }),
+            projectsWeeklyeffortList({}),
+            monthlyAssignmentsList({ month: getCurrentMonthStart() }),
+            weeklyEffortMissingWeeksRetrieve().catch(() => null),
+            weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
+          ]);
 
         // Process projects
         if (projectsRes.data?.results) {
           setProjects(projectsRes.data.results);
+        }
+
+        // Process expected hours
+        if (expectedHoursRes?.status === 200) {
+          setExpectedHours(expectedHoursRes.data.expected_hours ?? null);
+        }
+
+        // Process missing weeks
+        if (missingWeeksRes?.status === 200 && missingWeeksRes.data.missing_weeks) {
+          setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
 
         // Process weekly effort entries for the current user
@@ -166,16 +179,6 @@ export default function WeeklyEffort() {
             .sort((a, b) => b.percentage - a.percentage);
           setMonthlyAssignments(userAssignments);
         }
-
-        // Fetch missing weeks
-        try {
-          const missingWeeksRes = await weeklyEffortMissingWeeksRetrieve();
-          if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
-            setMissingWeeks(missingWeeksRes.data.missing_weeks);
-          }
-        } catch {
-          // Failed to fetch missing weeks - not critical
-        }
       } catch {
         setError("データの取得に失敗しました");
       } finally {
@@ -184,18 +187,87 @@ export default function WeeklyEffort() {
     };
 
     fetchData();
-  }, [user, fetchExpectedHours]);
+  }, [user]);
 
   // Refetch expected hours and update selected week entries when week_start changes
   useEffect(() => {
-    if (weekStart) {
-      fetchExpectedHours(weekStart);
+    if (!weekStart || allUserEntries.length === 0 || projects.length === 0) return;
 
-      // Update entries for the selected week
-      const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
-      setSelectedWeekEntries(entriesForSelectedWeek);
+    fetchExpectedHours(weekStart);
+
+    // Update entries for the selected week
+    const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
+    setSelectedWeekEntries(entriesForSelectedWeek);
+
+    // Update form entries based on selected week or fall back to previous week's data
+    const projectsMap = new Map(projects.map((p) => [p.id, p]));
+
+    if (entriesForSelectedWeek.length > 0) {
+      // Selected week has entries - use them
+      const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
+        const project = projectsMap.get(e.project);
+        const filterType: "project" | "anon-project" =
+          project?.phase === "anon-project" ? "anon-project" : "project";
+        return {
+          id: Date.now() + idx,
+          projectId: e.project,
+          projectName: e.project_name,
+          hours: e.hours,
+          filterType,
+        };
+      });
+      setEntries(formEntries);
+    } else {
+      // No entries for selected week - use previous week's data as template
+      // Calculate previous week (7 days before selected week)
+      const selectedDate = new Date(weekStart);
+      selectedDate.setDate(selectedDate.getDate() - 7);
+      const previousWeekStart = selectedDate.toISOString().split("T")[0];
+
+      const previousWeekEntries = allUserEntries.filter((e) => e.week_start === previousWeekStart);
+
+      if (previousWeekEntries.length > 0) {
+        // Use previous week's entries as template (with hours reset to 0)
+        const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
+          const project = projectsMap.get(e.project);
+          const filterType: "project" | "anon-project" =
+            project?.phase === "anon-project" ? "anon-project" : "project";
+          return {
+            id: Date.now() + idx,
+            projectId: e.project,
+            projectName: e.project_name,
+            hours: 0, // Reset hours for new week entry
+            filterType,
+          };
+        });
+        setEntries(formEntries);
+      } else {
+        // No previous week data either - use latest entries as template
+        const sortedEntries = [...allUserEntries].sort((a, b) =>
+          (b.week_start || "").localeCompare(a.week_start || ""),
+        );
+        if (sortedEntries.length > 0) {
+          const latestWeekStart = sortedEntries[0].week_start;
+          const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
+          const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
+            const project = projectsMap.get(e.project);
+            const filterType: "project" | "anon-project" =
+              project?.phase === "anon-project" ? "anon-project" : "project";
+            return {
+              id: Date.now() + idx,
+              projectId: e.project,
+              projectName: e.project_name,
+              hours: 0, // Reset hours for new week entry
+              filterType,
+            };
+          });
+          setEntries(formEntries);
+        } else {
+          setEntries([createEmptyEntry()]);
+        }
+      }
     }
-  }, [weekStart, fetchExpectedHours, allUserEntries]);
+  }, [weekStart, fetchExpectedHours, allUserEntries, projects]);
 
   function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
     return {
