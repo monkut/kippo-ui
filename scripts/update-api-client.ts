@@ -32,13 +32,19 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = MAX_RETRIES,
+): Promise<Response> {
   const response = await fetch(url, options);
 
   // Retry on 5xx errors (server errors) or 429 (rate limit)
   if ((response.status >= 500 || response.status === 429) && retries > 0) {
     const delay = RETRY_DELAY_MS * (MAX_RETRIES - retries + 1);
-    console.log(`Request failed with ${response.status}, retrying in ${delay}ms... (${retries} retries left)`);
+    console.log(
+      `Request failed with ${response.status}, retrying in ${delay}ms... (${retries} retries left)`,
+    );
     await sleep(delay);
     return fetchWithRetry(url, options, retries - 1);
   }
