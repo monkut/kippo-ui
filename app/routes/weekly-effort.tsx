@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
-import { projectsList } from "~/lib/api/generated/projects/projects";
 import {
   projectsWeeklyeffortList,
   projectsWeeklyeffortCreate,
@@ -12,6 +11,7 @@ import {
   weeklyEffortExpectedHoursRetrieve,
   weeklyEffortMissingWeeksRetrieve,
 } from "~/lib/api/generated/weekly-effort/weekly-effort";
+import { fetchAllProjects } from "~/lib/api/pagination";
 import type {
   KippoProject,
   ProjectWeeklyEffort,
@@ -246,19 +246,18 @@ export default function WeeklyEffort() {
 
       try {
         // Fetch ALL data in parallel for faster initial load
-        const [projectsRes, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
+        // Note: fetchAllProjects handles pagination internally to retrieve all active projects
+        const [allProjects, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
           await Promise.all([
-            projectsList({ is_active: true }),
+            fetchAllProjects({ is_active: true }),
             projectsWeeklyeffortList({ user_username: user?.username }),
             monthlyAssignmentsList({ month: getCurrentMonthStart() }),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
             weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
           ]);
 
-        // Process projects
-        if (projectsRes.data?.results) {
-          setProjects(projectsRes.data.results);
-        }
+        // Process projects (allProjects is already the complete array from all pages)
+        setProjects(allProjects);
 
         // Process expected hours
         if (expectedHoursRes?.status === 200) {
@@ -280,7 +279,7 @@ export default function WeeklyEffort() {
           setSelectedWeekEntries(entriesForSelectedWeek);
 
           // Auto-populate form entries from selected week entries (or latest if none)
-          const projectsMap = new Map((projectsRes.data?.results || []).map((p) => [p.id, p]));
+          const projectsMap = new Map(allProjects.map((p) => [p.id, p]));
           if (entriesForSelectedWeek.length > 0) {
             const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
               const project = projectsMap.get(e.project);
