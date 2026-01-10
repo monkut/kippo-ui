@@ -25,15 +25,43 @@ interface GitHubRelease {
   }>;
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  const response = await fetch(url, options);
+
+  // Retry on 5xx errors (server errors) or 429 (rate limit)
+  if ((response.status >= 500 || response.status === 429) && retries > 0) {
+    const delay = RETRY_DELAY_MS * (MAX_RETRIES - retries + 1);
+    console.log(`Request failed with ${response.status}, retrying in ${delay}ms... (${retries} retries left)`);
+    await sleep(delay);
+    return fetchWithRetry(url, options, retries - 1);
+  }
+
+  return response;
+}
+
 async function fetchLatestRelease(): Promise<GitHubRelease> {
   console.log(`Fetching latest release from ${KIPPO_REPO}...`);
 
-  const response = await fetch(GITHUB_API_URL, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "kippo-ui-api-client-generator",
-    },
-  });
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "kippo-ui-api-client-generator",
+  };
+
+  // Use GITHUB_TOKEN if available for higher rate limits
+  const token = process.env.GITHUB_TOKEN;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    console.log("Using GITHUB_TOKEN for authenticated request");
+  }
+
+  const response = await fetchWithRetry(GITHUB_API_URL, { headers });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch release info: ${response.status} ${response.statusText}`);
