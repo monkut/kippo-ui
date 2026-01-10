@@ -47,6 +47,144 @@ function getCurrentMonthStart(): string {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+// Calendar component to display the month with selected week highlighted
+// Weeks start on Sunday to match standard calendar display
+function WeekCalendar({
+  weekStart,
+  onWeekSelect,
+}: {
+  weekStart: string;
+  onWeekSelect: (date: string) => void;
+}) {
+  const selectedDate = new Date(weekStart);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
+
+  // Get first day of month and last day of month
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  // Calculate the Sunday of the week containing the first day of the month
+  const startDate = new Date(firstDayOfMonth);
+  const dayOfWeek = startDate.getDay(); // 0 = Sunday
+  startDate.setDate(startDate.getDate() - dayOfWeek);
+
+  // Calculate the Saturday of the week containing the last day of the month
+  const endDate = new Date(lastDayOfMonth);
+  const lastDayOfWeek = endDate.getDay();
+  const daysToSaturday = lastDayOfWeek === 6 ? 0 : 6 - lastDayOfWeek;
+  endDate.setDate(endDate.getDate() + daysToSaturday);
+
+  // Generate all dates to display
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Group dates into weeks (Sunday to Saturday)
+  const weeks: Date[][] = [];
+  for (let i = 0; i < dates.length; i += 7) {
+    weeks.push(dates.slice(i, i + 7));
+  }
+
+  // Check if a date is in the selected week (Monday to Sunday)
+  const isInSelectedWeek = (date: Date): boolean => {
+    const weekStartDate = new Date(weekStart);
+    const weekEndDate = new Date(weekStart);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    return date >= weekStartDate && date <= weekEndDate;
+  };
+
+  // Get Monday of the week containing a date (for week selection)
+  const getMondayOfWeek = (date: Date): string => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? 1 : day === 1 ? 0 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split("T")[0];
+  };
+
+  const monthNames = [
+    "1月", "2月", "3月", "4月", "5月", "6月",
+    "7月", "8月", "9月", "10月", "11月", "12月",
+  ];
+
+  // Day headers starting with Sunday
+  const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+
+  return (
+    <div className="bg-white rounded-lg">
+      {/* Month/Year header */}
+      <div className="text-center font-medium text-gray-900 mb-3">
+        {year}年 {monthNames[month]}
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {dayNames.map((day, idx) => (
+          <div
+            key={day}
+            className={`text-center text-xs font-medium py-1 ${
+              idx === 0 ? "text-red-600" : idx === 6 ? "text-blue-600" : "text-gray-500"
+            }`}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="space-y-1">
+        {weeks.map((week, weekIdx) => {
+          // Get Monday of this display week (second day since week starts Sunday)
+          const weekMonday = getMondayOfWeek(week[1]);
+          // Check if Monday (index 1) is in the selected week
+          const isSelectedWeek = isInSelectedWeek(week[1]);
+
+          return (
+            <button
+              key={weekIdx}
+              type="button"
+              onClick={() => onWeekSelect(weekMonday)}
+              className={`grid grid-cols-7 gap-1 w-full rounded-md transition-colors ${
+                isSelectedWeek
+                  ? "bg-indigo-100 ring-2 ring-indigo-500"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              {week.map((date, dayIdx) => {
+                const isCurrentMonth = date.getMonth() === month;
+                const isToday = date.toDateString() === new Date().toDateString();
+
+                return (
+                  <div
+                    key={dayIdx}
+                    className={`text-center text-sm py-1.5 ${
+                      !isCurrentMonth
+                        ? "text-gray-300"
+                        : isToday
+                          ? "font-bold text-indigo-600"
+                          : dayIdx === 0
+                            ? "text-red-600"
+                            : dayIdx === 6
+                              ? "text-blue-600"
+                              : "text-gray-700"
+                    }`}
+                  >
+                    {date.getDate()}
+                  </div>
+                );
+              })}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function WeeklyEffort() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -191,81 +329,106 @@ export default function WeeklyEffort() {
 
   // Refetch expected hours and update form entries when week_start changes
   useEffect(() => {
-    if (!weekStart || allUserEntries.length === 0 || projects.length === 0) return;
+    if (!weekStart || projects.length === 0) return;
 
-    fetchExpectedHours(weekStart);
+    const updateWeekData = async () => {
+      fetchExpectedHours(weekStart);
 
-    // Update selected week entries (for display section)
-    const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
-    setSelectedWeekEntries(entriesForSelectedWeek);
-
-    // Update form entries based on selected week or previous week's data
-    const projectsMap = new Map(projects.map((p) => [p.id, p]));
-
-    if (entriesForSelectedWeek.length > 0) {
-      // Selected week has entries - populate form with them
-      const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
-        const project = projectsMap.get(e.project);
-        const filterType: "project" | "anon-project" =
-          project?.phase === "anon-project" ? "anon-project" : "project";
-        return {
-          id: Date.now() + idx,
-          projectId: e.project,
-          projectName: e.project_name,
-          hours: e.hours,
-          filterType,
-        };
-      });
-      setEntries(formEntries);
-    } else {
-      // Missing week - use previous week's data as template
+      // Fetch entries for the selected week and previous week from API
       const selectedDate = new Date(weekStart);
       selectedDate.setDate(selectedDate.getDate() - 7);
       const previousWeekStart = selectedDate.toISOString().split("T")[0];
-      const previousWeekEntries = allUserEntries.filter((e) => e.week_start === previousWeekStart);
 
-      if (previousWeekEntries.length > 0) {
-        // Use previous week's entries as template (hours reset to 0)
-        const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
-          const project = projectsMap.get(e.project);
-          const filterType: "project" | "anon-project" =
-            project?.phase === "anon-project" ? "anon-project" : "project";
-          return {
-            id: Date.now() + idx,
-            projectId: e.project,
-            projectName: e.project_name,
-            hours: 0,
-            filterType,
-          };
+      try {
+        // Fetch both selected week and previous week entries
+        const weeklyEffortRes = await projectsWeeklyeffortList({
+          week_start_gte: previousWeekStart,
+          week_start_lte: weekStart,
         });
-        setEntries(formEntries);
-      } else {
-        // No previous week - fall back to latest entries as template
-        const sortedEntries = [...allUserEntries].sort((a, b) =>
-          (b.week_start || "").localeCompare(a.week_start || ""),
-        );
-        if (sortedEntries.length > 0) {
-          const latestWeekStart = sortedEntries[0].week_start;
-          const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
-          const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
-            const project = projectsMap.get(e.project);
-            const filterType: "project" | "anon-project" =
-              project?.phase === "anon-project" ? "anon-project" : "project";
-            return {
-              id: Date.now() + idx,
-              projectId: e.project,
-              projectName: e.project_name,
-              hours: 0,
-              filterType,
-            };
-          });
-          setEntries(formEntries);
-        } else {
-          setEntries([createEmptyEntry()]);
+
+        const projectsMap = new Map(projects.map((p) => [p.id, p]));
+
+        if (weeklyEffortRes.data?.results) {
+          const userEntries = weeklyEffortRes.data.results.filter(
+            (e) => e.user_username === user?.username,
+          );
+
+          // Update selected week entries (for display section)
+          const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
+          setSelectedWeekEntries(entriesForSelectedWeek);
+
+          if (entriesForSelectedWeek.length > 0) {
+            // Selected week has entries - populate form with them
+            const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
+              const project = projectsMap.get(e.project);
+              const filterType: "project" | "anon-project" =
+                project?.phase === "anon-project" ? "anon-project" : "project";
+              return {
+                id: Date.now() + idx,
+                projectId: e.project,
+                projectName: e.project_name,
+                hours: e.hours,
+                filterType,
+              };
+            });
+            setEntries(formEntries);
+          } else {
+            // Missing week - use previous week's data as template
+            const previousWeekEntries = userEntries.filter(
+              (e) => e.week_start === previousWeekStart,
+            );
+
+            if (previousWeekEntries.length > 0) {
+              // Use previous week's entries as template (hours reset to 0)
+              const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
+                const project = projectsMap.get(e.project);
+                const filterType: "project" | "anon-project" =
+                  project?.phase === "anon-project" ? "anon-project" : "project";
+                return {
+                  id: Date.now() + idx,
+                  projectId: e.project,
+                  projectName: e.project_name,
+                  hours: 0,
+                  filterType,
+                };
+              });
+              setEntries(formEntries);
+            } else {
+              // No previous week data - use latest from allUserEntries as fallback
+              const sortedEntries = [...allUserEntries].sort((a, b) =>
+                (b.week_start || "").localeCompare(a.week_start || ""),
+              );
+              if (sortedEntries.length > 0) {
+                const latestWeekStart = sortedEntries[0].week_start;
+                const latestEntries = sortedEntries.filter(
+                  (e) => e.week_start === latestWeekStart,
+                );
+                const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
+                  const project = projectsMap.get(e.project);
+                  const filterType: "project" | "anon-project" =
+                    project?.phase === "anon-project" ? "anon-project" : "project";
+                  return {
+                    id: Date.now() + idx,
+                    projectId: e.project,
+                    projectName: e.project_name,
+                    hours: 0,
+                    filterType,
+                  };
+                });
+                setEntries(formEntries);
+              } else {
+                setEntries([createEmptyEntry()]);
+              }
+            }
+          }
         }
+      } catch {
+        // Failed to fetch week data - keep current entries
       }
-    }
-  }, [weekStart, fetchExpectedHours, allUserEntries, projects]);
+    };
+
+    updateWeekData();
+  }, [weekStart, fetchExpectedHours, projects, user, allUserEntries]);
 
   function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
     return {
@@ -434,14 +597,23 @@ export default function WeeklyEffort() {
           </div>
         ) : (
           <>
-            {/* Expected Hours Section */}
-            <section className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">期待稼働時間</h2>
-              <div className="text-3xl font-bold text-indigo-600">
-                {expectedHours === null ? "---" : `${expectedHours} 時間`}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
-            </section>
+            {/* Expected Hours and Calendar Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Expected Hours */}
+              <section className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">期待稼働時間</h2>
+                <div className="text-3xl font-bold text-indigo-600">
+                  {expectedHours === null ? "---" : `${expectedHours} 時間`}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
+              </section>
+
+              {/* Calendar */}
+              <section className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">カレンダー</h2>
+                <WeekCalendar weekStart={weekStart} onWeekSelect={setWeekStart} />
+              </section>
+            </div>
 
             {/* Missing Weeks Section */}
             {missingWeeks.length > 0 && (
