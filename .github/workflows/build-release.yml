@@ -30,6 +30,8 @@ jobs:
 
       - name: Update API client from latest kippo release
         run: pnpm update:api
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run type check
         run: pnpm typecheck
