@@ -60,8 +60,8 @@ export default function WeeklyEffort() {
   const [expectedHours, setExpectedHours] = useState<number | null>(null);
   const [missingWeeks, setMissingWeeks] = useState<string[]>([]);
   const [monthlyAssignments, setMonthlyAssignments] = useState<ProjectMonthlyAssignment[]>([]);
-  const [previousEntries, setPreviousEntries] = useState<ProjectWeeklyEffort[]>([]);
-  const [previousWeekStart, setPreviousWeekStart] = useState<string | null>(null);
+  const [allUserEntries, setAllUserEntries] = useState<ProjectWeeklyEffort[]>([]);
+  const [selectedWeekEntries, setSelectedWeekEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [entries, setEntries] = useState<FormEntry[]>([]);
 
@@ -112,19 +112,35 @@ export default function WeeklyEffort() {
           const userEntries = weeklyEffortRes.data.results.filter(
             (e) => e.user_username === user.username,
           );
+          setAllUserEntries(userEntries);
 
-          // Find the latest week_start
-          if (userEntries.length > 0) {
+          // Find entries for the selected week
+          const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
+          setSelectedWeekEntries(entriesForSelectedWeek);
+
+          // Auto-populate form entries from selected week entries (or latest if none)
+          const projectsMap = new Map((projectsRes.data?.results || []).map((p) => [p.id, p]));
+          if (entriesForSelectedWeek.length > 0) {
+            const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
+              const project = projectsMap.get(e.project);
+              const filterType: "project" | "anon-project" =
+                project?.phase === "anon-project" ? "anon-project" : "project";
+              return {
+                id: Date.now() + idx,
+                projectId: e.project,
+                projectName: e.project_name,
+                hours: e.hours,
+                filterType,
+              };
+            });
+            setEntries(formEntries);
+          } else if (userEntries.length > 0) {
+            // Fall back to latest entries as template
             const sortedEntries = [...userEntries].sort((a, b) =>
               (b.week_start || "").localeCompare(a.week_start || ""),
             );
             const latestWeekStart = sortedEntries[0].week_start;
             const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
-            setPreviousEntries(latestEntries);
-            setPreviousWeekStart(latestWeekStart || null);
-
-            // Auto-populate form entries from latest entries
-            const projectsMap = new Map((projectsRes.data?.results || []).map((p) => [p.id, p]));
             const formEntries: FormEntry[] = latestEntries.map((e, idx) => {
               const project = projectsMap.get(e.project);
               const filterType: "project" | "anon-project" =
@@ -151,9 +167,6 @@ export default function WeeklyEffort() {
           setMonthlyAssignments(userAssignments);
         }
 
-        // Fetch expected hours for the default week
-        await fetchExpectedHours(weekStart);
-
         // Fetch missing weeks
         try {
           const missingWeeksRes = await weeklyEffortMissingWeeksRetrieve();
@@ -171,14 +184,18 @@ export default function WeeklyEffort() {
     };
 
     fetchData();
-  }, [user, weekStart, fetchExpectedHours]);
+  }, [user, fetchExpectedHours]);
 
-  // Refetch expected hours when week_start changes
+  // Refetch expected hours and update selected week entries when week_start changes
   useEffect(() => {
     if (weekStart) {
       fetchExpectedHours(weekStart);
+
+      // Update entries for the selected week
+      const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
+      setSelectedWeekEntries(entriesForSelectedWeek);
     }
-  }, [weekStart, fetchExpectedHours]);
+  }, [weekStart, fetchExpectedHours, allUserEntries]);
 
   function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
     return {
@@ -282,8 +299,8 @@ export default function WeeklyEffort() {
     }
   };
 
-  // Calculate total hours for previous entries
-  const previousTotalHours = previousEntries.reduce((sum, e) => sum + e.hours, 0);
+  // Calculate total hours for selected week entries
+  const selectedWeekTotalHours = selectedWeekEntries.reduce((sum, e) => sum + e.hours, 0);
 
   // Calculate total hours for form entries
   const formTotalHours = entries.reduce((sum, e) => sum + e.hours, 0);
@@ -378,17 +395,17 @@ export default function WeeklyEffort() {
               </section>
             )}
 
-            {/* Previous Entries Section */}
-            {previousEntries.length > 0 && previousWeekStart && (
-              <section className="bg-white shadow rounded-lg p-6">
+            {/* Selected Week Existing Entries Section */}
+            {selectedWeekEntries.length > 0 && (
+              <section className="bg-white shadow rounded-lg p-6 border-l-4 border-green-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
-                  前回の入力 ({previousWeekStart})
+                  登録済みの入力 ({weekStart})
                 </h2>
                 <div className="space-y-2">
-                  {previousEntries.map((entry) => {
+                  {selectedWeekEntries.map((entry) => {
                     const percentage =
-                      previousTotalHours > 0
-                        ? Math.round((entry.hours / previousTotalHours) * 100)
+                      selectedWeekTotalHours > 0
+                        ? Math.round((entry.hours / selectedWeekTotalHours) * 100)
                         : 0;
                     return (
                       <div
@@ -405,7 +422,7 @@ export default function WeeklyEffort() {
                   })}
                   <div className="flex justify-between items-center pt-2 font-medium">
                     <span className="text-gray-900">合計</span>
-                    <span className="text-gray-900">{previousTotalHours} 時間</span>
+                    <span className="text-gray-900">{selectedWeekTotalHours} 時間</span>
                   </div>
                 </div>
               </section>
