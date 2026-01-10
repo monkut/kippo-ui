@@ -601,6 +601,297 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/monthly-costs/:
+    get:
+      operationId: monthly_costs_list
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      parameters:
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: Filter by exact month (YYYY-MM-DD format)
+      - in: query
+        name: month_gte
+        schema:
+          type: string
+        description: Filter by month >= date (YYYY-MM-DD format)
+      - in: query
+        name: month_lte
+        schema:
+          type: string
+        description: Filter by month <= date (YYYY-MM-DD format)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      - in: query
+        name: service
+        schema:
+          type: string
+        description: Filter by service type
+      tags:
+      - monthly-costs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectMonthlyCostList'
+          description: ''
+    post:
+      operationId: monthly_costs_create
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      tags:
+      - monthly-costs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyCost'
+          description: ''
+  /api/monthly-costs/{id}/:
+    get:
+      operationId: monthly_costs_retrieve
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly cost.
+        required: true
+      tags:
+      - monthly-costs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyCost'
+          description: ''
+    put:
+      operationId: monthly_costs_update
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly cost.
+        required: true
+      tags:
+      - monthly-costs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMonthlyCostRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyCost'
+          description: ''
+    patch:
+      operationId: monthly_costs_partial_update
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly cost.
+        required: true
+      tags:
+      - monthly-costs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyCostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyCostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMonthlyCostRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMonthlyCost'
+          description: ''
+    delete:
+      operationId: monthly_costs_destroy
+      description: |-
+        ViewSet for ProjectMonthlyCost model.
+
+        Manages monthly cost entries for projects.
+
+        **Organization Scoping:**
+        - Regular users can only access costs for projects in organizations they belong to
+        - Superusers can access costs from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - service: Filter by service type
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month_gte: Filter by month >= date (YYYY-MM-DD format)
+        - month_lte: Filter by month <= date (YYYY-MM-DD format)
+
+        **Permissions:**
+        - All CRUD operations require authentication
+        - Users can only manage costs for projects in their organizations
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this project monthly cost.
+        required: true
+      tags:
+      - monthly-costs
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/projects/:
     get:
       operationId: projects_list
@@ -872,6 +1163,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -897,6 +1189,12 @@ paths:
         schema:
           type: integer
         description: Filter by user ID
+      - in: query
+        name: user_username
+        schema:
+          type: string
+        description: Filter by user's username (must match logged-in user's username
+          for non-superusers)
       - in: query
         name: week_start_gte
         schema:
@@ -932,6 +1230,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -978,6 +1277,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -1017,6 +1317,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -1068,6 +1369,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -1118,6 +1420,7 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
+        - user_username: Filter by user's username (must match the logged-in user's username)
         - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
         - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -3768,6 +4071,37 @@ paths:
                   error:
                     type: string
           description: ''
+  /api/weekly-effort/missing-weeks/:
+    get:
+      operationId: weekly_effort_missing_weeks_retrieve
+      description: Returns week start dates where the current user has not entered
+        any weekly effort data.
+      summary: Get missing weekly effort weeks
+      tags:
+      - weekly-effort
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  missing_weeks:
+                    type: array
+                    items:
+                      type: string
+                      format: date
+                    description: List of week start dates (Mondays) with no entries
+                  fiscal_year_start:
+                    type: string
+                    format: date
+                  organization:
+                    type: string
+                    nullable: true
+          description: ''
 components:
   schemas:
     CategoryEnum:
@@ -3778,6 +4112,16 @@ components:
       description: |-
         * `assumption` - 前提条件
         * `constraint` - 制約事項
+    CurrencyEnum:
+      enum:
+      - USD
+      - JPY
+      - EUR
+      type: string
+      description: |-
+        * `USD` - USD
+        * `JPY` - JPY
+        * `EUR` - EUR
     ErrorResponse:
       type: object
       description: Serializer for error responses.
@@ -3835,7 +4179,7 @@ components:
           maxLength: 256
         slack_channel_name:
           type: string
-          description: If given, updates are sent periodically
+          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
           maxLength: 80
         project_manager:
           type: string
@@ -3997,7 +4341,7 @@ components:
           maxLength: 256
         slack_channel_name:
           type: string
-          description: If given, updates are sent periodically
+          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
           maxLength: 80
         project_manager:
           type: string
@@ -4272,6 +4616,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectMonthlyAssignment'
+    PaginatedProjectMonthlyCostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectMonthlyCost'
     PaginatedProjectProblemDefinitionList:
       type: object
       required:
@@ -4450,7 +4817,7 @@ components:
           maxLength: 256
         slack_channel_name:
           type: string
-          description: If given, updates are sent periodically
+          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
           maxLength: 80
         project_manager:
           type: string
@@ -4628,6 +4995,27 @@ components:
         is_confirmed:
           type: boolean
           description: Assignment is confirmed or not
+    PatchedProjectMonthlyCostRequest:
+      type: object
+      description: Serializer for ProjectMonthlyCost model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: COST month (defaults to project start_date month)
+        service:
+          $ref: '#/components/schemas/ServiceEnum'
+        cost:
+          type: number
+          format: double
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        itemized_cost:
+          nullable: true
     PatchedProjectProblemDefinitionRequest:
       type: object
       properties:
@@ -5316,6 +5704,74 @@ components:
       - percentage
       - project
       - user
+    ProjectMonthlyCost:
+      type: object
+      description: Serializer for ProjectMonthlyCost model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        project_name:
+          type: string
+          readOnly: true
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: COST month (defaults to project start_date month)
+        service:
+          $ref: '#/components/schemas/ServiceEnum'
+        cost:
+          type: number
+          format: double
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        itemized_cost:
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cost
+      - created_datetime
+      - id
+      - project
+      - project_name
+      - service
+      - updated_datetime
+    ProjectMonthlyCostRequest:
+      type: object
+      description: Serializer for ProjectMonthlyCost model.
+      properties:
+        project:
+          type: string
+          format: uuid
+        month:
+          type: string
+          format: date
+          nullable: true
+          description: COST month (defaults to project start_date month)
+        service:
+          $ref: '#/components/schemas/ServiceEnum'
+        cost:
+          type: number
+          format: double
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        itemized_cost:
+          nullable: true
+      required:
+      - cost
+      - project
+      - service
     ProjectProblemDefinition:
       type: object
       properties:
@@ -5871,6 +6327,18 @@ components:
       - scheduled_end_date
       - scheduled_start_date
       - title
+    ServiceEnum:
+      enum:
+      - AWS
+      - AZURE
+      - GCP
+      - OTHER
+      type: string
+      description: |-
+        * `AWS` - AWS
+        * `AZURE` - AZURE
+        * `GCP` - GCP
+        * `OTHER` - OTHER
     TokenObtainPair:
       type: object
       properties:

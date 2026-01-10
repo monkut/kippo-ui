@@ -39,7 +39,7 @@ export interface PatchedKippoProjectRequest {
    */
   category?: string;
   /**
-   * If given, updates are sent periodically
+   * Run '/invite {ORG.slack_command_name}' to enable channel notification
    * @maxLength 80
    */
   slack_channel_name?: string;

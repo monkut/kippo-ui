@@ -270,7 +270,7 @@ export default function WeeklyEffort() {
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
 
-        // Process weekly effort entries for the current user (already filtered by user_username)
+        // Process weekly effort entries for the current user (filtered server-side by user_username)
         if (weeklyEffortRes.data?.results) {
           const userEntries = weeklyEffortRes.data.results;
           setAllUserEntries(userEntries);
@@ -357,7 +357,7 @@ export default function WeeklyEffort() {
       const prevWeekLte = `${sundayBeforeSelectedWeek.getFullYear()}-${String(sundayBeforeSelectedWeek.getMonth() + 1).padStart(2, "0")}-${String(sundayBeforeSelectedWeek.getDate()).padStart(2, "0")}`;
 
       try {
-        // Fetch previous week entries for the current user (to use as template)
+        // Fetch previous week entries for current user (to use as template)
         const weeklyEffortRes = await projectsWeeklyeffortList({
           user_username: user?.username,
           week_start_gte: prevWeekGte,

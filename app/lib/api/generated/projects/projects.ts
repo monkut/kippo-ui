@@ -337,6 +337,7 @@ export const projectsDestroy = async (id: string, options?: RequestInit): Promis
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -396,6 +397,7 @@ export const projectsWeeklyeffortList = async (params?: ProjectsWeeklyeffortList
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -449,6 +451,7 @@ export const projectsWeeklyeffortCreate = async (projectWeeklyEffortRequest: Pro
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -501,6 +504,7 @@ export const projectsWeeklyeffortRetrieve = async (id: number, options?: Request
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -555,6 +559,7 @@ export const projectsWeeklyeffortUpdate = async (id: number,
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 
@@ -609,6 +614,7 @@ export const projectsWeeklyeffortPartialUpdate = async (id: number,
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
+- user_username: Filter by user's username (must match the logged-in user's username)
 - week_start_gte: Filter by week_start greater than or equal to date (YYYY-MM-DD)
 - week_start_lte: Filter by week_start less than or equal to date (YYYY-MM-DD)
 

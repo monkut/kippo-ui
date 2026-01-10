@@ -72,22 +72,31 @@ export type weeklyEffortMissingWeeksRetrieveResponse200 = {
   data: WeeklyEffortMissingWeeksRetrieve200
   status: 200
 }
-
+    
 export type weeklyEffortMissingWeeksRetrieveResponseSuccess = (weeklyEffortMissingWeeksRetrieveResponse200) & {
   headers: Headers;
 };
+;
 
-export type weeklyEffortMissingWeeksRetrieveResponse = weeklyEffortMissingWeeksRetrieveResponseSuccess
+export type weeklyEffortMissingWeeksRetrieveResponse = (weeklyEffortMissingWeeksRetrieveResponseSuccess)
 
 export const getWeeklyEffortMissingWeeksRetrieveUrl = () => {
+
+
+  
+
   return `/api/weekly-effort/missing-weeks/`
 }
 
-export const weeklyEffortMissingWeeksRetrieve = async (options?: RequestInit): Promise<weeklyEffortMissingWeeksRetrieveResponse> => {
+export const weeklyEffortMissingWeeksRetrieve = async ( options?: RequestInit): Promise<weeklyEffortMissingWeeksRetrieveResponse> => {
+  
   return customFetch<weeklyEffortMissingWeeksRetrieveResponse>(getWeeklyEffortMissingWeeksRetrieveUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
+    
+    
   }
 );}
+
 
