@@ -8,7 +8,8 @@
 import type {
   WeeklyEffortExpectedHoursRetrieve200,
   WeeklyEffortExpectedHoursRetrieve400,
-  WeeklyEffortExpectedHoursRetrieveParams
+  WeeklyEffortExpectedHoursRetrieveParams,
+  WeeklyEffortMissingWeeksRetrieve200
 } from '.././models';
 
 import { customFetch } from '../../custom-fetch';
@@ -62,4 +63,31 @@ export const weeklyEffortExpectedHoursRetrieve = async (params: WeeklyEffortExpe
   }
 );}
 
+
+/**
+ * Returns week start dates where the current user has not entered any weekly effort data.
+ * @summary Get missing weekly effort weeks
+ */
+export type weeklyEffortMissingWeeksRetrieveResponse200 = {
+  data: WeeklyEffortMissingWeeksRetrieve200
+  status: 200
+}
+
+export type weeklyEffortMissingWeeksRetrieveResponseSuccess = (weeklyEffortMissingWeeksRetrieveResponse200) & {
+  headers: Headers;
+};
+
+export type weeklyEffortMissingWeeksRetrieveResponse = weeklyEffortMissingWeeksRetrieveResponseSuccess
+
+export const getWeeklyEffortMissingWeeksRetrieveUrl = () => {
+  return `/api/weekly-effort/missing-weeks/`
+}
+
+export const weeklyEffortMissingWeeksRetrieve = async (options?: RequestInit): Promise<weeklyEffortMissingWeeksRetrieveResponse> => {
+  return customFetch<weeklyEffortMissingWeeksRetrieveResponse>(getWeeklyEffortMissingWeeksRetrieveUrl(),
+  {
+    ...options,
+    method: 'GET'
+  }
+);}
 
