@@ -43,8 +43,8 @@ export default function ProjectStatus() {
         const filteredProjects = response.data.results
           .filter(
             (project) =>
-              project.display_as_active !== false &&
-              project.is_closed !== true &&
+              project.display_as_active === true &&
+              project.is_closed === false &&
               (!project.phase || !EXCLUDED_PHASES.includes(project.phase)),
           )
           // Sort by: -confidence (large to small), target_date (earliest to latest), name
