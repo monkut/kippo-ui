@@ -445,6 +445,16 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
     return "text-green-600";
   };
 
+  // Get background color for meter (matches text color)
+  const getMeterColor = () => {
+    if (difference_percentage === null || difference_percentage === undefined) {
+      return "bg-gray-400";
+    }
+    if (difference_percentage > EXCEEDING_THRESHOLD) return "bg-red-500";
+    if (difference_percentage > 0) return "bg-yellow-500";
+    return "bg-green-500";
+  };
+
   const formatDifferencePercentage = () => {
     if (difference_percentage === null || difference_percentage === undefined) {
       return null;
@@ -463,19 +473,27 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
         <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
       )}
 
-      {/* Meter element - shows timeline progress (expected vs allocated) */}
+      {/* Progress bar - shows timeline progress (expected vs allocated) */}
       <div className="flex justify-center">
-        <meter
-          min={0}
-          max={allocated_effort_hours}
-          value={expected_effort_hours}
-          className="w-48 h-6"
-        />
+        <div className="w-48 h-6 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${getMeterColor()} transition-all duration-300`}
+            style={{
+              width: `${Math.min((expected_effort_hours / allocated_effort_hours) * 100, 100)}%`,
+            }}
+          />
+        </div>
       </div>
 
       {/* Legend */}
       <div className="text-xs text-gray-500">
-        予定: {Math.round(expected_effort_hours)}h / 予算: {allocated_effort_hours}h
+        <span title="現在日までに消化されているべき工数（線形進捗に基づく）">
+          予定: {Math.round(expected_effort_hours)}h
+        </span>
+        {" / "}
+        <span title="プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）">
+          予算: {allocated_effort_hours}h
+        </span>
       </div>
     </div>
   );
