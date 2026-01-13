@@ -466,7 +466,7 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
   return (
     <div className="space-y-2">
       {/* Hours display */}
-      <div className={`text-2xl font-semibold ${getTextColor()}`}>{current_effort_hours}h</div>
+      <div className={`text-2xl font-semibold ${getTextColor()}`}>{current_effort_hours ?? 0}h</div>
 
       {/* Difference percentage */}
       {formatDifferencePercentage() && (
