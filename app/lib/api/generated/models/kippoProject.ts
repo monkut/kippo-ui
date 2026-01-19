@@ -10,6 +10,7 @@ import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline'
 import type { KippoProjectProjectstatusDisplay } from './kippoProjectProjectstatusDisplay';
 import type { KippoProjectLatestComment } from './kippoProjectLatestComment';
 import type { WeeklyEffortUserInline } from './weeklyEffortUserInline';
+import type { SurveyUserInline } from './surveyUserInline';
 
 /**
  * Serializer for KippoProject model.
@@ -55,6 +56,11 @@ export interface KippoProject {
   readonly project_manager_username: string | null;
   /** Manually set when project is complete */
   is_closed?: boolean;
+  /**
+   * Datetime when the project was closed
+   * @nullable
+   */
+  readonly closed_datetime?: string | null;
   /** If True, project will be included in the ActiveKippoProject List */
   display_as_active?: boolean;
   /** If True, project will be included in the Project Report Summary */
@@ -103,6 +109,7 @@ export interface KippoProject {
   /** @nullable */
   readonly latest_comment: KippoProjectLatestComment;
   readonly weekly_effort_users: readonly WeeklyEffortUserInline[];
+  readonly survey_users: readonly SurveyUserInline[];
   readonly created_datetime: string;
   readonly updated_datetime: string;
 }

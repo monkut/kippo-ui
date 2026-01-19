@@ -4194,6 +4194,12 @@ components:
           type: boolean
           title: Project is Closed
           description: Manually set when project is complete
+        closed_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: Datetime when the project was closed
         display_as_active:
           type: boolean
           description: If True, project will be included in the ActiveKippoProject

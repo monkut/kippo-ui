@@ -158,3 +158,4 @@ export * from './weeklyEffortExpectedHoursRetrieve400';
 export * from './weeklyEffortExpectedHoursRetrieveParams';
 export * from './weeklyEffortMissingWeeksRetrieve200';
 export * from './weeklyEffortUserInline';
+export * from './surveyUserInline';
