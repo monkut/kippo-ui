@@ -5,6 +5,8 @@ import { Layout } from "~/components/layout";
 import {
   projectsWeeklyeffortList,
   projectsWeeklyeffortCreate,
+  projectsWeeklyeffortPartialUpdate,
+  projectsWeeklyeffortDestroy,
 } from "~/lib/api/generated/projects/projects";
 import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import {
@@ -215,6 +217,11 @@ export default function WeeklyEffort() {
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [entries, setEntries] = useState<FormEntry[]>([]);
 
+  // Edit mode states
+  const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
+  const [editingHours, setEditingHours] = useState<number>(0);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+
   // Auth check
   useEffect(() => {
     if (!authLoading && !user) {
@@ -246,10 +253,11 @@ export default function WeeklyEffort() {
 
       try {
         // Fetch ALL data in parallel for faster initial load
-        // Note: fetchAllProjects handles pagination internally to retrieve all active projects
+        // Note: fetchAllProjects handles pagination internally to retrieve all projects
+        // We fetch all projects (not just active) to allow effort logging for projects at any confidence level
         const [allProjects, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
           await Promise.all([
-            fetchAllProjects({ is_active: true }),
+            fetchAllProjects(),
             projectsWeeklyeffortList({ user_username: user?.username }),
             monthlyAssignmentsList({ month: getCurrentMonthStart() }),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
@@ -278,22 +286,11 @@ export default function WeeklyEffort() {
           const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
           setSelectedWeekEntries(entriesForSelectedWeek);
 
-          // Auto-populate form entries from selected week entries (or latest if none)
+          // Auto-populate form entries (or clear if existing entries for week)
           const projectsMap = new Map(allProjects.map((p) => [p.id, p]));
           if (entriesForSelectedWeek.length > 0) {
-            const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
-              const project = projectsMap.get(e.project);
-              const filterType: "project" | "anon-project" =
-                project?.phase === "anon-project" ? "anon-project" : "project";
-              return {
-                id: Date.now() + idx,
-                projectId: e.project,
-                projectName: e.project_name,
-                hours: e.hours,
-                filterType,
-              };
-            });
-            setEntries(formEntries);
+            // Selected week has entries - clear form (edit via existing entries UI)
+            setEntries([]);
           } else if (userEntries.length > 0) {
             // Fall back to latest entries as template
             const sortedEntries = [...userEntries].sort((a, b) =>
@@ -371,20 +368,8 @@ export default function WeeklyEffort() {
         setSelectedWeekEntries(entriesForSelectedWeek);
 
         if (entriesForSelectedWeek.length > 0) {
-          // Selected week has entries - populate form with them
-          const formEntries: FormEntry[] = entriesForSelectedWeek.map((e, idx) => {
-            const project = projectsMap.get(e.project);
-            const filterType: "project" | "anon-project" =
-              project?.phase === "anon-project" ? "anon-project" : "project";
-            return {
-              id: Date.now() + idx,
-              projectId: e.project,
-              projectName: e.project_name,
-              hours: e.hours,
-              filterType,
-            };
-          });
-          setEntries(formEntries);
+          // Selected week has entries - clear form (edit via existing entries UI)
+          setEntries([]);
         } else if (previousWeekEntries.length > 0) {
           // Use previous week's entries as template (hours reset to 0)
           const formEntries: FormEntry[] = previousWeekEntries.map((e, idx) => {
@@ -444,19 +429,19 @@ export default function WeeklyEffort() {
   }
 
   const addEntry = (filterType: "project" | "anon-project") => {
-    const filteredProjects = projects.filter((p) =>
-      filterType === "anon-project"
-        ? p.phase === "anon-project" && p.display_as_active !== false && !p.is_closed
-        : p.phase !== "anon-project" && p.display_as_active !== false && !p.is_closed,
-    );
+    // Helper to check if a project should be displayed for the selected week
+    const isOpenForWeek = (project: KippoProject): boolean => {
+      if (!project.closed_datetime) return true;
+      return weekStart <= project.closed_datetime.split("T")[0];
+    };
 
-    const firstProject = filteredProjects[0];
+    // Add new entry with no project selected (user must choose)
     setEntries([
       ...entries,
       {
         id: Date.now(),
-        projectId: firstProject?.id || "",
-        projectName: firstProject?.name || "",
+        projectId: "",
+        projectName: "",
         hours: 0,
         filterType,
       },
@@ -484,6 +469,75 @@ export default function WeeklyEffort() {
         return { ...e, [field]: value };
       }),
     );
+  };
+
+  // Start editing an existing entry
+  const startEditEntry = (entry: ProjectWeeklyEffort) => {
+    setEditingEntryId(entry.id);
+    setEditingHours(entry.hours);
+  };
+
+  // Cancel editing
+  const cancelEditEntry = () => {
+    setEditingEntryId(null);
+    setEditingHours(0);
+  };
+
+  // Save updated entry
+  const saveEditEntry = async (entryId: number) => {
+    setIsSubmitting(true);
+    setError("");
+    try {
+      await projectsWeeklyeffortPartialUpdate(entryId, { hours: editingHours });
+
+      // Refresh data
+      const weeklyEffortRes = await projectsWeeklyeffortList({ user_username: user?.username });
+      if (weeklyEffortRes.data?.results) {
+        const userEntries = weeklyEffortRes.data.results;
+        setAllUserEntries(userEntries);
+        setSelectedWeekEntries(userEntries.filter((e) => e.week_start === weekStart));
+      }
+
+      setEditingEntryId(null);
+      setEditingHours(0);
+    } catch {
+      setError("更新に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete an existing entry
+  const deleteEntry = async (entryId: number) => {
+    if (!confirm("このエントリを削除しますか？")) return;
+
+    setIsSubmitting(true);
+    setError("");
+    try {
+      await projectsWeeklyeffortDestroy(entryId);
+
+      // Refresh data
+      const [weeklyEffortRes, missingWeeksRes] = await Promise.all([
+        projectsWeeklyeffortList({ user_username: user?.username }),
+        weeklyEffortMissingWeeksRetrieve(),
+      ]);
+
+      if (weeklyEffortRes.data?.results) {
+        const userEntries = weeklyEffortRes.data.results;
+        setAllUserEntries(userEntries);
+        setSelectedWeekEntries(userEntries.filter((e) => e.week_start === weekStart));
+      }
+
+      if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
+        setMissingWeeks(missingWeeksRes.data.missing_weeks);
+      }
+
+      setEditingEntryId(null);
+    } catch {
+      setError("削除に失敗しました");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -562,14 +616,22 @@ export default function WeeklyEffort() {
   // Calculate total hours for form entries
   const formTotalHours = entries.reduce((sum, e) => sum + e.hours, 0);
 
+  // Helper to check if a project should be displayed for the selected week
+  // Projects are shown if they have no closed_datetime OR if week_start <= closed_datetime
+  const isProjectOpenForWeek = (project: KippoProject): boolean => {
+    if (!project.closed_datetime) return true;
+    return weekStart <= project.closed_datetime.split("T")[0];
+  };
+
   // Filter projects for dropdowns
-  // Use `!== false` to treat undefined as default true (Django model default)
-  const projectProjects = projects.filter(
-    (p) => p.phase !== "anon-project" && p.display_as_active !== false && !p.is_closed,
-  );
-  const nonProjectProjects = projects.filter(
-    (p) => p.phase === "anon-project" && p.display_as_active !== false && !p.is_closed,
-  );
+  // Include all non-closed projects (regardless of display_as_active or confidence)
+  // Sort alphabetically by name for consistent ordering
+  const projectProjects = projects
+    .filter((p) => p.phase !== "anon-project" && p.is_closed !== true && isProjectOpenForWeek(p))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const nonProjectProjects = projects
+    .filter((p) => p.phase === "anon-project" && p.is_closed !== true && isProjectOpenForWeek(p))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (authLoading) {
     return (
@@ -664,24 +726,136 @@ export default function WeeklyEffort() {
             {/* Selected Week Existing Entries Section */}
             {selectedWeekEntries.length > 0 && (
               <section className="bg-white shadow rounded-lg p-6 border-l-4 border-green-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">
-                  登録済みの入力 ({weekStart})
-                </h2>
+                <div
+                  className="flex justify-between items-center mb-4 group"
+                  onMouseEnter={() => setIsHeaderHovered(true)}
+                  onMouseLeave={() => setIsHeaderHovered(false)}
+                >
+                  <h2 className="text-lg font-medium text-gray-900">
+                    登録済みの入力 ({weekStart})
+                  </h2>
+                  <div
+                    className={`flex gap-2 transition-opacity ${isHeaderHovered ? "opacity-100" : "opacity-0"}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => addEntry("project")}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100"
+                      disabled={isSubmitting}
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                        <title>追加</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      Project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addEntry("anon-project")}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                      disabled={isSubmitting}
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                        <title>追加</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      Non-Project
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   {selectedWeekEntries.map((entry) => {
                     const percentage =
                       selectedWeekTotalHours > 0
                         ? Math.round((entry.hours / selectedWeekTotalHours) * 100)
                         : 0;
+                    const isEditing = editingEntryId === entry.id;
+
                     return (
                       <div
                         key={entry.id}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
+                        className="group flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded cursor-pointer"
+                        onClick={() => !isEditing && !isSubmitting && startEditEntry(entry)}
                       >
                         <span className="text-gray-700">{entry.project_name}</span>
-                        <div className="text-right">
-                          <span className="text-gray-900 font-medium">{entry.hours} 時間</span>
-                          <span className="text-gray-500 text-sm ml-2">({percentage}%)</span>
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <>
+                              <input
+                                type="number"
+                                value={editingHours}
+                                onChange={(e) => setEditingHours(Number.parseInt(e.target.value, 10) || 0)}
+                                onClick={(e) => e.stopPropagation()}
+                                min="0"
+                                className="w-20 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1"
+                                disabled={isSubmitting}
+                                autoFocus
+                              />
+                              <span className="text-gray-500 text-sm">時間</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  saveEditEntry(entry.id);
+                                }}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                disabled={isSubmitting}
+                                title="保存"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                  <title>保存</title>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelEditEntry();
+                                }}
+                                className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                                disabled={isSubmitting}
+                                title="キャンセル"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                  <title>キャンセル</title>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteEntry(entry.id);
+                                }}
+                                className="p-1 text-red-400 hover:bg-red-50 hover:text-red-600 rounded"
+                                disabled={isSubmitting}
+                                title="削除"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                  <title>削除</title>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-right">
+                                <span className="text-gray-900 font-medium">{entry.hours} 時間</span>
+                                <span className="text-gray-500 text-sm ml-2">({percentage}%)</span>
+                              </div>
+                              <svg
+                                className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                stroke="currentColor"
+                              >
+                                <title>編集</title>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                              </svg>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -694,29 +868,45 @@ export default function WeeklyEffort() {
               </section>
             )}
 
-            {/* Input Entries Section */}
-            <section className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">今週の入力</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Week Start Picker */}
-                <div>
-                  <label
-                    htmlFor="week-start"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    週開始日 (月曜日)
-                  </label>
-                  <input
-                    type="date"
-                    id="week-start"
-                    value={weekStart}
-                    onChange={(e) => setWeekStart(e.target.value)}
-                    className="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                    disabled={isSubmitting}
-                  />
+            {/* Input Entries Section - only show when no existing entries OR when adding new entries */}
+            {(selectedWeekEntries.length === 0 || entries.length > 0) && (
+              <section className="bg-white shadow rounded-lg p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-medium text-gray-900">
+                    {selectedWeekEntries.length > 0 ? "新規入力を追加" : "今週の入力"}
+                  </h2>
+                  {selectedWeekEntries.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEntries([])}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      キャンセル
+                    </button>
+                  )}
                 </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Week Start Picker - only show when no existing entries */}
+                  {selectedWeekEntries.length === 0 && (
+                    <div>
+                      <label
+                        htmlFor="week-start"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        週開始日 (月曜日)
+                      </label>
+                      <input
+                        type="date"
+                        id="week-start"
+                        value={weekStart}
+                        onChange={(e) => setWeekStart(e.target.value)}
+                        className="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
 
-                {/* Entry List */}
+                  {/* Entry List */}
                 <div className="space-y-3">
                   {entries.map((entry) => (
                     <div
@@ -817,53 +1007,55 @@ export default function WeeklyEffort() {
                   </span>
                 </div>
 
-                {/* Add Buttons */}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => addEntry("project")}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
-                    disabled={isSubmitting}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
+                {/* Add Buttons - only show when no existing entries */}
+                {selectedWeekEntries.length === 0 && (
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => addEntry("project")}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                      disabled={isSubmitting}
                     >
-                      <title>追加</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 4.5v15m7.5-7.5h-15"
-                      />
-                    </svg>
-                    Project
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => addEntry("anon-project")}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
-                    disabled={isSubmitting}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                      >
+                        <title>追加</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      Project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addEntry("anon-project")}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+                      disabled={isSubmitting}
                     >
-                      <title>追加</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 4.5v15m7.5-7.5h-15"
-                      />
-                    </svg>
-                    Non-Project
-                  </button>
-                </div>
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                      >
+                        <title>追加</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      Non-Project
+                    </button>
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <div className="pt-4">
@@ -875,8 +1067,9 @@ export default function WeeklyEffort() {
                     {isSubmitting ? "保存中..." : "保存"}
                   </button>
                 </div>
-              </form>
-            </section>
+                </form>
+              </section>
+            )}
           </>
         )}
       </div>

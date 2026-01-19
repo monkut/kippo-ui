@@ -315,14 +315,21 @@ function ProjectStatusLayout({
                   KIPPO
                 </a>
                 <a
-                  href="/projects"
+                  href={`${urlPrefix}/ui/projects`}
                   onClick={() => setMenuOpen(false)}
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                 >
                   要件管理
                 </a>
                 <a
-                  href="/project-status"
+                  href={`${urlPrefix}/ui/weekly-effort`}
+                  onClick={() => setMenuOpen(false)}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  週間稼働量
+                </a>
+                <a
+                  href={`${urlPrefix}/ui/project-status`}
                   onClick={() => setMenuOpen(false)}
                   className="px-3 py-2 rounded-md text-sm font-medium bg-indigo-100 text-indigo-700"
                 >
@@ -379,20 +386,43 @@ function ProjectSlide({ project }: ProjectSlideProps) {
           <LatestCommentDisplay comment={project.latest_comment} />
         </div>
 
-        {/* Weekly Effort Users */}
+        {/* Weekly Effort Users with Survey Status */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-gray-500">稼働メンバー</h3>
           {project.weekly_effort_users && project.weekly_effort_users.length > 0 ? (
             <div className="flex flex-wrap justify-center gap-2">
-              {project.weekly_effort_users.map((effortUser) => (
-                <span
-                  key={effortUser.user_id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
-                >
-                  {effortUser.display_name} ({effortUser.percentage.toFixed(0)}
-                  %)
-                </span>
-              ))}
+              {project.weekly_effort_users.map((effortUser) => {
+                // Find survey status for this user (only users with >3% have survey status)
+                const surveyUser = project.survey_users?.find((s) => s.user_id === effortUser.user_id);
+                const showSurveyStatus = surveyUser !== undefined;
+                const surveyCompleted = surveyUser?.survey_completed ?? false;
+
+                return (
+                  <span
+                    key={effortUser.user_id}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                  >
+                    {showSurveyStatus && (
+                      surveyCompleted ? (
+                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <title>アンケート完了</title>
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <title>アンケート未完了</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )
+                    )}
+                    {effortUser.display_name} ({effortUser.percentage.toFixed(0)}%)
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <div className="text-gray-400">-</div>
