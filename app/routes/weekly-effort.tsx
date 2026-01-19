@@ -429,13 +429,6 @@ export default function WeeklyEffort() {
   }
 
   const addEntry = (filterType: "project" | "anon-project") => {
-    // Helper to check if a project should be displayed for the selected week
-    const isOpenForWeek = (project: KippoProject): boolean => {
-      if (!project.closed_datetime) return true;
-      return weekStart <= project.closed_datetime.split("T")[0];
-    };
-
-    // Add new entry with no project selected (user must choose)
     setEntries([
       ...entries,
       {
@@ -623,13 +616,13 @@ export default function WeeklyEffort() {
   };
 
   // Filter projects for dropdowns
-  // Include all non-closed projects (regardless of display_as_active or confidence)
+  // Show projects where closed_datetime is null OR week_start <= closed_datetime
   // Sort alphabetically by name for consistent ordering
   const projectProjects = projects
-    .filter((p) => p.phase !== "anon-project" && p.is_closed !== true && isProjectOpenForWeek(p))
+    .filter((p) => p.phase !== "anon-project" && isProjectOpenForWeek(p))
     .sort((a, b) => a.name.localeCompare(b.name));
   const nonProjectProjects = projects
-    .filter((p) => p.phase === "anon-project" && p.is_closed !== true && isProjectOpenForWeek(p))
+    .filter((p) => p.phase === "anon-project" && isProjectOpenForWeek(p))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   if (authLoading) {
