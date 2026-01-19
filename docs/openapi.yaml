@@ -892,6 +892,510 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/personal-holidays/:
+    get:
+      operationId: personal_holidays_list
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      parameters:
+      - in: query
+        name: day_gte
+        schema:
+          type: string
+        description: Filter by day >= date (YYYY-MM-DD format)
+      - in: query
+        name: day_lte
+        schema:
+          type: string
+        description: Filter by day <= date (YYYY-MM-DD format)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - personal-holidays
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPersonalHolidayList'
+          description: ''
+    post:
+      operationId: personal_holidays_create
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      tags:
+      - personal-holidays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalHoliday'
+          description: ''
+  /api/personal-holidays/{id}/:
+    get:
+      operationId: personal_holidays_retrieve
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 個人休日.
+        required: true
+      tags:
+      - personal-holidays
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalHoliday'
+          description: ''
+    put:
+      operationId: personal_holidays_update
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 個人休日.
+        required: true
+      tags:
+      - personal-holidays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PersonalHolidayRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalHoliday'
+          description: ''
+    patch:
+      operationId: personal_holidays_partial_update
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 個人休日.
+        required: true
+      tags:
+      - personal-holidays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalHolidayRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalHolidayRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonalHolidayRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalHoliday'
+          description: ''
+    delete:
+      operationId: personal_holidays_destroy
+      description: |-
+        ViewSet for PersonalHoliday model (個人休日).
+
+        Users can only manage their own personal holidays.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - All operations: Authenticated users (own holidays only)
+        - User is auto-set to current user on create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 個人休日.
+        required: true
+      tags:
+      - personal-holidays
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/project-surveys/:
+    get:
+      operationId: project_surveys_list
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter by project UUID
+      - in: query
+        name: user
+        schema:
+          type: integer
+        description: Filter by user ID (created_by)
+      tags:
+      - project-surveys
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectUserStatisfactionResultList'
+          description: ''
+    post:
+      operationId: project_surveys_create
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      tags:
+      - project-surveys
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+          description: ''
+  /api/project-surveys/{id}/:
+    get:
+      operationId: project_surveys_retrieve
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 振り返り従業員アンケート.
+        required: true
+      tags:
+      - project-surveys
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+          description: ''
+    put:
+      operationId: project_surveys_update
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 振り返り従業員アンケート.
+        required: true
+      tags:
+      - project-surveys
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectUserStatisfactionResultRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+          description: ''
+    patch:
+      operationId: project_surveys_partial_update
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 振り返り従業員アンケート.
+        required: true
+      tags:
+      - project-surveys
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectUserStatisfactionResultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectUserStatisfactionResultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectUserStatisfactionResultRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+          description: ''
+    delete:
+      operationId: project_surveys_destroy
+      description: |-
+        ViewSet for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        Manages project closure retrospective survey results.
+
+        **Organization Scoping:**
+        - Regular users can only access surveys for projects in organizations they belong to
+        - Superusers can access surveys from all organizations
+
+        **Filtering:**
+        - project: Filter by project UUID
+        - user: Filter by user ID (created_by)
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users)
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
+        - Delete (DELETE): Superusers only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 振り返り従業員アンケート.
+        required: true
+      tags:
+      - project-surveys
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/projects/:
     get:
       operationId: projects_list
@@ -1169,8 +1673,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       parameters:
       - name: page
@@ -1236,8 +1740,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       tags:
       - projects
@@ -1283,8 +1787,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -1323,8 +1827,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -1375,8 +1879,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -1426,8 +1930,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users (user is auto-set to current user)
+        - Update (PUT/PATCH): Authenticated users (own entries only)
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -4131,6 +4635,34 @@ components:
           description: Error message describing what went wrong
       required:
       - error
+    FullfillmentScoreEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      type: integer
+      description: |-
+        * `1` - 1
+        * `2` - 2
+        * `3` - 3
+        * `4` - 4
+        * `5` - 5
+    GrowthScoreEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      type: integer
+      description: |-
+        * `1` - 1
+        * `2` - 2
+        * `3` - 3
+        * `4` - 4
+        * `5` - 5
     KippoProject:
       type: object
       description: Serializer for KippoProject model.
@@ -4197,9 +4729,8 @@ components:
         closed_datetime:
           type: string
           format: date-time
-          nullable: true
           readOnly: true
-          description: Datetime when the project was closed
+          nullable: true
         display_as_active:
           type: boolean
           description: If True, project will be included in the ActiveKippoProject
@@ -4283,6 +4814,11 @@ components:
           items:
             $ref: '#/components/schemas/WeeklyEffortUserInline'
           readOnly: true
+        survey_users:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyUserInline'
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -4294,6 +4830,7 @@ components:
       required:
       - allocated_effort_hours
       - assignment_rates
+      - closed_datetime
       - columnset
       - created_datetime
       - has_requirements
@@ -4305,6 +4842,7 @@ components:
       - project_manager_username
       - projectstatus_display
       - slug
+      - survey_users
       - updated_datetime
       - weekly_effort_users
     KippoProjectRequest:
@@ -4417,6 +4955,90 @@ components:
       - columnset
       - name
       - organization
+    KippoProjectUserStatisfactionResult:
+      type: object
+      description: |-
+        Serializer for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        The `created_by` field is auto-set to the current authenticated user on create.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        project_name:
+          type: string
+          readOnly: true
+        fullfillment_score:
+          allOf:
+          - $ref: '#/components/schemas/FullfillmentScoreEnum'
+          title: 充実した時間
+          minimum: 0
+          maximum: 32767
+        growth_score:
+          allOf:
+          - $ref: '#/components/schemas/GrowthScoreEnum'
+          title: 成長
+          minimum: 0
+          maximum: 32767
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_by_display_name:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - created_by_display_name
+      - created_by_username
+      - created_datetime
+      - fullfillment_score
+      - growth_score
+      - id
+      - project
+      - project_name
+      - updated_datetime
+    KippoProjectUserStatisfactionResultRequest:
+      type: object
+      description: |-
+        Serializer for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        The `created_by` field is auto-set to the current authenticated user on create.
+      properties:
+        project:
+          type: string
+          format: uuid
+        fullfillment_score:
+          allOf:
+          - $ref: '#/components/schemas/FullfillmentScoreEnum'
+          title: 充実した時間
+          minimum: 0
+          maximum: 32767
+        growth_score:
+          allOf:
+          - $ref: '#/components/schemas/GrowthScoreEnum'
+          title: 成長
+          minimum: 0
+          maximum: 32767
+      required:
+      - fullfillment_score
+      - growth_score
+      - project
     LatestCommentInline:
       type: object
       description: Inline serializer for latest project status comment in OpenAPI
@@ -4461,6 +5083,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KippoProject'
+    PaginatedKippoProjectUserStatisfactionResultList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+    PaginatedPersonalHolidayList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalHoliday'
     PaginatedProjectAssignmentRateList:
       type: object
       required:
@@ -4889,6 +5557,47 @@ components:
         survey_issued:
           type: boolean
           description: Update when survey is issued!
+    PatchedKippoProjectUserStatisfactionResultRequest:
+      type: object
+      description: |-
+        Serializer for KippoProjectUserStatisfactionResult model (振り返り従業員アンケート).
+
+        The `created_by` field is auto-set to the current authenticated user on create.
+      properties:
+        project:
+          type: string
+          format: uuid
+        fullfillment_score:
+          allOf:
+          - $ref: '#/components/schemas/FullfillmentScoreEnum'
+          title: 充実した時間
+          minimum: 0
+          maximum: 32767
+        growth_score:
+          allOf:
+          - $ref: '#/components/schemas/GrowthScoreEnum'
+          title: 成長
+          minimum: 0
+          maximum: 32767
+    PatchedPersonalHolidayRequest:
+      type: object
+      description: |-
+        Serializer for PersonalHoliday model.
+
+        The `user` field is auto-set to the current authenticated user on create.
+        Users can only create personal holidays for themselves.
+      properties:
+        day:
+          type: string
+          format: date
+        is_half:
+          type: boolean
+          description: Select if taking only a half day
+        duration:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: How many days (including weekends/existing holidays)
     PatchedProjectAssignmentRateRequest:
       type: object
       description: Serializer for ProjectAssignmentRate model.
@@ -5088,7 +5797,11 @@ components:
           description: 見積もり計算には、含むかどうか
     PatchedProjectWeeklyEffortRequest:
       type: object
-      description: Serializer for ProjectWeeklyEffort model.
+      description: |-
+        Serializer for ProjectWeeklyEffort model.
+
+        The `user` field defaults to the current authenticated user on create.
+        Superusers can optionally specify a different user.
       properties:
         week_start:
           type: string
@@ -5100,12 +5813,83 @@ components:
         user:
           type: string
           format: uuid
+          nullable: true
         hours:
           type: integer
           maximum: 32767
           minimum: -32768
           description: Actual effort in hours performed on the project for the given
             'week start'
+    PersonalHoliday:
+      type: object
+      description: |-
+        Serializer for PersonalHoliday model.
+
+        The `user` field is auto-set to the current authenticated user on create.
+        Users can only create personal holidays for themselves.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_username:
+          type: string
+          readOnly: true
+        user_display_name:
+          type: string
+          description: Get the user's display name.
+          readOnly: true
+        day:
+          type: string
+          format: date
+        is_half:
+          type: boolean
+          description: Select if taking only a half day
+        duration:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: How many days (including weekends/existing holidays)
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - day
+      - id
+      - updated_datetime
+      - user
+      - user_display_name
+      - user_username
+    PersonalHolidayRequest:
+      type: object
+      description: |-
+        Serializer for PersonalHoliday model.
+
+        The `user` field is auto-set to the current authenticated user on create.
+        Users can only create personal holidays for themselves.
+      properties:
+        day:
+          type: string
+          format: date
+        is_half:
+          type: boolean
+          description: Select if taking only a half day
+        duration:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: How many days (including weekends/existing holidays)
+      required:
+      - day
     PhaseEnum:
       enum:
       - anon-project
@@ -6135,7 +6919,11 @@ components:
       - title
     ProjectWeeklyEffort:
       type: object
-      description: Serializer for ProjectWeeklyEffort model.
+      description: |-
+        Serializer for ProjectWeeklyEffort model.
+
+        The `user` field defaults to the current authenticated user on create.
+        Superusers can optionally specify a different user.
       properties:
         id:
           type: integer
@@ -6153,9 +6941,11 @@ components:
         user:
           type: string
           format: uuid
+          nullable: true
         user_username:
           type: string
           readOnly: true
+          nullable: true
         user_display_name:
           type: string
           readOnly: true
@@ -6180,12 +6970,15 @@ components:
       - project
       - project_name
       - updated_datetime
-      - user
       - user_display_name
       - user_username
     ProjectWeeklyEffortRequest:
       type: object
-      description: Serializer for ProjectWeeklyEffort model.
+      description: |-
+        Serializer for ProjectWeeklyEffort model.
+
+        The `user` field defaults to the current authenticated user on create.
+        Superusers can optionally specify a different user.
       properties:
         week_start:
           type: string
@@ -6197,6 +6990,7 @@ components:
         user:
           type: string
           format: uuid
+          nullable: true
         hours:
           type: integer
           maximum: 32767
@@ -6206,7 +7000,6 @@ components:
       required:
       - hours
       - project
-      - user
     RoleEnum:
       enum:
       - developer
@@ -6345,6 +7138,27 @@ components:
         * `AZURE` - AZURE
         * `GCP` - GCP
         * `OTHER` - OTHER
+    SurveyUserInline:
+      type: object
+      description: Inline serializer for survey completion user data in OpenAPI schema.
+      properties:
+        user_id:
+          type: integer
+        username:
+          type: string
+        display_name:
+          type: string
+        percentage:
+          type: number
+          format: double
+        survey_completed:
+          type: boolean
+      required:
+      - display_name
+      - percentage
+      - survey_completed
+      - user_id
+      - username
     TokenObtainPair:
       type: object
       properties:

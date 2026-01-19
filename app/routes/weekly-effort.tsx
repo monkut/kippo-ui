@@ -8,6 +8,7 @@ import {
   projectsWeeklyeffortPartialUpdate,
   projectsWeeklyeffortDestroy,
 } from "~/lib/api/generated/projects/projects";
+import { personalHolidaysCreate } from "~/lib/api/generated/personal-holidays/personal-holidays";
 import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import {
   weeklyEffortExpectedHoursRetrieve,
@@ -221,6 +222,13 @@ export default function WeeklyEffort() {
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [editingHours, setEditingHours] = useState<number>(0);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+
+  // Personal holiday modal states
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayDate, setHolidayDate] = useState(weekStart);
+  const [isHalfDay, setIsHalfDay] = useState(false);
+  const [isSubmittingHoliday, setIsSubmittingHoliday] = useState(false);
+  const [holidayError, setHolidayError] = useState("");
 
   // Auth check
   useEffect(() => {
@@ -602,6 +610,35 @@ export default function WeeklyEffort() {
     }
   };
 
+  // Open holiday modal with date defaulting to week start
+  const openHolidayModal = () => {
+    setHolidayDate(weekStart);
+    setIsHalfDay(false);
+    setHolidayError("");
+    setShowHolidayModal(true);
+  };
+
+  // Submit personal holiday
+  const handleSubmitHoliday = async () => {
+    setIsSubmittingHoliday(true);
+    setHolidayError("");
+
+    try {
+      await personalHolidaysCreate({
+        day: holidayDate,
+        is_half: isHalfDay,
+      });
+
+      // Close modal and refresh expected hours
+      setShowHolidayModal(false);
+      fetchExpectedHours(weekStart);
+    } catch {
+      setHolidayError("休日の登録に失敗しました");
+    } finally {
+      setIsSubmittingHoliday(false);
+    }
+  };
+
   // Calculate total hours for selected week entries
   const selectedWeekTotalHours = selectedWeekEntries.reduce((sum, e) => sum + e.hours, 0);
 
@@ -661,6 +698,23 @@ export default function WeeklyEffort() {
                   {expectedHours === null ? "---" : `${expectedHours} 時間`}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
+                <button
+                  type="button"
+                  onClick={openHolidayModal}
+                  className="mt-4 flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 rounded-md hover:bg-amber-100 border border-amber-200"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                  >
+                    <title>休日追加</title>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  個人休日を追加
+                </button>
               </section>
 
               {/* Calendar */}
@@ -1216,6 +1270,79 @@ export default function WeeklyEffort() {
               </section>
             )}
           </>
+        )}
+
+        {/* Personal Holiday Modal */}
+        {showHolidayModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div
+              className="fixed inset-0 bg-black bg-opacity-25"
+              onClick={() => setShowHolidayModal(false)}
+            />
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">個人休日を追加</h3>
+
+                {holidayError && (
+                  <div className="mb-4 rounded-md bg-red-50 p-3">
+                    <div className="text-sm text-red-800">{holidayError}</div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="holiday-date"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      日付
+                    </label>
+                    <input
+                      type="date"
+                      id="holiday-date"
+                      value={holidayDate}
+                      onChange={(e) => setHolidayDate(e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+                      disabled={isSubmittingHoliday}
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="is-half-day"
+                      checked={isHalfDay}
+                      onChange={(e) => setIsHalfDay(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      disabled={isSubmittingHoliday}
+                    />
+                    <label htmlFor="is-half-day" className="ml-2 block text-sm text-gray-700">
+                      半休
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowHolidayModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    disabled={isSubmittingHoliday}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmitHoliday}
+                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSubmittingHoliday}
+                  >
+                    {isSubmittingHoliday ? "登録中..." : "登録"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </Layout>
