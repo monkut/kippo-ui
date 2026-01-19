@@ -1947,6 +1947,84 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/public-holidays/:
+    get:
+      operationId: public_holidays_list
+      description: |-
+        ViewSet for PublicHoliday model (祝日).
+
+        Read-only access to public holidays for the authenticated user's holiday_country.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read only: Authenticated users
+        - Returns holidays for user's holiday_country only
+      parameters:
+      - in: query
+        name: day_gte
+        schema:
+          type: string
+        description: Filter by day >= date (YYYY-MM-DD format)
+      - in: query
+        name: day_lte
+        schema:
+          type: string
+        description: Filter by day <= date (YYYY-MM-DD format)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - public-holidays
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPublicHolidayList'
+          description: ''
+  /api/public-holidays/{id}/:
+    get:
+      operationId: public_holidays_retrieve
+      description: |-
+        ViewSet for PublicHoliday model (祝日).
+
+        Read-only access to public holidays for the authenticated user's holiday_country.
+
+        **Filtering:**
+        - day_gte: Filter by day greater than or equal to date (YYYY-MM-DD)
+        - day_lte: Filter by day less than or equal to date (YYYY-MM-DD)
+
+        **Permissions:**
+        - Read only: Authenticated users
+        - Returns holidays for user's holiday_country only
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this public holiday.
+        required: true
+      tags:
+      - public-holidays
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicHoliday'
+          description: ''
   /api/requirements/assumptions/:
     get:
       operationId: requirements_assumptions_list
@@ -5451,6 +5529,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectWeeklyEffort'
+    PaginatedPublicHolidayList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicHoliday'
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -7000,6 +7101,32 @@ components:
       required:
       - hours
       - project
+    PublicHoliday:
+      type: object
+      description: |-
+        Serializer for PublicHoliday model.
+
+        Returns public holidays for the authenticated user's holiday_country.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Holiday Name
+        day:
+          type: string
+          format: date
+          readOnly: true
+        country_name:
+          type: string
+          readOnly: true
+      required:
+      - country_name
+      - day
+      - id
+      - name
     RoleEnum:
       enum:
       - developer
