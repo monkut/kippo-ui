@@ -393,7 +393,9 @@ function ProjectSlide({ project }: ProjectSlideProps) {
             <div className="flex flex-wrap justify-center gap-2">
               {project.weekly_effort_users.map((effortUser) => {
                 // Find survey status for this user (only users with >3% have survey status)
-                const surveyUser = project.survey_users?.find((s) => s.user_id === effortUser.user_id);
+                const surveyUser = project.survey_users?.find(
+                  (s) => s.user_id === effortUser.user_id,
+                );
                 const showSurveyStatus = surveyUser !== undefined;
                 const surveyCompleted = surveyUser?.survey_completed ?? false;
 
@@ -402,9 +404,13 @@ function ProjectSlide({ project }: ProjectSlideProps) {
                     key={effortUser.user_id}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
                   >
-                    {showSurveyStatus && (
-                      surveyCompleted ? (
-                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    {showSurveyStatus &&
+                      (surveyCompleted ? (
+                        <svg
+                          className="w-4 h-4 text-green-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
                           <title>アンケート完了</title>
                           <path
                             fillRule="evenodd"
@@ -413,12 +419,21 @@ function ProjectSlide({ project }: ProjectSlideProps) {
                           />
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                        <svg
+                          className="w-4 h-4 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                          stroke="currentColor"
+                        >
                           <title>アンケート未完了</title>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4.5 12.75l6 6 9-13.5"
+                          />
                         </svg>
-                      )
-                    )}
+                      ))}
                     {effortUser.display_name} ({effortUser.percentage.toFixed(0)}%)
                   </span>
                 );

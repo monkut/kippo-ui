@@ -743,9 +743,19 @@ export default function WeeklyEffort() {
                       className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100"
                       disabled={isSubmitting}
                     >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
                         <title>追加</title>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
                       </svg>
                       Project
                     </button>
@@ -755,9 +765,19 @@ export default function WeeklyEffort() {
                       className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
                       disabled={isSubmitting}
                     >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
                         <title>追加</title>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
                       </svg>
                       Non-Project
                     </button>
@@ -784,7 +804,9 @@ export default function WeeklyEffort() {
                               <input
                                 type="number"
                                 value={editingHours}
-                                onChange={(e) => setEditingHours(Number.parseInt(e.target.value, 10) || 0)}
+                                onChange={(e) =>
+                                  setEditingHours(Number.parseInt(e.target.value, 10) || 0)
+                                }
                                 onClick={(e) => e.stopPropagation()}
                                 min="0"
                                 className="w-20 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1"
@@ -802,9 +824,19 @@ export default function WeeklyEffort() {
                                 disabled={isSubmitting}
                                 title="保存"
                               >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                <svg
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                  stroke="currentColor"
+                                >
                                   <title>保存</title>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.5 12.75l6 6 9-13.5"
+                                  />
                                 </svg>
                               </button>
                               <button
@@ -817,9 +849,19 @@ export default function WeeklyEffort() {
                                 disabled={isSubmitting}
                                 title="キャンセル"
                               >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                <svg
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                  stroke="currentColor"
+                                >
                                   <title>キャンセル</title>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
                                 </svg>
                               </button>
                               <button
@@ -832,16 +874,28 @@ export default function WeeklyEffort() {
                                 disabled={isSubmitting}
                                 title="削除"
                               >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                                <svg
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                  stroke="currentColor"
+                                >
                                   <title>削除</title>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                  />
                                 </svg>
                               </button>
                             </>
                           ) : (
                             <>
                               <div className="text-right">
-                                <span className="text-gray-900 font-medium">{entry.hours} 時間</span>
+                                <span className="text-gray-900 font-medium">
+                                  {entry.hours} 時間
+                                </span>
                                 <span className="text-gray-500 text-sm ml-2">({percentage}%)</span>
                               </div>
                               <svg
@@ -852,7 +906,11 @@ export default function WeeklyEffort() {
                                 stroke="currentColor"
                               >
                                 <title>編集</title>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                />
                               </svg>
                             </>
                           )}
@@ -907,166 +965,170 @@ export default function WeeklyEffort() {
                   )}
 
                   {/* Entry List */}
-                <div className="space-y-3">
-                  {entries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-md"
-                    >
-                      <div className="flex-1">
-                        <label
-                          htmlFor={`project-${entry.id}`}
-                          className="block text-xs font-medium text-gray-500 mb-1"
-                        >
-                          {entry.filterType === "anon-project" ? "Non-Project" : "プロジェクト"}
-                        </label>
-                        <select
-                          id={`project-${entry.id}`}
-                          value={entry.projectId}
-                          onChange={(e) => updateEntry(entry.id, "projectId", e.target.value)}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                          disabled={isSubmitting}
-                        >
-                          <option value="">-- 選択してください --</option>
-                          {entry.filterType === "anon-project"
-                            ? nonProjectProjects.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))
-                            : projectProjects.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                        </select>
-                      </div>
-                      <div className="w-24">
-                        <label
-                          htmlFor={`hours-${entry.id}`}
-                          className="block text-xs font-medium text-gray-500 mb-1"
-                        >
-                          時間
-                        </label>
-                        <input
-                          type="number"
-                          id={`hours-${entry.id}`}
-                          value={entry.hours}
-                          onChange={(e) =>
-                            updateEntry(entry.id, "hours", Number.parseInt(e.target.value, 10) || 0)
-                          }
-                          min="0"
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                      {entries.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeEntry(entry.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md mt-5"
-                          title="削除"
-                          disabled={isSubmitting}
-                        >
-                          <svg
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth="1.5"
-                            stroke="currentColor"
+                  <div className="space-y-3">
+                    {entries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-md"
+                      >
+                        <div className="flex-1">
+                          <label
+                            htmlFor={`project-${entry.id}`}
+                            className="block text-xs font-medium text-gray-500 mb-1"
                           >
-                            <title>削除</title>
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
+                            {entry.filterType === "anon-project" ? "Non-Project" : "プロジェクト"}
+                          </label>
+                          <select
+                            id={`project-${entry.id}`}
+                            value={entry.projectId}
+                            onChange={(e) => updateEntry(entry.id, "projectId", e.target.value)}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+                            disabled={isSubmitting}
+                          >
+                            <option value="">-- 選択してください --</option>
+                            {entry.filterType === "anon-project"
+                              ? nonProjectProjects.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))
+                              : projectProjects.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                          </select>
+                        </div>
+                        <div className="w-24">
+                          <label
+                            htmlFor={`hours-${entry.id}`}
+                            className="block text-xs font-medium text-gray-500 mb-1"
+                          >
+                            時間
+                          </label>
+                          <input
+                            type="number"
+                            id={`hours-${entry.id}`}
+                            value={entry.hours}
+                            onChange={(e) =>
+                              updateEntry(
+                                entry.id,
+                                "hours",
+                                Number.parseInt(e.target.value, 10) || 0,
+                              )
+                            }
+                            min="0"
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        {entries.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeEntry(entry.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md mt-5"
+                            title="削除"
+                            disabled={isSubmitting}
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="1.5"
+                              stroke="currentColor"
+                            >
+                              <title>削除</title>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Form Total */}
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">入力合計</span>
+                    <span
+                      className={`text-lg font-bold ${
+                        expectedHours !== null && formTotalHours >= expectedHours
+                          ? "text-green-600"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {formTotalHours} 時間
+                      {expectedHours !== null && (
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          / {expectedHours} 時間
+                        </span>
                       )}
+                    </span>
+                  </div>
+
+                  {/* Add Buttons - only show when no existing entries */}
+                  {selectedWeekEntries.length === 0 && (
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => addEntry("project")}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                        disabled={isSubmitting}
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="1.5"
+                          stroke="currentColor"
+                        >
+                          <title>追加</title>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                        Project
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addEntry("anon-project")}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+                        disabled={isSubmitting}
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="1.5"
+                          stroke="currentColor"
+                        >
+                          <title>追加</title>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                        Non-Project
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
 
-                {/* Form Total */}
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">入力合計</span>
-                  <span
-                    className={`text-lg font-bold ${
-                      expectedHours !== null && formTotalHours >= expectedHours
-                        ? "text-green-600"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {formTotalHours} 時間
-                    {expectedHours !== null && (
-                      <span className="text-sm font-normal text-gray-500 ml-2">
-                        / {expectedHours} 時間
-                      </span>
-                    )}
-                  </span>
-                </div>
-
-                {/* Add Buttons - only show when no existing entries */}
-                {selectedWeekEntries.length === 0 && (
-                  <div className="flex gap-3">
+                  {/* Submit Button */}
+                  <div className="pt-4">
                     <button
-                      type="button"
-                      onClick={() => addEntry("project")}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                      type="submit"
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isSubmitting}
                     >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                      >
-                        <title>追加</title>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 4.5v15m7.5-7.5h-15"
-                        />
-                      </svg>
-                      Project
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addEntry("anon-project")}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
-                      disabled={isSubmitting}
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                      >
-                        <title>追加</title>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 4.5v15m7.5-7.5h-15"
-                        />
-                      </svg>
-                      Non-Project
+                      {isSubmitting ? "保存中..." : "保存"}
                     </button>
                   </div>
-                )}
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "保存中..." : "保存"}
-                  </button>
-                </div>
                 </form>
               </section>
             )}
