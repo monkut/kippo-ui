@@ -1583,7 +1583,7 @@ export default function WeeklyEffort() {
             {/* Input Entries Section - only show when no existing entries */}
             {selectedWeekEntries.length === 0 && (
               <section className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">今週の入力</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">稼働入力</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label
