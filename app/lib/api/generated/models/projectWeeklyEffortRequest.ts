@@ -13,7 +13,8 @@ export interface ProjectWeeklyEffortRequest {
   /** Effort Week Start (MONDAY) */
   week_start?: string;
   project: string;
-  user: string;
+  /** User ID - defaults to current authenticated user if not provided */
+  user?: string | null;
   /**
    * Actual effort in hours performed on the project for the given 'week start'
    * @minimum -32768
