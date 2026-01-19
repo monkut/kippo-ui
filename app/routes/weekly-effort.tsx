@@ -575,7 +575,6 @@ export default function WeeklyEffort() {
         await projectsWeeklyeffortCreate({
           week_start: weekStart,
           project: entry.projectId,
-          user: "", // Will be set by backend
           hours: entry.hours,
         });
       }
