@@ -8,7 +8,11 @@ import {
   projectsWeeklyeffortPartialUpdate,
   projectsWeeklyeffortDestroy,
 } from "~/lib/api/generated/projects/projects";
-import { personalHolidaysCreate } from "~/lib/api/generated/personal-holidays/personal-holidays";
+import {
+  personalHolidaysCreate,
+  personalHolidaysList,
+} from "~/lib/api/generated/personal-holidays/personal-holidays";
+import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import {
   weeklyEffortExpectedHoursRetrieve,
@@ -19,6 +23,8 @@ import type {
   KippoProject,
   ProjectWeeklyEffort,
   ProjectMonthlyAssignment,
+  PersonalHoliday,
+  PublicHoliday,
 } from "~/lib/api/generated/models";
 
 export function meta() {
@@ -55,9 +61,13 @@ function getCurrentMonthStart(): string {
 function WeekCalendar({
   weekStart,
   onWeekSelect,
+  personalHolidays = [],
+  publicHolidays = [],
 }: {
   weekStart: string;
   onWeekSelect: (date: string) => void;
+  personalHolidays?: PersonalHoliday[];
+  publicHolidays?: PublicHoliday[];
 }) {
   const selectedDate = new Date(weekStart);
   const year = selectedDate.getFullYear();
@@ -131,6 +141,15 @@ function WeekCalendar({
   // Day headers starting with Sunday
   const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
 
+  // Create sets for quick holiday lookup
+  const personalHolidayDates = new Set(personalHolidays.map((h) => h.day));
+  const publicHolidayDates = new Set(publicHolidays.map((h) => h.day));
+  const publicHolidayNames = new Map(publicHolidays.map((h) => [h.day, h.name]));
+
+  const formatDateStr = (d: Date): string => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   return (
     <div className="bg-white rounded-lg">
       {/* Month/Year header */}
@@ -172,21 +191,35 @@ function WeekCalendar({
               {week.map((date, dayIdx) => {
                 const isCurrentMonth = date.getMonth() === month;
                 const isToday = date.toDateString() === new Date().toDateString();
+                const dateStr = formatDateStr(date);
+                const isPublicHoliday = publicHolidayDates.has(dateStr);
+                const isPersonalHoliday = personalHolidayDates.has(dateStr);
+                const holidayName = publicHolidayNames.get(dateStr);
+
+                let textClass = "text-gray-700";
+                let bgClass = "";
+
+                if (!isCurrentMonth) {
+                  textClass = "text-gray-300";
+                } else if (isPublicHoliday) {
+                  textClass = "text-red-700 font-medium";
+                  bgClass = "bg-red-100 rounded";
+                } else if (isPersonalHoliday) {
+                  textClass = "text-purple-700 font-medium";
+                  bgClass = "bg-purple-100 rounded";
+                } else if (isToday) {
+                  textClass = "font-bold text-indigo-600";
+                } else if (dayIdx === 0) {
+                  textClass = "text-red-600";
+                } else if (dayIdx === 6) {
+                  textClass = "text-blue-600";
+                }
 
                 return (
                   <div
                     key={dayIdx}
-                    className={`text-center text-sm py-1.5 ${
-                      !isCurrentMonth
-                        ? "text-gray-300"
-                        : isToday
-                          ? "font-bold text-indigo-600"
-                          : dayIdx === 0
-                            ? "text-red-600"
-                            : dayIdx === 6
-                              ? "text-blue-600"
-                              : "text-gray-700"
-                    }`}
+                    className={`text-center text-sm py-1.5 ${textClass} ${bgClass}`}
+                    title={holidayName || undefined}
                   >
                     {date.getDate()}
                   </div>
@@ -195,6 +228,198 @@ function WeekCalendar({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Calendar component for holiday selection with existing holidays highlighted
+function HolidayCalendar({
+  selectedDate,
+  onDateSelect,
+  personalHolidays,
+  publicHolidays,
+  disabled,
+}: {
+  selectedDate: string;
+  onDateSelect: (date: string) => void;
+  personalHolidays: PersonalHoliday[];
+  publicHolidays: PublicHoliday[];
+  disabled?: boolean;
+}) {
+  const date = new Date(selectedDate + "T00:00:00");
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // Get first and last days of month
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  // Calculate start of calendar (Sunday before first day)
+  const startDate = new Date(firstDayOfMonth);
+  startDate.setDate(startDate.getDate() - startDate.getDay());
+
+  // Calculate end of calendar (Saturday after last day)
+  const endDate = new Date(lastDayOfMonth);
+  const daysToSaturday = endDate.getDay() === 6 ? 0 : 6 - endDate.getDay();
+  endDate.setDate(endDate.getDate() + daysToSaturday);
+
+  // Generate all dates
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Group into weeks
+  const weeks: Date[][] = [];
+  for (let i = 0; i < dates.length; i += 7) {
+    weeks.push(dates.slice(i, i + 7));
+  }
+
+  // Create sets for quick lookup
+  const personalHolidayDates = new Set(personalHolidays.map((h) => h.day));
+  const publicHolidayDates = new Set(publicHolidays.map((h) => h.day));
+  const publicHolidayNames = new Map(publicHolidays.map((h) => [h.day, h.name]));
+
+  const formatDate = (d: Date): string => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const monthNames = [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月",
+  ];
+  const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+
+  const navigateMonth = (delta: number) => {
+    const newDate = new Date(year, month + delta, 1);
+    onDateSelect(formatDate(newDate));
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-3">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={() => navigateMonth(-1)}
+          className="p-1 hover:bg-gray-200 rounded"
+          disabled={disabled}
+        >
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>前月</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <span className="font-medium text-gray-900">
+          {year}年 {monthNames[month]}
+        </span>
+        <button
+          type="button"
+          onClick={() => navigateMonth(1)}
+          className="p-1 hover:bg-gray-200 rounded"
+          disabled={disabled}
+        >
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <title>次月</title>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {dayNames.map((day, idx) => (
+          <div
+            key={day}
+            className={`text-center text-xs font-medium py-1 ${
+              idx === 0 ? "text-red-600" : idx === 6 ? "text-blue-600" : "text-gray-500"
+            }`}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="space-y-1">
+        {weeks.map((week, weekIdx) => (
+          <div key={weekIdx} className="grid grid-cols-7 gap-1">
+            {week.map((day) => {
+              const dateStr = formatDate(day);
+              const isCurrentMonth = day.getMonth() === month;
+              const isSelected = dateStr === selectedDate;
+              const isPersonalHoliday = personalHolidayDates.has(dateStr);
+              const isPublicHoliday = publicHolidayDates.has(dateStr);
+              const publicHolidayName = publicHolidayNames.get(dateStr);
+              const dayOfWeek = day.getDay();
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+              let bgClass = "bg-white hover:bg-gray-100";
+              let textClass = isCurrentMonth ? "text-gray-900" : "text-gray-300";
+
+              if (isPublicHoliday && isCurrentMonth) {
+                bgClass = "bg-red-100 hover:bg-red-200";
+                textClass = "text-red-700";
+              } else if (isPersonalHoliday && isCurrentMonth) {
+                bgClass = "bg-purple-100 hover:bg-purple-200";
+                textClass = "text-purple-700";
+              } else if (isWeekend && isCurrentMonth) {
+                textClass = dayOfWeek === 0 ? "text-red-500" : "text-blue-500";
+              }
+
+              if (isSelected) {
+                bgClass = "bg-amber-500 hover:bg-amber-600";
+                textClass = "text-white font-bold";
+              }
+
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => onDateSelect(dateStr)}
+                  disabled={disabled}
+                  title={publicHolidayName || undefined}
+                  className={`p-2 text-sm rounded ${bgClass} ${textClass} disabled:opacity-50`}
+                >
+                  {day.getDate()}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Selected date display */}
+      <div className="mt-3 text-center text-sm text-gray-600">
+        選択日: <span className="font-medium text-gray-900">{selectedDate}</span>
       </div>
     </div>
   );
@@ -223,12 +448,26 @@ export default function WeeklyEffort() {
   const [editingHours, setEditingHours] = useState<number>(0);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
+  // Inline personal holiday input states
+  const [showInlineHolidayInput, setShowInlineHolidayInput] = useState(false);
+  const [inlineHolidayDate, setInlineHolidayDate] = useState("");
+  const [inlineIsHalfDay, setInlineIsHalfDay] = useState(false);
+  const [isSubmittingInlineHoliday, setIsSubmittingInlineHoliday] = useState(false);
+
   // Personal holiday modal states
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayDate, setHolidayDate] = useState(weekStart);
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [isSubmittingHoliday, setIsSubmittingHoliday] = useState(false);
   const [holidayError, setHolidayError] = useState("");
+  const [isLoadingHolidays, setIsLoadingHolidays] = useState(false);
+  const [existingPersonalHolidays, setExistingPersonalHolidays] = useState<PersonalHoliday[]>([]);
+  const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
+
+  // Week holidays for display in form
+  const [weekPersonalHolidays, setWeekPersonalHolidays] = useState<PersonalHoliday[]>([]);
+  const [weekPublicHolidays, setWeekPublicHolidays] = useState<PublicHoliday[]>([]);
+  const [isLoadingWeekHolidays, setIsLoadingWeekHolidays] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -248,6 +487,33 @@ export default function WeeklyEffort() {
       }
     } catch {
       // Failed to fetch expected hours
+    }
+  }, []);
+
+  // Fetch holidays for the selected week (Monday to Sunday)
+  const fetchWeekHolidays = useCallback(async (weekStartDate: string) => {
+    setIsLoadingWeekHolidays(true);
+    try {
+      const startDate = new Date(weekStartDate + "T00:00:00");
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 6); // Sunday of the week
+
+      const dayGte = weekStartDate;
+      const dayLte = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+      const [personalRes, publicRes] = await Promise.all([
+        personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+        publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+      ]);
+
+      setWeekPersonalHolidays(personalRes.data?.results || []);
+      setWeekPublicHolidays(publicRes.data?.results || []);
+    } catch {
+      // Failed to fetch week holidays
+      setWeekPersonalHolidays([]);
+      setWeekPublicHolidays([]);
+    } finally {
+      setIsLoadingWeekHolidays(false);
     }
   }, []);
 
@@ -347,6 +613,7 @@ export default function WeeklyEffort() {
 
     const updateWeekData = async () => {
       fetchExpectedHours(weekStart);
+      fetchWeekHolidays(weekStart);
 
       // Fetch entries for the previous week from API (to use as template)
       // Use Sunday dates for range to properly capture Monday week_start values
@@ -424,7 +691,7 @@ export default function WeeklyEffort() {
     };
 
     updateWeekData();
-  }, [weekStart, fetchExpectedHours, projects, user, allUserEntries]);
+  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, projects, user, allUserEntries]);
 
   function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
     return {
@@ -482,6 +749,42 @@ export default function WeeklyEffort() {
   const cancelEditEntry = () => {
     setEditingEntryId(null);
     setEditingHours(0);
+  };
+
+  // Start inline holiday input
+  const startInlineHolidayInput = () => {
+    setInlineHolidayDate(weekStart);
+    setInlineIsHalfDay(false);
+    setShowInlineHolidayInput(true);
+  };
+
+  // Cancel inline holiday input
+  const cancelInlineHolidayInput = () => {
+    setShowInlineHolidayInput(false);
+    setInlineHolidayDate("");
+    setInlineIsHalfDay(false);
+  };
+
+  // Submit inline holiday
+  const submitInlineHoliday = async () => {
+    if (!inlineHolidayDate) return;
+
+    setIsSubmittingInlineHoliday(true);
+    try {
+      await personalHolidaysCreate({
+        day: inlineHolidayDate,
+        is_half: inlineIsHalfDay,
+      });
+
+      // Refresh data
+      fetchExpectedHours(weekStart);
+      fetchWeekHolidays(weekStart);
+      cancelInlineHolidayInput();
+    } catch {
+      // Failed to create holiday
+    } finally {
+      setIsSubmittingInlineHoliday(false);
+    }
   };
 
   // Save updated entry
@@ -611,11 +914,44 @@ export default function WeeklyEffort() {
   };
 
   // Open holiday modal with date defaulting to week start
+  // Fetch holidays for the modal calendar
+  const fetchHolidaysForMonth = async (dateStr: string) => {
+    setIsLoadingHolidays(true);
+    try {
+      const date = new Date(dateStr + "T00:00:00");
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const dayGte = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, "0")}-01`;
+      const dayLte = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+
+      const [personalRes, publicRes] = await Promise.all([
+        personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+        publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+      ]);
+
+      if (personalRes.data?.results) {
+        setExistingPersonalHolidays(personalRes.data.results);
+      }
+      if (publicRes.data?.results) {
+        setPublicHolidays(publicRes.data.results);
+      }
+    } catch {
+      // Failed to fetch holidays, continue without them
+    } finally {
+      setIsLoadingHolidays(false);
+    }
+  };
+
   const openHolidayModal = () => {
     setHolidayDate(weekStart);
     setIsHalfDay(false);
     setHolidayError("");
+    setExistingPersonalHolidays([]);
+    setPublicHolidays([]);
     setShowHolidayModal(true);
+    fetchHolidaysForMonth(weekStart);
   };
 
   // Submit personal holiday
@@ -629,9 +965,10 @@ export default function WeeklyEffort() {
         is_half: isHalfDay,
       });
 
-      // Close modal and refresh expected hours
+      // Close modal and refresh expected hours and week holidays
       setShowHolidayModal(false);
       fetchExpectedHours(weekStart);
+      fetchWeekHolidays(weekStart);
     } catch {
       setHolidayError("休日の登録に失敗しました");
     } finally {
@@ -698,29 +1035,28 @@ export default function WeeklyEffort() {
                   {expectedHours === null ? "---" : `${expectedHours} 時間`}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
-                <button
-                  type="button"
-                  onClick={openHolidayModal}
-                  className="mt-4 flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 rounded-md hover:bg-amber-100 border border-amber-200"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                  >
-                    <title>休日追加</title>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  個人休日を追加
-                </button>
               </section>
 
               {/* Calendar */}
               <section className="bg-white shadow rounded-lg p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">カレンダー</h2>
-                <WeekCalendar weekStart={weekStart} onWeekSelect={setWeekStart} />
+                <WeekCalendar
+                  weekStart={weekStart}
+                  onWeekSelect={setWeekStart}
+                  personalHolidays={weekPersonalHolidays}
+                  publicHolidays={weekPublicHolidays}
+                />
+                {/* Legend */}
+                <div className="mt-3 flex gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-red-100 border border-red-300" />
+                    <span className="text-gray-600">祝日</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-purple-100 border border-purple-300" />
+                    <span className="text-gray-600">個人休日</span>
+                  </div>
+                </div>
               </section>
             </div>
 
@@ -827,8 +1163,57 @@ export default function WeeklyEffort() {
                       </svg>
                       Non-Project
                     </button>
+                    <button
+                      type="button"
+                      onClick={startInlineHolidayInput}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 rounded hover:bg-amber-100 border border-amber-200"
+                      disabled={isSubmitting || showInlineHolidayInput}
+                    >
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <title>休日追加</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      個人休日
+                    </button>
                   </div>
                 </div>
+
+                {/* Week Holidays Display */}
+                {(weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                    <div className="text-sm font-medium text-gray-700 mb-2">今週の休日</div>
+                    <div className="flex flex-wrap gap-2">
+                      {weekPublicHolidays.map((h) => (
+                        <span
+                          key={`pub-${h.id}`}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                          title={h.name}
+                        >
+                          {h.day.substring(5)} {h.name}
+                        </span>
+                      ))}
+                      {weekPersonalHolidays.map((h) => (
+                        <span
+                          key={`per-${h.id}`}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                        >
+                          {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   {selectedWeekEntries.map((entry) => {
                     const percentage =
@@ -965,6 +1350,120 @@ export default function WeeklyEffort() {
                     );
                   })}
 
+                  {/* Inline Personal Holiday Input Form */}
+                  {showInlineHolidayInput && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-medium text-amber-700">個人休日を追加</span>
+                        <button
+                          type="button"
+                          onClick={cancelInlineHolidayInput}
+                          className="text-xs text-gray-500 hover:text-gray-700"
+                          disabled={isSubmittingInlineHoliday}
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-md">
+                        <div className="flex-1">
+                          <label
+                            htmlFor="inline-holiday-date"
+                            className="block text-xs font-medium text-gray-500 mb-1"
+                          >
+                            日付
+                          </label>
+                          <input
+                            type="date"
+                            id="inline-holiday-date"
+                            value={inlineHolidayDate}
+                            onChange={(e) => setInlineHolidayDate(e.target.value)}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm border px-3 py-2"
+                            disabled={isSubmittingInlineHoliday}
+                          />
+                        </div>
+                        <div className="flex items-center mt-5">
+                          <input
+                            type="checkbox"
+                            id="inline-is-half-day"
+                            checked={inlineIsHalfDay}
+                            onChange={(e) => setInlineIsHalfDay(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                            disabled={isSubmittingInlineHoliday}
+                          />
+                          <label
+                            htmlFor="inline-is-half-day"
+                            className="ml-2 block text-sm text-gray-700"
+                          >
+                            半休
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={submitInlineHoliday}
+                          className="mt-5 p-2 text-amber-600 hover:bg-amber-100 rounded-md"
+                          disabled={isSubmittingInlineHoliday || !inlineHolidayDate}
+                          title="保存"
+                        >
+                          {isSubmittingInlineHoliday ? (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <title>保存中</title>
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="2"
+                              stroke="currentColor"
+                            >
+                              <title>保存</title>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4.5 12.75l6 6 9-13.5"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelInlineHolidayInput}
+                          className="mt-5 p-2 text-gray-400 hover:bg-gray-100 rounded-md"
+                          disabled={isSubmittingInlineHoliday}
+                          title="キャンセル"
+                        >
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                          >
+                            <title>キャンセル</title>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Inline Add Entry Form - shows when adding new entries to existing week */}
                   {entries.length > 0 && (
                     <form
@@ -1084,7 +1583,7 @@ export default function WeeklyEffort() {
             {/* Input Entries Section - only show when no existing entries */}
             {selectedWeekEntries.length === 0 && (
               <section className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">今週の入力</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">稼働入力</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label
@@ -1102,6 +1601,32 @@ export default function WeeklyEffort() {
                       disabled={isSubmitting}
                     />
                   </div>
+
+                  {/* Week Holidays Display */}
+                  {(weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
+                    <div className="p-3 bg-gray-50 rounded-md">
+                      <div className="text-sm font-medium text-gray-700 mb-2">今週の休日</div>
+                      <div className="flex flex-wrap gap-2">
+                        {weekPublicHolidays.map((h) => (
+                          <span
+                            key={`pub-${h.id}`}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                            title={h.name}
+                          >
+                            {h.day.substring(5)} {h.name}
+                          </span>
+                        ))}
+                        {weekPersonalHolidays.map((h) => (
+                          <span
+                            key={`per-${h.id}`}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                          >
+                            {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Entry List */}
                   <div className="space-y-3">
@@ -1209,7 +1734,7 @@ export default function WeeklyEffort() {
                   </div>
 
                   {/* Add Buttons */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
                       onClick={() => addEntry("project")}
@@ -1254,6 +1779,28 @@ export default function WeeklyEffort() {
                       </svg>
                       Non-Project
                     </button>
+                    <button
+                      type="button"
+                      onClick={openHolidayModal}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 rounded-md hover:bg-amber-100 border border-amber-200"
+                      disabled={isSubmitting}
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                      >
+                        <title>休日追加</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      個人休日
+                    </button>
                   </div>
 
                   {/* Submit Button */}
@@ -1290,21 +1837,42 @@ export default function WeeklyEffort() {
                 )}
 
                 <div className="space-y-4">
+                  {/* Holiday Calendar */}
                   <div>
-                    <label
-                      htmlFor="holiday-date"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      日付
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      日付を選択
                     </label>
-                    <input
-                      type="date"
-                      id="holiday-date"
-                      value={holidayDate}
-                      onChange={(e) => setHolidayDate(e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                      disabled={isSubmittingHoliday}
-                    />
+                    {isLoadingHolidays ? (
+                      <div className="text-center py-4 text-gray-500">読み込み中...</div>
+                    ) : (
+                      <HolidayCalendar
+                        selectedDate={holidayDate}
+                        onDateSelect={(date) => {
+                          setHolidayDate(date);
+                          // Fetch holidays if month changed
+                          const newMonth = date.substring(0, 7);
+                          const currentMonth = holidayDate.substring(0, 7);
+                          if (newMonth !== currentMonth) {
+                            fetchHolidaysForMonth(date);
+                          }
+                        }}
+                        personalHolidays={existingPersonalHolidays}
+                        publicHolidays={publicHolidays}
+                        disabled={isSubmittingHoliday}
+                      />
+                    )}
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex gap-4 text-xs">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-full bg-red-100 border border-red-300" />
+                      <span className="text-gray-600">祝日</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-full bg-purple-100 border border-purple-300" />
+                      <span className="text-gray-600">個人休日</span>
+                    </div>
                   </div>
 
                   <div className="flex items-center">
