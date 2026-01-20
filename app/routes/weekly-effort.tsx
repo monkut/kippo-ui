@@ -1035,6 +1035,33 @@ export default function WeeklyEffort() {
                   {expectedHours === null ? "---" : `${expectedHours} 時間`}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
+
+                {/* Week Holidays Display */}
+                {!isLoadingWeekHolidays &&
+                  (weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="text-xs font-medium text-gray-500 mb-2">今週の休日</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {weekPublicHolidays.map((h) => (
+                          <span
+                            key={`pub-${h.id}`}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                            title={h.name}
+                          >
+                            {h.day.substring(5)} {h.name}
+                          </span>
+                        ))}
+                        {weekPersonalHolidays.map((h) => (
+                          <span
+                            key={`per-${h.id}`}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                          >
+                            {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               </section>
 
               {/* Calendar */}
@@ -1187,32 +1214,6 @@ export default function WeeklyEffort() {
                     </button>
                   </div>
                 </div>
-
-                {/* Week Holidays Display */}
-                {(weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                    <div className="text-sm font-medium text-gray-700 mb-2">今週の休日</div>
-                    <div className="flex flex-wrap gap-2">
-                      {weekPublicHolidays.map((h) => (
-                        <span
-                          key={`pub-${h.id}`}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                          title={h.name}
-                        >
-                          {h.day.substring(5)} {h.name}
-                        </span>
-                      ))}
-                      {weekPersonalHolidays.map((h) => (
-                        <span
-                          key={`per-${h.id}`}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-                        >
-                          {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   {selectedWeekEntries.map((entry) => {
@@ -1601,32 +1602,6 @@ export default function WeeklyEffort() {
                       disabled={isSubmitting}
                     />
                   </div>
-
-                  {/* Week Holidays Display */}
-                  {(weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="text-sm font-medium text-gray-700 mb-2">今週の休日</div>
-                      <div className="flex flex-wrap gap-2">
-                        {weekPublicHolidays.map((h) => (
-                          <span
-                            key={`pub-${h.id}`}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                            title={h.name}
-                          >
-                            {h.day.substring(5)} {h.name}
-                          </span>
-                        ))}
-                        {weekPersonalHolidays.map((h) => (
-                          <span
-                            key={`per-${h.id}`}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-                          >
-                            {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Entry List */}
                   <div className="space-y-3">
