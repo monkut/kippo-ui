@@ -376,19 +376,16 @@ function ProjectSlide({ project }: ProjectSlideProps) {
 
         {/* Project Status Display */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-500">稼働状況</h3>
           <ProjectStatusMeter status={project.projectstatus_display} />
         </div>
 
         {/* Latest Comment */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-500">最新コメント</h3>
           <LatestCommentDisplay comment={project.latest_comment} />
         </div>
 
         {/* Weekly Effort Users with Survey Status */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-500">稼働メンバー</h3>
           {project.weekly_effort_users && project.weekly_effort_users.length > 0 ? (
             <div className="flex flex-wrap justify-center gap-2">
               {project.weekly_effort_users.map((effortUser) => {
@@ -532,12 +529,12 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
 
       {/* Legend */}
       <div className="text-xs text-gray-500">
-        <span title="現在日までに消化されているべき工数（線形進捗に基づく）">
-          予定: {Math.round(expected_effort_hours)}h
+        <span title="予定: 現在日までに消化されているべき工数（線形進捗に基づく）">
+          {Math.round(expected_effort_hours)}h
         </span>
         {" / "}
-        <span title="プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）">
-          予算: {allocated_effort_hours}h
+        <span title="予算: プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）">
+          {allocated_effort_hours}h
         </span>
       </div>
     </div>
