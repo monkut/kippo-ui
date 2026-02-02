@@ -445,7 +445,7 @@ export default function WeeklyEffort() {
 
   // Edit mode states
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
-  const [editingHours, setEditingHours] = useState<number>(0);
+  const [editingHours, setEditingHours] = useState<string>("");
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   // Inline personal holiday input states
@@ -742,13 +742,13 @@ export default function WeeklyEffort() {
   // Start editing an existing entry
   const startEditEntry = (entry: ProjectWeeklyEffort) => {
     setEditingEntryId(entry.id);
-    setEditingHours(entry.hours);
+    setEditingHours(String(entry.hours));
   };
 
   // Cancel editing
   const cancelEditEntry = () => {
     setEditingEntryId(null);
-    setEditingHours(0);
+    setEditingHours("");
   };
 
   // Start inline holiday input
@@ -792,7 +792,7 @@ export default function WeeklyEffort() {
     setIsSubmitting(true);
     setError("");
     try {
-      await projectsWeeklyeffortPartialUpdate(entryId, { hours: editingHours });
+      await projectsWeeklyeffortPartialUpdate(entryId, { hours: parseInt(editingHours, 10) || 0 });
 
       // Refresh data
       const weeklyEffortRes = await projectsWeeklyeffortList({ user_username: user?.username });
@@ -803,7 +803,7 @@ export default function WeeklyEffort() {
       }
 
       setEditingEntryId(null);
-      setEditingHours(0);
+      setEditingHours("");
     } catch {
       setError("更新に失敗しました");
     } finally {
@@ -1234,13 +1234,14 @@ export default function WeeklyEffort() {
                           {isEditing ? (
                             <>
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={editingHours}
                                 onChange={(e) =>
-                                  setEditingHours(Number.parseInt(e.target.value, 10) || 0)
+                                  setEditingHours(e.target.value.replace(/[^0-9]/g, ""))
                                 }
                                 onClick={(e) => e.stopPropagation()}
-                                min="0"
                                 className="w-20 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1"
                                 disabled={isSubmitting}
                                 autoFocus
@@ -1522,17 +1523,20 @@ export default function WeeklyEffort() {
                               時間
                             </label>
                             <input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               id={`hours-${entry.id}`}
-                              value={entry.hours}
-                              onChange={(e) =>
+                              value={entry.hours === 0 ? "" : entry.hours}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9]/g, "");
                                 updateEntry(
                                   entry.id,
                                   "hours",
-                                  Number.parseInt(e.target.value, 10) || 0,
-                                )
-                              }
-                              min="0"
+                                  value === "" ? 0 : parseInt(value, 10),
+                                );
+                              }}
+                              placeholder="0"
                               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
                               disabled={isSubmitting}
                             />
@@ -1646,17 +1650,20 @@ export default function WeeklyEffort() {
                             時間
                           </label>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             id={`hours-${entry.id}`}
-                            value={entry.hours}
-                            onChange={(e) =>
+                            value={entry.hours === 0 ? "" : entry.hours}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9]/g, "");
                               updateEntry(
                                 entry.id,
                                 "hours",
-                                Number.parseInt(e.target.value, 10) || 0,
-                              )
-                            }
-                            min="0"
+                                value === "" ? 0 : parseInt(value, 10),
+                              );
+                            }}
+                            placeholder="0"
                             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
                             disabled={isSubmitting}
                           />
