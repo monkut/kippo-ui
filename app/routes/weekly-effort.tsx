@@ -39,6 +39,13 @@ type FormEntry = {
   filterType: "project" | "anon-project";
 };
 
+/** Convert full-width digits (０-９) to half-width (0-9) and strip non-numeric characters */
+function normalizeDigits(input: string): string {
+  return input
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[^0-9]/g, "");
+}
+
 function getPreviousWeekStartDate(): string {
   // Matches kippo's previous_week_startdate() logic from projects/functions.py
   const today = new Date();
@@ -723,8 +730,8 @@ export default function WeeklyEffort() {
   };
 
   const updateEntry = (id: number, field: keyof FormEntry, value: string | number) => {
-    setEntries(
-      entries.map((e) => {
+    setEntries((prev) =>
+      prev.map((e) => {
         if (e.id !== id) return e;
         if (field === "projectId") {
           const project = projects.find((p) => p.id === value);
@@ -1238,9 +1245,7 @@ export default function WeeklyEffort() {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={editingHours}
-                                onChange={(e) =>
-                                  setEditingHours(e.target.value.replace(/[^0-9]/g, ""))
-                                }
+                                onChange={(e) => setEditingHours(normalizeDigits(e.target.value))}
                                 onClick={(e) => e.stopPropagation()}
                                 className="w-20 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1"
                                 disabled={isSubmitting}
@@ -1527,9 +1532,9 @@ export default function WeeklyEffort() {
                               inputMode="numeric"
                               pattern="[0-9]*"
                               id={`hours-${entry.id}`}
-                              value={entry.hours === 0 ? "" : entry.hours}
+                              value={entry.hours === 0 ? "" : String(entry.hours)}
                               onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, "");
+                                const value = normalizeDigits(e.target.value);
                                 updateEntry(
                                   entry.id,
                                   "hours",
@@ -1654,9 +1659,9 @@ export default function WeeklyEffort() {
                             inputMode="numeric"
                             pattern="[0-9]*"
                             id={`hours-${entry.id}`}
-                            value={entry.hours === 0 ? "" : entry.hours}
+                            value={entry.hours === 0 ? "" : String(entry.hours)}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, "");
+                              const value = normalizeDigits(e.target.value);
                               updateEntry(
                                 entry.id,
                                 "hours",
