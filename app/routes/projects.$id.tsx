@@ -21,8 +21,7 @@ import {
   requirementsBusinessRequirementsList,
   requirementsBusinessRequirementCategoriesList,
   requirementsBusinessRequirementCategoriesCreate,
-  requirementsBusinessRequirementCommentsList,
-  requirementsBusinessRequirementCommentsCreate,
+  requirementsBusinessRequirementsCommentsCreate,
   requirementsTechnicalRequirementsCreate,
   requirementsTechnicalRequirementsDestroy,
   requirementsTechnicalRequirementsPartialUpdate,
@@ -30,9 +29,9 @@ import {
   requirementsTechnicalRequirementCategoriesList,
   requirementsTechnicalRequirementCategoriesCreate,
   requirementsTechnicalRequirementsRetrieve,
-  requirementsTechnicalRequirementCommentsCreate,
-  requirementsEstimatesCreate,
-  requirementsEstimatesPartialUpdate,
+  requirementsTechnicalRequirementsCommentsCreate,
+  requirementsTechnicalRequirementsEstimatesCreate,
+  requirementsTechnicalRequirementsEstimatesPartialUpdate,
 } from "~/lib/api/generated";
 import type {
   KippoProject,
@@ -2136,8 +2135,7 @@ function TechnicalRequirementInlineForm({
         });
 
         if (techReqResponse.data) {
-          await requirementsEstimatesCreate({
-            requirement: techReqResponse.data.id,
+          await requirementsTechnicalRequirementsEstimatesCreate(String(techReqResponse.data.id), {
             days: Number.parseFloat(entry.estimateDays),
             confidence: Number.parseInt(entry.confidence, 10) / 100,
           });
@@ -2843,10 +2841,14 @@ function TechnicalRequirementEditForm({
 
       // Update estimate if we have the estimate ID and values
       if (requirement.estimate?.id && estimateDays) {
-        await requirementsEstimatesPartialUpdate(requirement.estimate.id, {
-          days: Number.parseFloat(estimateDays),
-          confidence: Number.parseInt(confidence, 10) / 100,
-        });
+        await requirementsTechnicalRequirementsEstimatesPartialUpdate(
+          String(requirement.id),
+          requirement.estimate.id,
+          {
+            days: Number.parseFloat(estimateDays),
+            confidence: Number.parseInt(confidence, 10) / 100,
+          },
+        );
       }
 
       onUpdated();
@@ -3080,8 +3082,7 @@ function CommentInlineForm({
     setIsSubmitting(true);
     setError("");
     try {
-      await requirementsBusinessRequirementCommentsCreate({
-        requirement: requirementId,
+      await requirementsBusinessRequirementsCommentsCreate(String(requirementId), {
         comment: comment.trim(),
         parent_comment: parentCommentId,
       });
@@ -3159,8 +3160,7 @@ function TechCommentInlineForm({
     setIsSubmitting(true);
     setError("");
     try {
-      await requirementsTechnicalRequirementCommentsCreate({
-        requirement: requirementId,
+      await requirementsTechnicalRequirementsCommentsCreate(String(requirementId), {
         comment: comment.trim(),
         parent_comment: parentCommentId,
       });

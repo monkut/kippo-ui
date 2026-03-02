@@ -2110,6 +2110,90 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectAssumption'
           description: ''
+  /api/requirements/assumptions/{assumption_pk}/evaluations/:
+    get:
+      operationId: requirements_assumptions_evaluations_list
+      description: Read-only viewset for assumption evaluations with accept action.
+      parameters:
+      - in: path
+        name: assumption_pk
+        schema:
+          type: string
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssumptionEvaluationList'
+          description: ''
+  /api/requirements/assumptions/{assumption_pk}/evaluations/{id}/:
+    get:
+      operationId: requirements_assumptions_evaluations_retrieve
+      description: Read-only viewset for assumption evaluations with accept action.
+      parameters:
+      - in: path
+        name: assumption_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption Evaluation.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssumptionEvaluation'
+          description: ''
+  /api/requirements/assumptions/{assumption_pk}/evaluations/{id}/accept/:
+    post:
+      operationId: requirements_assumptions_evaluations_accept_create
+      description: Accept this evaluation's suggestions and apply them to the assumption.
+      parameters:
+      - in: path
+        name: assumption_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption Evaluation.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAssumption'
+          description: ''
   /api/requirements/assumptions/{id}/:
     get:
       operationId: requirements_assumptions_retrieve
@@ -2262,6 +2346,29 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/requirements/assumptions/{id}/evaluate/:
+    post:
+      operationId: requirements_assumptions_evaluate_create
+      description: Trigger evaluation of this assumption via external service.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Assumption.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssumptionEvaluation'
+          description: ''
   /api/requirements/assumptions/categories/:
     get:
       operationId: requirements_assumptions_categories_retrieve
@@ -2506,298 +2613,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/requirements/business-requirement-comments/:
-    get:
-      operationId: requirements_business_requirement_comments_list
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - in: query
-        name: requirement
-        schema:
-          type: integer
-        description: Filter by business requirement ID
-      - in: query
-        name: top_level_only
-        schema:
-          type: boolean
-        description: Return only top-level comments (no replies)
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementCommentList'
-          description: ''
-    post:
-      operationId: requirements_business_requirement_comments_create
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
-          description: ''
-  /api/requirements/business-requirement-comments/{id}/:
-    get:
-      operationId: requirements_business_requirement_comments_retrieve
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Business Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
-          description: ''
-    put:
-      operationId: requirements_business_requirement_comments_update
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Business Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
-          description: ''
-    patch:
-      operationId: requirements_business_requirement_comments_partial_update
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Business Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
-          description: ''
-    delete:
-      operationId: requirements_business_requirement_comments_destroy
-      description: |-
-        ViewSet for ProjectBusinessRequirementComment model.
-
-        Comments on business requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by business requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-
-        **Actions:**
-        - toggle_resolved: Toggle the is_resolved status for a top-level comment
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Business Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/requirements/business-requirement-comments/{id}/toggle_resolved/:
-    post:
-      operationId: requirements_business_requirement_comments_toggle_resolved_create
-      description: Toggle the is_resolved status for a top-level comment.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Business Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
-          description: ''
   /api/requirements/business-requirements/:
     get:
       operationId: requirements_business_requirements_list
@@ -2892,6 +2707,424 @@ paths:
       - cookieAuth: []
       responses:
         '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirement'
+          description: ''
+  /api/requirements/business-requirements/{business_requirement_pk}/comments/:
+    get:
+      operationId: requirements_business_requirements_comments_list
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: top_level_only
+        schema:
+          type: boolean
+        description: Return only top-level comments (no replies)
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementCommentList'
+          description: ''
+    post:
+      operationId: requirements_business_requirements_comments_create
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+  /api/requirements/business-requirements/{business_requirement_pk}/comments/{id}/:
+    get:
+      operationId: requirements_business_requirements_comments_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    put:
+      operationId: requirements_business_requirements_comments_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    patch:
+      operationId: requirements_business_requirements_comments_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementCommentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+    delete:
+      operationId: requirements_business_requirements_comments_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirementComment model.
+
+        Nested under: /business-requirements/{business_requirement_pk}/comments/
+
+        Comments on business requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/business-requirements/{business_requirement_pk}/comments/{id}/toggle_resolved/:
+    post:
+      operationId: requirements_business_requirements_comments_toggle_resolved_create
+      description: Toggle the is_resolved status for a top-level comment.
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Comment.
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementComment'
+          description: ''
+  /api/requirements/business-requirements/{business_requirement_pk}/evaluations/:
+    get:
+      operationId: requirements_business_requirements_evaluations_list
+      description: Read-only viewset for business requirement evaluations with accept
+        action.
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBusinessRequirementEvaluationList'
+          description: ''
+  /api/requirements/business-requirements/{business_requirement_pk}/evaluations/{id}/:
+    get:
+      operationId: requirements_business_requirements_evaluations_retrieve
+      description: Read-only viewset for business requirement evaluations with accept
+        action.
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Evaluation.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessRequirementEvaluation'
+          description: ''
+  /api/requirements/business-requirements/{business_requirement_pk}/evaluations/{id}/accept/:
+    post:
+      operationId: requirements_business_requirements_evaluations_accept_create
+      description: Accept this evaluation's suggestions and apply them to the business
+        requirement.
+      parameters:
+      - in: path
+        name: business_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement
+          Evaluation.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
@@ -3073,78 +3306,19 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/requirements/estimates/:
-    get:
-      operationId: requirements_estimates_list
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - in: query
-        name: project
-        schema:
-          type: string
-        description: Filter by project UUID
-      - in: query
-        name: requirement
-        schema:
-          type: integer
-        description: Filter by technical requirement ID
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementEstimateList'
-          description: ''
+  /api/requirements/business-requirements/{id}/evaluate/:
     post:
-      operationId: requirements_estimates_create
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
+      operationId: requirements_business_requirements_evaluate_create
+      description: Trigger evaluation of this business requirement via external service.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Business Requirement.
+        required: true
       tags:
       - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-        required: true
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -3153,387 +3327,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+                $ref: '#/components/schemas/BusinessRequirementEvaluation'
           description: ''
-  /api/requirements/estimates/{id}/:
-    get:
-      operationId: requirements_estimates_retrieve
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Requirement Estimate.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
-          description: ''
-    put:
-      operationId: requirements_estimates_update
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Requirement Estimate.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
-          description: ''
-    patch:
-      operationId: requirements_estimates_partial_update
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Requirement Estimate.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
-          description: ''
-    delete:
-      operationId: requirements_estimates_destroy
-      description: |-
-        ViewSet for ProjectBusinessRequirementEstimate model.
-
-        Estimates for technical requirements (days and confidence level).
-
-        **Organization Scoping:**
-        - Regular users can only access estimates for projects in their organizations
-        - Superusers can access all estimates
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - project: Filter by project UUID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Requirement Estimate.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/requirements/github-issues/:
-    get:
-      operationId: requirements_github_issues_list
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - in: query
-        name: technical_requirement
-        schema:
-          type: integer
-        description: Filter by technical requirement ID
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementGithubIssueList'
-          description: ''
-    post:
-      operationId: requirements_github_issues_create
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
-          description: ''
-  /api/requirements/github-issues/{id}/:
-    get:
-      operationId: requirements_github_issues_retrieve
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          GitHub Issue.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
-          description: ''
-    put:
-      operationId: requirements_github_issues_update
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          GitHub Issue.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
-          description: ''
-    patch:
-      operationId: requirements_github_issues_partial_update
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          GitHub Issue.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
-          description: ''
-    delete:
-      operationId: requirements_github_issues_destroy
-      description: |-
-        ViewSet for ProjectTechnicalRequirementGithubIssue model.
-
-        Links between technical requirements and GitHub issues.
-
-        **Organization Scoping:**
-        - Regular users can only access links for projects in their organizations
-        - Superusers can access all links
-
-        **Filtering:**
-        - technical_requirement: Filter by technical requirement ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          GitHub Issue.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
   /api/requirements/problem-definitions/:
     get:
       operationId: requirements_problem_definitions_list
@@ -3757,6 +3552,116 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/requirements/problem-definitions/{id}/evaluate/:
+    post:
+      operationId: requirements_problem_definitions_evaluate_create
+      description: Trigger evaluation of this problem definition via external service.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDefinitionEvaluation'
+          description: ''
+  /api/requirements/problem-definitions/{problem_definition_pk}/evaluations/:
+    get:
+      operationId: requirements_problem_definitions_evaluations_list
+      description: Read-only viewset for problem definition evaluations with accept
+        action.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProblemDefinitionEvaluationList'
+          description: ''
+  /api/requirements/problem-definitions/{problem_definition_pk}/evaluations/{id}/:
+    get:
+      operationId: requirements_problem_definitions_evaluations_retrieve
+      description: Read-only viewset for problem definition evaluations with accept
+        action.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Evaluation.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDefinitionEvaluation'
+          description: ''
+  /api/requirements/problem-definitions/{problem_definition_pk}/evaluations/{id}/accept/:
+    post:
+      operationId: requirements_problem_definitions_evaluations_accept_create
+      description: Accept this evaluation's suggestions and apply them to the problem
+        definition.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Evaluation.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinition'
+          description: ''
   /api/requirements/schedule-estimation/:
     post:
       operationId: requirements_schedule_estimation_create
@@ -4016,244 +3921,6 @@ paths:
           type: integer
         description: A unique integer value identifying this Technical Requirement
           Category.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/requirements/technical-requirement-comments/:
-    get:
-      operationId: requirements_technical_requirement_comments_list
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - in: query
-        name: requirement
-        schema:
-          type: integer
-        description: Filter by technical requirement ID
-      - in: query
-        name: top_level_only
-        schema:
-          type: boolean
-        description: Return only top-level comments (no replies)
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementCommentList'
-          description: ''
-    post:
-      operationId: requirements_technical_requirement_comments_create
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
-          description: ''
-  /api/requirements/technical-requirement-comments/{id}/:
-    get:
-      operationId: requirements_technical_requirement_comments_retrieve
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
-          description: ''
-    put:
-      operationId: requirements_technical_requirement_comments_update
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
-          description: ''
-    patch:
-      operationId: requirements_technical_requirement_comments_partial_update
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          Comment.
-        required: true
-      tags:
-      - requirements
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
-          description: ''
-    delete:
-      operationId: requirements_technical_requirement_comments_destroy
-      description: |-
-        ViewSet for ProjectTechnicalRequirementComment model.
-
-        Comments on technical requirements with nested reply support.
-
-        **Organization Scoping:**
-        - Regular users can only access comments for projects in their organizations
-        - Superusers can access all comments
-
-        **Filtering:**
-        - requirement: Filter by technical requirement ID
-        - top_level_only: Return only top-level comments (true/false)
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Technical Requirement
-          Comment.
         required: true
       tags:
       - requirements
@@ -4532,6 +4199,878 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/requirements/technical-requirements/{id}/evaluate/:
+    post:
+      operationId: requirements_technical_requirements_evaluate_create
+      description: Trigger evaluation of this technical requirement via external service.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement.
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalRequirementEvaluation'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/comments/:
+    get:
+      operationId: requirements_technical_requirements_comments_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: top_level_only
+        schema:
+          type: boolean
+        description: Return only top-level comments (no replies)
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementCommentList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirements_comments_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/comments/{id}/:
+    get:
+      operationId: requirements_technical_requirements_comments_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    put:
+      operationId: requirements_technical_requirements_comments_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirements_comments_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementCommentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementComment'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirements_comments_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirementComment model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/comments/
+
+        Comments on technical requirements with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Comment.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/technical-requirements/{technical_requirement_pk}/estimates/:
+    get:
+      operationId: requirements_technical_requirements_estimates_list
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectBusinessRequirementEstimateList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirements_estimates_create
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/estimates/{id}/:
+    get:
+      operationId: requirements_technical_requirements_estimates_retrieve
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    put:
+      operationId: requirements_technical_requirements_estimates_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectBusinessRequirementEstimateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirements_estimates_partial_update
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectBusinessRequirementEstimateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirements_estimates_destroy
+      description: |-
+        ViewSet for ProjectBusinessRequirementEstimate model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/estimates/
+
+        Estimates for technical requirements (days and confidence level).
+
+        **Organization Scoping:**
+        - Regular users can only access estimates for projects in their organizations
+        - Superusers can access all estimates
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Requirement Estimate.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/technical-requirements/{technical_requirement_pk}/evaluations/:
+    get:
+      operationId: requirements_technical_requirements_evaluations_list
+      description: Read-only viewset for technical requirement evaluations with accept
+        action.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTechnicalRequirementEvaluationList'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/evaluations/{id}/:
+    get:
+      operationId: requirements_technical_requirements_evaluations_retrieve
+      description: Read-only viewset for technical requirement evaluations with accept
+        action.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Evaluation.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalRequirementEvaluation'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/evaluations/{id}/accept/:
+    post:
+      operationId: requirements_technical_requirements_evaluations_accept_create
+      description: Accept this evaluation's suggestions and apply them to the technical
+        requirement.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          Evaluation.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirement'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/github-issues/:
+    get:
+      operationId: requirements_technical_requirements_github_issues_list
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectTechnicalRequirementGithubIssueList'
+          description: ''
+    post:
+      operationId: requirements_technical_requirements_github_issues_create
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+  /api/requirements/technical-requirements/{technical_requirement_pk}/github-issues/{id}/:
+    get:
+      operationId: requirements_technical_requirements_github_issues_retrieve
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    put:
+      operationId: requirements_technical_requirements_github_issues_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssueRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    patch:
+      operationId: requirements_technical_requirements_github_issues_partial_update
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectTechnicalRequirementGithubIssueRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTechnicalRequirementGithubIssue'
+          description: ''
+    delete:
+      operationId: requirements_technical_requirements_github_issues_destroy
+      description: |-
+        ViewSet for ProjectTechnicalRequirementGithubIssue model.
+
+        Nested under: /technical-requirements/{technical_requirement_pk}/github-issues/
+
+        Links between technical requirements and GitHub issues.
+
+        **Organization Scoping:**
+        - Regular users can only access links for projects in their organizations
+        - Superusers can access all links
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Technical Requirement
+          GitHub Issue.
+        required: true
+      - in: path
+        name: technical_requirement_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/token/:
     post:
       operationId: token_create
@@ -4686,6 +5225,80 @@ paths:
           description: ''
 components:
   schemas:
+    AssumptionEvaluation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        evaluation_result:
+          $ref: '#/components/schemas/EvaluationResultEnum'
+        feedback:
+          type: string
+        suggested_title:
+          type: string
+          maxLength: 100
+        suggested_details:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - created_by_name
+      - created_datetime
+      - evaluation_result
+      - feedback
+      - id
+      - requirement
+    BusinessRequirementEvaluation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        evaluation_result:
+          $ref: '#/components/schemas/EvaluationResultEnum'
+        feedback:
+          type: string
+        suggested_title:
+          type: string
+          maxLength: 100
+        suggested_details:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - created_by_name
+      - created_datetime
+      - evaluation_result
+      - feedback
+      - id
+      - requirement
     CategoryEnum:
       enum:
       - assumption
@@ -4713,6 +5326,24 @@ components:
           description: Error message describing what went wrong
       required:
       - error
+    EvaluationResultEnum:
+      enum:
+      - valid
+      - invalid
+      type: string
+      description: |-
+        * `valid` - valid
+        * `invalid` - invalid
+    EvaluationStateEnum:
+      enum:
+      - unevaluated
+      - valid
+      - invalid
+      type: string
+      description: |-
+        * `unevaluated` - unevaluated
+        * `valid` - valid
+        * `invalid` - invalid
     FullfillmentScoreEnum:
       enum:
       - 1
@@ -4821,11 +5452,10 @@ components:
           type: string
           format: uri
           maxLength: 200
-        github_project_api_url:
+        github_project_api_nodeid:
           type: string
-          format: uri
-          title: Github Project api URL (needed for webhook event linking to project)
-          maxLength: 200
+          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          maxLength: 255
         allocated_staff_days:
           type: integer
           maximum: 2147483647
@@ -4986,11 +5616,10 @@ components:
           type: string
           format: uri
           maxLength: 200
-        github_project_api_url:
+        github_project_api_nodeid:
           type: string
-          format: uri
-          title: Github Project api URL (needed for webhook event linking to project)
-          maxLength: 200
+          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          maxLength: 255
         allocated_staff_days:
           type: integer
           maximum: 2147483647
@@ -5138,6 +5767,52 @@ components:
       - created_by_display_name
       - created_by_username
       - created_datetime
+    PaginatedAssumptionEvaluationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssumptionEvaluation'
+    PaginatedBusinessRequirementEvaluationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessRequirementEvaluation'
     PaginatedKippoProjectList:
       type: object
       required:
@@ -5207,6 +5882,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PersonalHoliday'
+    PaginatedProblemDefinitionEvaluationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemDefinitionEvaluation'
     PaginatedProjectAssignmentRateList:
       type: object
       required:
@@ -5552,6 +6250,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicHoliday'
+    PaginatedTechnicalRequirementEvaluationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechnicalRequirementEvaluation'
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -5615,11 +6336,10 @@ components:
           type: string
           format: uri
           maxLength: 200
-        github_project_api_url:
+        github_project_api_nodeid:
           type: string
-          format: uri
-          title: Github Project api URL (needed for webhook event linking to project)
-          maxLength: 200
+          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          maxLength: 255
         allocated_staff_days:
           type: integer
           maximum: 2147483647
@@ -5742,8 +6462,6 @@ components:
     PatchedProjectBusinessRequirementCommentRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         parent_comment:
           type: integer
           nullable: true
@@ -5756,8 +6474,6 @@ components:
     PatchedProjectBusinessRequirementEstimateRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         days:
           type: number
           format: double
@@ -5857,8 +6573,6 @@ components:
     PatchedProjectTechnicalRequirementCommentRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         parent_comment:
           type: integer
           nullable: true
@@ -5868,8 +6582,6 @@ components:
     PatchedProjectTechnicalRequirementGithubIssueRequest:
       type: object
       properties:
-        technical_requirement:
-          type: integer
         url:
           type: string
           format: uri
@@ -6003,6 +6715,43 @@ components:
         * `lead-evaluation` - Lead Evaluation
         * `project-proposal` - Project Proposal Preparation
         * `project-development` - Project Development
+    ProblemDefinitionEvaluation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        evaluation_result:
+          $ref: '#/components/schemas/EvaluationResultEnum'
+        feedback:
+          type: string
+        suggested_title:
+          type: string
+          maxLength: 100
+        suggested_details:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - created_by_name
+      - created_datetime
+      - evaluation_result
+      - feedback
+      - id
+      - requirement
     ProjectAssignmentRate:
       type: object
       description: Serializer for ProjectAssignmentRate model.
@@ -6092,6 +6841,10 @@ components:
           maxLength: 100
         details:
           type: string
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -6104,6 +6857,7 @@ components:
       - category_display
       - created_datetime
       - display_id
+      - evaluation_state
       - id
       - project
       - title
@@ -6152,6 +6906,10 @@ components:
           maxLength: 100
         details:
           type: string
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -6164,6 +6922,7 @@ components:
       - category
       - created_datetime
       - display_id
+      - evaluation_state
       - id
       - project
       - title
@@ -6215,6 +6974,7 @@ components:
           readOnly: true
         requirement:
           type: integer
+          readOnly: true
         parent_comment:
           type: integer
           nullable: true
@@ -6263,8 +7023,6 @@ components:
     ProjectBusinessRequirementCommentRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         parent_comment:
           type: integer
           nullable: true
@@ -6276,7 +7034,6 @@ components:
           description: is_resolved is only relevant for top-level comments
       required:
       - comment
-      - requirement
     ProjectBusinessRequirementDetail:
       type: object
       description: Detailed serializer for business requirement detail view.
@@ -6309,6 +7066,10 @@ components:
           maxLength: 100
         details:
           type: string
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         technical_requirements:
           type: array
           items:
@@ -6337,6 +7098,7 @@ components:
       - comments
       - created_datetime
       - display_id
+      - evaluation_state
       - id
       - problems_data
       - project
@@ -6352,6 +7114,7 @@ components:
           readOnly: true
         requirement:
           type: integer
+          readOnly: true
         days:
           type: number
           format: double
@@ -6401,8 +7164,6 @@ components:
     ProjectBusinessRequirementEstimateRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         days:
           type: number
           format: double
@@ -6416,7 +7177,6 @@ components:
       required:
       - confidence
       - days
-      - requirement
     ProjectBusinessRequirementList:
       type: object
       description: Lightweight serializer for listing business requirements.
@@ -6449,6 +7209,10 @@ components:
           maxLength: 100
         details:
           type: string
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         technical_requirements_count:
           type: integer
           readOnly: true
@@ -6469,6 +7233,7 @@ components:
       - category_name
       - created_datetime
       - display_id
+      - evaluation_state
       - id
       - problems_data
       - project
@@ -6680,6 +7445,10 @@ components:
           maxLength: 100
         details:
           type: string
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -6691,6 +7460,7 @@ components:
       required:
       - created_datetime
       - display_id
+      - evaluation_state
       - id
       - project
       - title
@@ -6760,6 +7530,10 @@ components:
         include_in_estimate:
           type: boolean
           description: 見積もり計算には、含むかどうか
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         estimate:
           allOf:
           - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
@@ -6783,6 +7557,7 @@ components:
       - created_datetime
       - display_id
       - estimate
+      - evaluation_state
       - github_issues
       - id
       - project
@@ -6835,6 +7610,7 @@ components:
           readOnly: true
         requirement:
           type: integer
+          readOnly: true
         parent_comment:
           type: integer
           nullable: true
@@ -6880,8 +7656,6 @@ components:
     ProjectTechnicalRequirementCommentRequest:
       type: object
       properties:
-        requirement:
-          type: integer
         parent_comment:
           type: integer
           nullable: true
@@ -6890,7 +7664,6 @@ components:
           minLength: 1
       required:
       - comment
-      - requirement
     ProjectTechnicalRequirementDetail:
       type: object
       properties:
@@ -6920,6 +7693,10 @@ components:
         include_in_estimate:
           type: boolean
           description: 見積もり計算には、含むかどうか
+        evaluation_state:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationStateEnum'
+          readOnly: true
         estimate:
           allOf:
           - $ref: '#/components/schemas/ProjectBusinessRequirementEstimate'
@@ -6949,6 +7726,7 @@ components:
       - created_datetime
       - display_id
       - estimate
+      - evaluation_state
       - github_issues
       - id
       - project
@@ -6962,6 +7740,7 @@ components:
           readOnly: true
         technical_requirement:
           type: integer
+          readOnly: true
         url:
           type: string
           format: uri
@@ -6983,15 +7762,12 @@ components:
     ProjectTechnicalRequirementGithubIssueRequest:
       type: object
       properties:
-        technical_requirement:
-          type: integer
         url:
           type: string
           format: uri
           minLength: 1
           maxLength: 200
       required:
-      - technical_requirement
       - url
     ProjectTechnicalRequirementRequest:
       type: object
@@ -7286,6 +8062,43 @@ components:
       - survey_completed
       - user_id
       - username
+    TechnicalRequirementEvaluation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+        evaluation_result:
+          $ref: '#/components/schemas/EvaluationResultEnum'
+        feedback:
+          type: string
+        suggested_title:
+          type: string
+          maxLength: 100
+        suggested_details:
+          type: string
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_by
+      - created_by_name
+      - created_datetime
+      - evaluation_result
+      - feedback
+      - id
+      - requirement
     TokenObtainPair:
       type: object
       properties:

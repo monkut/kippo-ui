@@ -8,9 +8,9 @@ import {
   requirementsTechnicalRequirementsCreate,
   requirementsTechnicalRequirementCategoriesList,
   requirementsTechnicalRequirementCategoriesCreate,
-  requirementsBusinessRequirementCommentsCreate,
-  requirementsBusinessRequirementCommentsPartialUpdate,
-  requirementsEstimatesCreate,
+  requirementsBusinessRequirementsCommentsCreate,
+  requirementsBusinessRequirementsCommentsPartialUpdate,
+  requirementsTechnicalRequirementsEstimatesCreate,
 } from "~/lib/api/generated";
 import type {
   KippoProject,
@@ -226,9 +226,13 @@ export default function BusinessRequirementDetails() {
                     }}
                     onResolveToggle={async (commentId, currentResolved) => {
                       try {
-                        await requirementsBusinessRequirementCommentsPartialUpdate(commentId, {
-                          is_resolved: !currentResolved,
-                        });
+                        await requirementsBusinessRequirementsCommentsPartialUpdate(
+                          String(requirementId),
+                          commentId,
+                          {
+                            is_resolved: !currentResolved,
+                          },
+                        );
                         loadRequirement();
                       } catch (err) {
                         console.error("Failed to update comment:", err);
@@ -573,8 +577,7 @@ function TechnicalRequirementInlineForm({
         });
 
         if (techReqResponse.data) {
-          await requirementsEstimatesCreate({
-            requirement: techReqResponse.data.id,
+          await requirementsTechnicalRequirementsEstimatesCreate(String(techReqResponse.data.id), {
             days: Number.parseFloat(entry.estimateDays),
             confidence: Number.parseInt(entry.confidence, 10) / 100,
           });
@@ -837,8 +840,7 @@ function CommentInlineForm({
     setIsSubmitting(true);
     setError("");
     try {
-      await requirementsBusinessRequirementCommentsCreate({
-        requirement: requirementId,
+      await requirementsBusinessRequirementsCommentsCreate(String(requirementId), {
         comment: comment.trim(),
         parent_comment: parentCommentId,
       });
