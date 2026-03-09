@@ -20,6 +20,7 @@
     "check": "pnpm typecheck && pnpm test && pnpm format:check"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@headlessui/react": "^2.2.9",
     "@react-router/node": "^7.9.4",
     "@react-router/serve": "^7.9.4",

@@ -2,22 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
+import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
   requirementsBusinessRequirementsRetrieve,
-  projectsRetrieve,
   requirementsTechnicalRequirementsCreate,
   requirementsTechnicalRequirementCategoriesList,
   requirementsTechnicalRequirementCategoriesCreate,
   requirementsBusinessRequirementsCommentsCreate,
   requirementsBusinessRequirementsCommentsPartialUpdate,
   requirementsTechnicalRequirementsEstimatesCreate,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/requirements/requirements";
 import type {
   KippoProject,
   ProjectBusinessRequirementDetail,
   ProjectTechnicalRequirementCategory,
   ProjectTechnicalRequirement,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/models";
 
 export function meta() {
   return [{ title: "ビジネス要件詳細 - Kippo要件管理" }];

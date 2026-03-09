@@ -8,21 +8,9 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import "@fontsource-variable/inter";
 import "./app.css";
 import { AuthProvider } from "~/lib/auth-context";
-
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
-];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -47,6 +35,14 @@ export default function App() {
     <AuthProvider>
       <Outlet />
     </AuthProvider>
+  );
+}
+
+export function HydrateFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-950">
+      <div className="text-gray-400 text-sm">読み込み中...</div>
+    </div>
   );
 }
 
