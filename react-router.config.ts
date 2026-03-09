@@ -7,4 +7,7 @@ const urlPrefix = process.env.VITE_URL_PREFIX || "";
 export default {
   ssr: false,
   basename: `${urlPrefix}/ui/`,
+  future: {
+    unstable_splitRouteModules: true,
+  },
 } satisfies Config;

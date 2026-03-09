@@ -3,8 +3,8 @@ import { Link, useParams, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
 import { MultiSelect } from "~/components/multi-select";
+import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
-  projectsRetrieve,
   requirementsAssumptionsCreate,
   requirementsAssumptionsPartialUpdate,
   requirementsAssumptionsDestroy,
@@ -32,7 +32,7 @@ import {
   requirementsTechnicalRequirementsCommentsCreate,
   requirementsTechnicalRequirementsEstimatesCreate,
   requirementsTechnicalRequirementsEstimatesPartialUpdate,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/requirements/requirements";
 import type {
   KippoProject,
   ProjectBusinessRequirementCategory,
@@ -42,7 +42,7 @@ import type {
   ProjectBusinessRequirement,
   ProjectTechnicalRequirement,
   CategoryEnum,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/models";
 
 // Assumption category type for enum-based categories from API
 type AssumptionCategoryChoice = {

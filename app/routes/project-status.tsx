@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
-import { projectsList } from "~/lib/api/generated";
-import type { KippoProject, KippoProjectProjectstatusDisplay } from "~/lib/api/generated";
+import { projectsList } from "~/lib/api/generated/projects/projects";
+import type { KippoProject } from "~/lib/api/generated/models";
+import type { KippoProjectProjectstatusDisplay } from "~/lib/api/generated/models";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];

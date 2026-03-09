@@ -2,17 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
+import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
-  projectsRetrieve,
   requirementsTechnicalRequirementsList,
   requirementsTechnicalRequirementCategoriesList,
   requirementsBusinessRequirementsList,
   requirementsProblemDefinitionsList,
   requirementsTechnicalRequirementsPartialUpdate,
+} from "~/lib/api/generated/requirements/requirements";
+import {
   assignmentRatesList,
   assignmentRatesCreate,
   assignmentRatesPartialUpdate,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/assignment-rates/assignment-rates";
 import { RoleEnum } from "~/lib/api/generated/models";
 import type {
   KippoProject,
@@ -20,7 +22,7 @@ import type {
   ProjectTechnicalRequirementCategory,
   ProjectBusinessRequirement,
   ProjectProblemDefinition,
-} from "~/lib/api/generated";
+} from "~/lib/api/generated/models";
 
 export function meta() {
   return [{ title: "プロジェクトサマリー - Kippo要件管理" }];
