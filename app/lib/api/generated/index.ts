@@ -29,3 +29,6 @@ export * from "./public-holidays/public-holidays";
 
 // Re-export weekly effort functions
 export * from "./weekly-effort/weekly-effort";
+
+// Re-export monthly costs functions
+export * from "./monthly-costs/monthly-costs";
