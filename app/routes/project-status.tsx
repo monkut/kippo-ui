@@ -1,6 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
+import {
+  InfraCostDisplay,
+  fetchAllMonthlyCostsForProject,
+  type ProjectMonthlyCost,
+} from "~/components/infra-cost-display";
 import { projectsList } from "~/lib/api/generated";
 import type { KippoProject, KippoProjectProjectstatusDisplay } from "~/lib/api/generated";
 
@@ -19,6 +24,9 @@ export default function ProjectStatus() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [monthlyCostsByProject, setMonthlyCostsByProject] = useState<
+    Record<string, ProjectMonthlyCost[]>
+  >({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -68,6 +76,7 @@ export default function ProjectStatus() {
             return a.name.localeCompare(b.name);
           });
         setProjects(filteredProjects);
+        loadMonthlyCosts(filteredProjects);
       }
     } catch (err) {
       console.error("Failed to load projects:", err);
@@ -75,6 +84,15 @@ export default function ProjectStatus() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadMonthlyCosts = async (projectList: KippoProject[]) => {
+    const results = await Promise.all(
+      projectList.map(
+        async (project) => [project.id, await fetchAllMonthlyCostsForProject(project.id)] as const,
+      ),
+    );
+    setMonthlyCostsByProject(Object.fromEntries(results));
   };
 
   const currentProject = useMemo(() => {
@@ -231,7 +249,12 @@ export default function ProjectStatus() {
             </div>
 
             {/* Project Info Slide */}
-            {currentProject && <ProjectSlide project={currentProject} />}
+            {currentProject && (
+              <ProjectSlide
+                project={currentProject}
+                monthlyCosts={monthlyCostsByProject[currentProject.id]}
+              />
+            )}
           </div>
         </div>
       )}
@@ -348,9 +371,10 @@ function ProjectStatusLayout({
 
 interface ProjectSlideProps {
   project: KippoProject;
+  monthlyCosts: ProjectMonthlyCost[] | undefined;
 }
 
-function ProjectSlide({ project }: ProjectSlideProps) {
+function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("ja-JP");
@@ -440,6 +464,9 @@ function ProjectSlide({ project }: ProjectSlideProps) {
             <div className="text-gray-400">-</div>
           )}
         </div>
+
+        {/* Infra Cost */}
+        <InfraCostDisplay costs={monthlyCosts} />
 
         {/* Confidence indicator */}
         <div className="pt-4 border-t border-gray-200">
