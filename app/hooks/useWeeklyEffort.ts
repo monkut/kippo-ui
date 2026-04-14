@@ -234,7 +234,10 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     };
 
     updateWeekData();
-  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, projects, user]);
+    // `projects` intentionally omitted: including it causes a duplicate-fetch cascade on initial mount (#44).
+    // `projects` is set exactly once by Effect 1; the runtime early return above still gates first invocation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, user]);
 
   const createEntries = useCallback(
     async (entries: FormEntry[], currentWeekStart: string): Promise<boolean> => {
