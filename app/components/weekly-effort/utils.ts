@@ -28,6 +28,19 @@ export function formatDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Returns a date range covering the previous week and the given week.
+ * Range: weekStart - 7 days ... weekStart + 6 days (inclusive).
+ */
+export function twoWeekWindow(weekStart: string): { gte: string; lte: string } {
+  const d = new Date(`${weekStart}T00:00:00`);
+  const gte = new Date(d);
+  gte.setDate(gte.getDate() - 7);
+  const lte = new Date(d);
+  lte.setDate(lte.getDate() + 6);
+  return { gte: formatDateStr(gte), lte: formatDateStr(lte) };
+}
+
 export function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {
   return {
     id: Date.now(),

@@ -21,7 +21,11 @@ import type {
   PublicHoliday,
 } from "~/lib/api/generated/models";
 import type { FormEntry } from "~/components/weekly-effort/types";
-import { createEmptyEntry, getCurrentMonthStart } from "~/components/weekly-effort/utils";
+import {
+  createEmptyEntry,
+  getCurrentMonthStart,
+  twoWeekWindow,
+} from "~/components/weekly-effort/utils";
 
 type AuthUser = {
   username: string;
@@ -53,7 +57,7 @@ export type UseWeeklyEffortReturn = {
   error: string;
   setError: (err: string) => void;
   projects: KippoProject[];
-  allUserEntries: ProjectWeeklyEffort[];
+  recentUserEntries: ProjectWeeklyEffort[];
   selectedWeekEntries: ProjectWeeklyEffort[];
   monthlyAssignments: ProjectMonthlyAssignment[];
   expectedHours: number | null;
@@ -76,7 +80,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
   const [expectedHours, setExpectedHours] = useState<number | null>(null);
   const [missingWeeks, setMissingWeeks] = useState<string[]>([]);
   const [monthlyAssignments, setMonthlyAssignments] = useState<ProjectMonthlyAssignment[]>([]);
-  const [allUserEntries, setAllUserEntries] = useState<ProjectWeeklyEffort[]>([]);
+  const [recentUserEntries, setRecentUserEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [selectedWeekEntries, setSelectedWeekEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [templateEntries, setTemplateEntries] = useState<FormEntry[]>([]);
@@ -132,10 +136,15 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       setError("");
 
       try {
+        const initialWindow = twoWeekWindow(weekStart);
         const [allProjects, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
           await Promise.all([
             fetchAllProjects(),
-            projectsWeeklyeffortList({ user_username: user.username }),
+            projectsWeeklyeffortList({
+              user_username: user.username,
+              week_start_gte: initialWindow.gte,
+              week_start_lte: initialWindow.lte,
+            }),
             monthlyAssignmentsList({ month: getCurrentMonthStart() }),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
             weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
@@ -153,23 +162,20 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
 
         if (weeklyEffortRes.data?.results) {
           const userEntries = weeklyEffortRes.data.results;
-          setAllUserEntries(userEntries);
+          setRecentUserEntries(userEntries);
 
           const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
           setSelectedWeekEntries(entriesForSelectedWeek);
 
           if (entriesForSelectedWeek.length > 0) {
             setTemplateEntries([]);
-          } else if (userEntries.length > 0) {
-            const sortedEntries = [...userEntries].sort((a, b) =>
-              (b.week_start || "").localeCompare(a.week_start || ""),
-            );
-            const latestWeekStart = sortedEntries[0].week_start;
-            const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
-            const formEntries = buildTemplateEntries(latestEntries, allProjects, false);
-            setTemplateEntries(formEntries.length > 0 ? formEntries : [createEmptyEntry()]);
           } else {
-            setTemplateEntries([createEmptyEntry()]);
+            const previousWeekEntries = userEntries.filter((e) => e.week_start !== weekStart);
+            if (previousWeekEntries.length > 0) {
+              setTemplateEntries(buildTemplateEntries(previousWeekEntries, allProjects, false));
+            } else {
+              setTemplateEntries([createEmptyEntry()]);
+            }
           }
         }
 
@@ -197,38 +203,27 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       fetchExpectedHours(weekStart);
       fetchWeekHolidays(weekStart);
 
-      const selectedDate = new Date(`${weekStart}T00:00:00`);
-      const sundayBeforePrevWeek = new Date(selectedDate);
-      sundayBeforePrevWeek.setDate(sundayBeforePrevWeek.getDate() - 8);
-      const prevWeekGte = `${sundayBeforePrevWeek.getFullYear()}-${String(sundayBeforePrevWeek.getMonth() + 1).padStart(2, "0")}-${String(sundayBeforePrevWeek.getDate()).padStart(2, "0")}`;
-      const sundayBeforeSelectedWeek = new Date(selectedDate);
-      sundayBeforeSelectedWeek.setDate(sundayBeforeSelectedWeek.getDate() - 1);
-      const prevWeekLte = `${sundayBeforeSelectedWeek.getFullYear()}-${String(sundayBeforeSelectedWeek.getMonth() + 1).padStart(2, "0")}-${String(sundayBeforeSelectedWeek.getDate()).padStart(2, "0")}`;
+      const window = twoWeekWindow(weekStart);
 
       try {
         const weeklyEffortRes = await projectsWeeklyeffortList({
           user_username: user?.username,
-          week_start_gte: prevWeekGte,
-          week_start_lte: prevWeekLte,
+          week_start_gte: window.gte,
+          week_start_lte: window.lte,
         });
 
-        const previousWeekEntries = weeklyEffortRes.data?.results || [];
+        const windowEntries = weeklyEffortRes.data?.results || [];
+        setRecentUserEntries(windowEntries);
 
-        const entriesForSelectedWeek = allUserEntries.filter((e) => e.week_start === weekStart);
+        const entriesForSelectedWeek = windowEntries.filter((e) => e.week_start === weekStart);
         setSelectedWeekEntries(entriesForSelectedWeek);
 
         if (entriesForSelectedWeek.length > 0) {
           setTemplateEntries([]);
-        } else if (previousWeekEntries.length > 0) {
-          setTemplateEntries(buildTemplateEntries(previousWeekEntries, projects, true));
         } else {
-          const sortedEntries = [...allUserEntries].sort((a, b) =>
-            (b.week_start || "").localeCompare(a.week_start || ""),
-          );
-          if (sortedEntries.length > 0) {
-            const latestWeekStart = sortedEntries[0].week_start;
-            const latestEntries = sortedEntries.filter((e) => e.week_start === latestWeekStart);
-            setTemplateEntries(buildTemplateEntries(latestEntries, projects, true));
+          const previousWeekEntries = windowEntries.filter((e) => e.week_start !== weekStart);
+          if (previousWeekEntries.length > 0) {
+            setTemplateEntries(buildTemplateEntries(previousWeekEntries, projects, true));
           } else {
             setTemplateEntries([createEmptyEntry()]);
           }
@@ -239,7 +234,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     };
 
     updateWeekData();
-  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, projects, user, allUserEntries]);
+  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, projects, user]);
 
   const createEntries = useCallback(
     async (entries: FormEntry[], currentWeekStart: string): Promise<boolean> => {
@@ -253,38 +248,46 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
           return false;
         }
 
-        const existingRes = await projectsWeeklyeffortList({
-          user_username: user?.username,
-          week_start_gte: currentWeekStart,
-          week_start_lte: currentWeekStart,
-        });
-
-        const existingForUser = existingRes.data?.results || [];
-
         for (const entry of validEntries) {
-          const duplicate = existingForUser.find((e) => e.project === entry.projectId);
+          const duplicate = selectedWeekEntries.find((e) => e.project === entry.projectId);
           if (duplicate) {
             setError(`${entry.projectName} は既にこの週のエントリが存在します。`);
             return false;
           }
         }
 
-        for (const entry of validEntries) {
-          await projectsWeeklyeffortCreate({
-            week_start: currentWeekStart,
-            project: entry.projectId,
-            hours: entry.hours,
-          });
+        try {
+          for (const entry of validEntries) {
+            await projectsWeeklyeffortCreate({
+              week_start: currentWeekStart,
+              project: entry.projectId,
+              hours: entry.hours,
+            });
+          }
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          if (status === 409 || status === 400) {
+            setError(
+              "他のタブで既にエントリが作成されている可能性があります。画面を更新してください。",
+            );
+            return false;
+          }
+          throw err;
         }
 
+        const window = twoWeekWindow(currentWeekStart);
         const [weeklyEffortRes, missingWeeksRes] = await Promise.all([
-          projectsWeeklyeffortList({ user_username: user?.username }),
+          projectsWeeklyeffortList({
+            user_username: user?.username,
+            week_start_gte: window.gte,
+            week_start_lte: window.lte,
+          }),
           weeklyEffortMissingWeeksRetrieve(),
         ]);
 
         if (weeklyEffortRes.data?.results) {
           const userEntries = weeklyEffortRes.data.results;
-          setAllUserEntries(userEntries);
+          setRecentUserEntries(userEntries);
           setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
         }
 
@@ -301,7 +304,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         setIsSubmitting(false);
       }
     },
-    [user],
+    [user, selectedWeekEntries],
   );
 
   const updateEntryHours = useCallback(
@@ -311,12 +314,15 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       try {
         await projectsWeeklyeffortPartialUpdate(entryId, { hours });
 
+        const window = twoWeekWindow(currentWeekStart);
         const weeklyEffortRes = await projectsWeeklyeffortList({
           user_username: user?.username,
+          week_start_gte: window.gte,
+          week_start_lte: window.lte,
         });
         if (weeklyEffortRes.data?.results) {
           const userEntries = weeklyEffortRes.data.results;
-          setAllUserEntries(userEntries);
+          setRecentUserEntries(userEntries);
           setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
         }
         return true;
@@ -337,14 +343,19 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       try {
         await projectsWeeklyeffortDestroy(entryId);
 
+        const window = twoWeekWindow(currentWeekStart);
         const [weeklyEffortRes, missingWeeksRes] = await Promise.all([
-          projectsWeeklyeffortList({ user_username: user?.username }),
+          projectsWeeklyeffortList({
+            user_username: user?.username,
+            week_start_gte: window.gte,
+            week_start_lte: window.lte,
+          }),
           weeklyEffortMissingWeeksRetrieve(),
         ]);
 
         if (weeklyEffortRes.data?.results) {
           const userEntries = weeklyEffortRes.data.results;
-          setAllUserEntries(userEntries);
+          setRecentUserEntries(userEntries);
           setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
         }
 
@@ -378,7 +389,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     error,
     setError,
     projects,
-    allUserEntries,
+    recentUserEntries,
     selectedWeekEntries,
     monthlyAssignments,
     expectedHours,
