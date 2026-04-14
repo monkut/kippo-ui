@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { memo, useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
@@ -65,7 +65,7 @@ function getCurrentMonthStart(): string {
 
 // Calendar component to display the month with selected week highlighted
 // Weeks start on Sunday to match standard calendar display
-function WeekCalendar({
+const WeekCalendar = memo(function WeekCalendar({
   weekStart,
   onWeekSelect,
   personalHolidays = [],
@@ -80,34 +80,36 @@ function WeekCalendar({
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
 
-  // Get first day of month and last day of month
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const weeks = useMemo(() => {
+    const ref = new Date(weekStart);
+    const refYear = ref.getFullYear();
+    const refMonth = ref.getMonth();
+    const firstDayOfMonth = new Date(refYear, refMonth, 1);
+    const lastDayOfMonth = new Date(refYear, refMonth + 1, 0);
 
-  // Calculate the Sunday of the week containing the first day of the month
-  const startDate = new Date(firstDayOfMonth);
-  const dayOfWeek = startDate.getDay(); // 0 = Sunday
-  startDate.setDate(startDate.getDate() - dayOfWeek);
+    // Sunday of the week containing the first day of the month
+    const startDate = new Date(firstDayOfMonth);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
 
-  // Calculate the Saturday of the week containing the last day of the month
-  const endDate = new Date(lastDayOfMonth);
-  const lastDayOfWeek = endDate.getDay();
-  const daysToSaturday = lastDayOfWeek === 6 ? 0 : 6 - lastDayOfWeek;
-  endDate.setDate(endDate.getDate() + daysToSaturday);
+    // Saturday of the week containing the last day of the month
+    const endDate = new Date(lastDayOfMonth);
+    const lastDayOfWeek = endDate.getDay();
+    const daysToSaturday = lastDayOfWeek === 6 ? 0 : 6 - lastDayOfWeek;
+    endDate.setDate(endDate.getDate() + daysToSaturday);
 
-  // Generate all dates to display
-  const dates: Date[] = [];
-  const current = new Date(startDate);
-  while (current <= endDate) {
-    dates.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
+    const dates: Date[] = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
 
-  // Group dates into weeks (Sunday to Saturday)
-  const weeks: Date[][] = [];
-  for (let i = 0; i < dates.length; i += 7) {
-    weeks.push(dates.slice(i, i + 7));
-  }
+    const grouped: Date[][] = [];
+    for (let i = 0; i < dates.length; i += 7) {
+      grouped.push(dates.slice(i, i + 7));
+    }
+    return grouped;
+  }, [weekStart]);
 
   // Check if a date is in the selected week (Monday to Sunday)
   // Compare by date string to avoid timezone issues
@@ -149,9 +151,17 @@ function WeekCalendar({
   const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
 
   // Create sets for quick holiday lookup
-  const personalHolidayDates = new Set(personalHolidays.map((h) => h.day));
-  const publicHolidayDates = new Set(publicHolidays.map((h) => h.day));
-  const publicHolidayNames = new Map(publicHolidays.map((h) => [h.day, h.name]));
+  const personalHolidayDates = useMemo(
+    () => new Set(personalHolidays.map((h) => h.day)),
+    [personalHolidays],
+  );
+  const { publicHolidayDates, publicHolidayNames } = useMemo(
+    () => ({
+      publicHolidayDates: new Set(publicHolidays.map((h) => h.day)),
+      publicHolidayNames: new Map(publicHolidays.map((h) => [h.day, h.name])),
+    }),
+    [publicHolidays],
+  );
 
   const formatDateStr = (d: Date): string => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -238,10 +248,10 @@ function WeekCalendar({
       </div>
     </div>
   );
-}
+});
 
 // Calendar component for holiday selection with existing holidays highlighted
-function HolidayCalendar({
+const HolidayCalendar = memo(function HolidayCalendar({
   selectedDate,
   onDateSelect,
   personalHolidays,
@@ -258,37 +268,46 @@ function HolidayCalendar({
   const year = date.getFullYear();
   const month = date.getMonth();
 
-  // Get first and last days of month
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const weeks = useMemo(() => {
+    const ref = new Date(selectedDate + "T00:00:00");
+    const refYear = ref.getFullYear();
+    const refMonth = ref.getMonth();
+    const firstDayOfMonth = new Date(refYear, refMonth, 1);
+    const lastDayOfMonth = new Date(refYear, refMonth + 1, 0);
 
-  // Calculate start of calendar (Sunday before first day)
-  const startDate = new Date(firstDayOfMonth);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
+    const startDate = new Date(firstDayOfMonth);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
 
-  // Calculate end of calendar (Saturday after last day)
-  const endDate = new Date(lastDayOfMonth);
-  const daysToSaturday = endDate.getDay() === 6 ? 0 : 6 - endDate.getDay();
-  endDate.setDate(endDate.getDate() + daysToSaturday);
+    const endDate = new Date(lastDayOfMonth);
+    const daysToSaturday = endDate.getDay() === 6 ? 0 : 6 - endDate.getDay();
+    endDate.setDate(endDate.getDate() + daysToSaturday);
 
-  // Generate all dates
-  const dates: Date[] = [];
-  const current = new Date(startDate);
-  while (current <= endDate) {
-    dates.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
+    const dates: Date[] = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
 
-  // Group into weeks
-  const weeks: Date[][] = [];
-  for (let i = 0; i < dates.length; i += 7) {
-    weeks.push(dates.slice(i, i + 7));
-  }
+    const grouped: Date[][] = [];
+    for (let i = 0; i < dates.length; i += 7) {
+      grouped.push(dates.slice(i, i + 7));
+    }
+    return grouped;
+  }, [selectedDate]);
 
   // Create sets for quick lookup
-  const personalHolidayDates = new Set(personalHolidays.map((h) => h.day));
-  const publicHolidayDates = new Set(publicHolidays.map((h) => h.day));
-  const publicHolidayNames = new Map(publicHolidays.map((h) => [h.day, h.name]));
+  const personalHolidayDates = useMemo(
+    () => new Set(personalHolidays.map((h) => h.day)),
+    [personalHolidays],
+  );
+  const { publicHolidayDates, publicHolidayNames } = useMemo(
+    () => ({
+      publicHolidayDates: new Set(publicHolidays.map((h) => h.day)),
+      publicHolidayNames: new Map(publicHolidays.map((h) => [h.day, h.name])),
+    }),
+    [publicHolidays],
+  );
 
   const formatDate = (d: Date): string => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -430,7 +449,7 @@ function HolidayCalendar({
       </div>
     </div>
   );
-}
+});
 
 export default function WeeklyEffort() {
   const { user, isLoading: authLoading } = useAuth();
@@ -922,7 +941,7 @@ export default function WeeklyEffort() {
 
   // Open holiday modal with date defaulting to week start
   // Fetch holidays for the modal calendar
-  const fetchHolidaysForMonth = async (dateStr: string) => {
+  const fetchHolidaysForMonth = useCallback(async (dateStr: string) => {
     setIsLoadingHolidays(true);
     try {
       const date = new Date(dateStr + "T00:00:00");
@@ -949,7 +968,20 @@ export default function WeeklyEffort() {
     } finally {
       setIsLoadingHolidays(false);
     }
-  };
+  }, []);
+
+  const handleHolidayDateSelect = useCallback(
+    (date: string) => {
+      setHolidayDate(date);
+      // Fetch holidays if month changed
+      const newMonth = date.substring(0, 7);
+      const currentMonth = holidayDate.substring(0, 7);
+      if (newMonth !== currentMonth) {
+        fetchHolidaysForMonth(date);
+      }
+    },
+    [holidayDate, fetchHolidaysForMonth],
+  );
 
   const openHolidayModal = () => {
     setHolidayDate(weekStart);
@@ -983,28 +1015,25 @@ export default function WeeklyEffort() {
     }
   };
 
-  // Calculate total hours for selected week entries
-  const selectedWeekTotalHours = selectedWeekEntries.reduce((sum, e) => sum + e.hours, 0);
+  const selectedWeekTotalHours = useMemo(
+    () => selectedWeekEntries.reduce((sum, e) => sum + e.hours, 0),
+    [selectedWeekEntries],
+  );
 
-  // Calculate total hours for form entries
-  const formTotalHours = entries.reduce((sum, e) => sum + e.hours, 0);
-
-  // Helper to check if a project should be displayed for the selected week
-  // Projects are shown if they have no closed_datetime OR if week_start <= closed_datetime
-  const isProjectOpenForWeek = (project: KippoProject): boolean => {
-    if (!project.closed_datetime) return true;
-    return weekStart <= project.closed_datetime.split("T")[0];
-  };
+  const formTotalHours = useMemo(() => entries.reduce((sum, e) => sum + e.hours, 0), [entries]);
 
   // Filter projects for dropdowns
   // Show projects where closed_datetime is null OR week_start <= closed_datetime
   // Sort alphabetically by name for consistent ordering
-  const projectProjects = projects
-    .filter((p) => p.phase !== "anon-project" && isProjectOpenForWeek(p))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const nonProjectProjects = projects
-    .filter((p) => p.phase === "anon-project" && isProjectOpenForWeek(p))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const { projectProjects, nonProjectProjects } = useMemo(() => {
+    const isOpen = (p: KippoProject) =>
+      !p.closed_datetime || weekStart <= p.closed_datetime.split("T")[0];
+    const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
+    return {
+      projectProjects: sorted.filter((p) => p.phase !== "anon-project" && isOpen(p)),
+      nonProjectProjects: sorted.filter((p) => p.phase === "anon-project" && isOpen(p)),
+    };
+  }, [projects, weekStart]);
 
   if (authLoading) {
     return (
@@ -1834,15 +1863,7 @@ export default function WeeklyEffort() {
                     ) : (
                       <HolidayCalendar
                         selectedDate={holidayDate}
-                        onDateSelect={(date) => {
-                          setHolidayDate(date);
-                          // Fetch holidays if month changed
-                          const newMonth = date.substring(0, 7);
-                          const currentMonth = holidayDate.substring(0, 7);
-                          if (newMonth !== currentMonth) {
-                            fetchHolidaysForMonth(date);
-                          }
-                        }}
+                        onDateSelect={handleHolidayDateSelect}
                         personalHolidays={existingPersonalHolidays}
                         publicHolidays={publicHolidays}
                         disabled={isSubmittingHoliday}
