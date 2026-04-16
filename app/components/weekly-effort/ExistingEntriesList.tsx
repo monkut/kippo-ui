@@ -169,25 +169,25 @@ function ExistingEntriesListImpl({
           return (
             <div
               key={entry.id}
-              className="group flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded cursor-pointer"
+              className="group grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded cursor-pointer"
               onClick={() => !isEditing && !isSubmitting && startEditEntry(entry)}
             >
-              <span className="text-gray-700">{entry.project_name}</span>
-              <div className="flex items-center gap-2">
-                {isEditing ? (
-                  <>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={editingHours}
-                      onChange={(e) => setEditingHours(normalizeDigits(e.target.value))}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-20 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1"
-                      disabled={isSubmitting}
-                      autoFocus
-                    />
-                    <span className="text-gray-500 text-sm">時間</span>
+              <span className="text-gray-700 min-w-0 truncate">{entry.project_name}</span>
+              {isEditing ? (
+                <>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={editingHours}
+                    onChange={(e) => setEditingHours(normalizeDigits(e.target.value))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1 text-right tabular-nums"
+                    disabled={isSubmitting}
+                    autoFocus
+                  />
+                  <span className="text-gray-500 text-sm">時間</span>
+                  <div className="col-start-5 flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -263,30 +263,33 @@ function ExistingEntriesListImpl({
                         />
                       </svg>
                     </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-right">
-                      <span className="text-gray-900 font-medium">{entry.hours} 時間</span>
-                      <span className="text-gray-500 text-sm ml-2">({percentage}%)</span>
-                    </div>
-                    <svg
-                      className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                      stroke="currentColor"
-                    >
-                      <title>編集</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                      />
-                    </svg>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-right text-gray-900 font-medium tabular-nums pr-2">
+                    {entry.hours}
+                  </span>
+                  <span className="text-gray-900 font-medium text-sm">時間</span>
+                  <span className="text-right text-gray-500 text-sm tabular-nums">
+                    ({percentage}%)
+                  </span>
+                  <svg
+                    className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                  >
+                    <title>編集</title>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                    />
+                  </svg>
+                </>
+              )}
             </div>
           );
         })}
