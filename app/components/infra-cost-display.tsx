@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { monthlyCostsList, type ProjectMonthlyCost } from "~/lib/api/generated";
 
 export type { ProjectMonthlyCost };
@@ -53,20 +54,10 @@ function aggregateMonthTotals(costs: ProjectMonthlyCost[]): CostPoint[] {
 }
 
 export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
-  if (costs === undefined) {
+  if (costs === undefined || costs.length === 0) {
     return null;
   }
-  if (costs.length === 0) {
-    return (
-      <div className="pt-4 border-t border-gray-200">
-        <div className="text-sm text-gray-500">
-          インフラコスト: <span className="text-gray-400">-</span>
-        </div>
-      </div>
-    );
-  }
 
-  // Mixed-currency check - fail loud per issue spec
   const currencies = new Set(costs.map((c) => c.currency || "USD"));
   if (currencies.size > 1) {
     return (
@@ -89,21 +80,15 @@ export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
   const cumulative = points.reduce((sum, p) => sum + p.total, 0);
   const currentMonth = points[points.length - 1];
 
+  const formatValue = (n: number) => formatCurrency(n, currency);
+
   return (
     <div className="pt-4 border-t border-gray-200">
-      <div className="flex items-center justify-center gap-4 flex-wrap">
-        <div className="text-left">
-          <div className="text-xs text-gray-500">今月</div>
-          <div className="text-sm font-semibold text-gray-700">
-            {formatCurrency(currentMonth.total, currency)}
-          </div>
-        </div>
-        <Sparkline points={points.map((p) => p.total)} />
-        <div className="text-left">
-          <div className="text-xs text-gray-500">累計</div>
-          <div className="text-sm font-semibold text-gray-700">
-            {formatCurrency(cumulative, currency)}
-          </div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <Sparkline points={points} formatValue={formatValue} />
+        <div className="flex gap-4">
+          <CostStat label="今月" value={formatValue(currentMonth.total)} />
+          <CostStat label="累計" value={formatValue(cumulative)} />
         </div>
       </div>
       <div className="text-xs text-gray-400 mt-1">インフラコスト</div>
@@ -111,13 +96,27 @@ export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
   );
 }
 
+function CostStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-right">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="text-sm font-semibold text-gray-700">{value}</div>
+    </div>
+  );
+}
+
+const TOOLTIP_HALF_WIDTH = 40;
+
 interface SparklineProps {
-  points: number[];
+  points: CostPoint[];
+  formatValue: (value: number) => string;
   width?: number;
   height?: number;
 }
 
-function Sparkline({ points, width = 120, height = 32 }: SparklineProps) {
+function Sparkline({ points, formatValue, width = 120, height = 32 }: SparklineProps) {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
   if (points.length === 0) {
     return null;
   }
@@ -130,14 +129,15 @@ function Sparkline({ points, width = 120, height = 32 }: SparklineProps) {
     );
   }
 
-  const max = Math.max(...points);
-  const min = Math.min(...points);
+  const values = points.map((p) => p.total);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
   const range = max - min || 1;
   const stepX = width / (points.length - 1);
 
-  const coords = points.map((value, i) => {
+  const coords = points.map((p, i) => {
     const x = i * stepX;
-    const y = height - ((value - min) / range) * (height - 4) - 2;
+    const y = height - ((p.total - min) / range) * (height - 4) - 2;
     return [x, y] as const;
   });
 
@@ -146,18 +146,59 @@ function Sparkline({ points, width = 120, height = 32 }: SparklineProps) {
     .join(" ");
   const last = coords[coords.length - 1];
 
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const idx = Math.max(0, Math.min(points.length - 1, Math.round(x / stepX)));
+    if (idx !== hoverIndex) setHoverIndex(idx);
+  };
+
+  const hoverPoint = hoverIndex !== null ? points[hoverIndex] : null;
+  const hoverCoord = hoverIndex !== null ? coords[hoverIndex] : null;
+
   return (
-    <svg width={width} height={height} aria-label="月次コスト推移">
-      <title>月次コスト推移</title>
-      <path
-        d={path}
-        fill="none"
-        stroke="#4f46e5"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <circle cx={last[0]} cy={last[1]} r={2} fill="#4f46e5" />
-    </svg>
+    <div className="relative inline-block">
+      <svg
+        width={width}
+        height={height}
+        aria-label="月次コスト推移"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverIndex(null)}
+      >
+        <title>月次コスト推移</title>
+        <path
+          d={path}
+          fill="none"
+          stroke="#4f46e5"
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <circle cx={last[0]} cy={last[1]} r={2} fill="#4f46e5" />
+        {hoverCoord && (
+          <circle
+            cx={hoverCoord[0]}
+            cy={hoverCoord[1]}
+            r={3}
+            fill="#4f46e5"
+            stroke="#fff"
+            strokeWidth={1}
+          />
+        )}
+      </svg>
+      {hoverPoint && hoverCoord && (
+        <div
+          className="absolute z-10 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg pointer-events-none whitespace-nowrap text-center"
+          style={{
+            left: Math.max(TOOLTIP_HALF_WIDTH, Math.min(width - TOOLTIP_HALF_WIDTH, hoverCoord[0])),
+            bottom: height + 4,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <div>{hoverPoint.month}</div>
+          <div className="font-semibold">{formatValue(hoverPoint.total)}</div>
+        </div>
+      )}
+    </div>
   );
 }
