@@ -56,6 +56,12 @@ const getHeaders = (headers?: HeadersInit, token?: string): HeadersInit => {
   };
 };
 
+// Endpoints used by the auth-context bootstrap. A 401 here is expected for
+// anonymous visitors — let the caller decide what to do, do not hard-redirect.
+const AUTH_BOOTSTRAP_PATHS = ["/api/auth/me/", "/api/token/"] as const;
+const isAuthBootstrapUrl = (url: string): boolean =>
+  AUTH_BOOTSTRAP_PATHS.some((p) => url.includes(p));
+
 // Redirect to login page
 const redirectToLogin = () => {
   if (typeof window !== "undefined") {
@@ -65,8 +71,8 @@ const redirectToLogin = () => {
     localStorage.removeItem("username");
     // Set flag to show message on login page
     localStorage.setItem("authExpired", "true");
-    // Redirect to login
-    window.location.href = "/login";
+    // Redirect to SPA login (honor stage prefix and SPA basename)
+    window.location.href = `${urlPrefix}/ui/login`;
   }
 };
 
@@ -143,8 +149,11 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
 
   // Handle 401 Unauthorized or 403 Forbidden - attempt token refresh
   if (response.status === 401 || response.status === 403) {
-    // Don't try to refresh for token endpoints to avoid infinite loop
-    if (url.includes("/api/token/")) {
+    // Auth-bootstrap endpoints (/api/auth/me/, /api/token/*) must return their
+    // 401 to the caller — auth-context relies on this to fall back gracefully
+    // for users with an expired/missing session. Hard-redirecting here would
+    // bounce a Django-logged-in user out of the SPA before they ever load it.
+    if (isAuthBootstrapUrl(url)) {
       const data = await getBody<T>(response);
       return { status: response.status, data, headers: response.headers } as T;
     }
