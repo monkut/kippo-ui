@@ -41,7 +41,7 @@ import type {
   ProjectAssumption,
   ProjectBusinessRequirement,
   ProjectTechnicalRequirement,
-  CategoryEnum,
+  ProjectAssumptionCategoryEnum,
 } from "~/lib/api/generated/models";
 
 // Assumption category type for enum-based categories from API
@@ -1537,7 +1537,7 @@ function AssumptionInlineForm({
           project: projectId,
           title: entry.title.trim(),
           details: entry.details.trim() || undefined,
-          category: entry.categoryValue as CategoryEnum,
+          category: entry.categoryValue as ProjectAssumptionCategoryEnum,
           is_internal: entry.isInternal,
         });
       }
@@ -2534,7 +2534,7 @@ function AssumptionEditForm({
       await requirementsAssumptionsPartialUpdate(assumption.id, {
         title: title.trim(),
         details: details.trim() || undefined,
-        category: categoryValue as CategoryEnum,
+        category: categoryValue as ProjectAssumptionCategoryEnum,
         is_internal: isInternal,
       });
       onUpdated();

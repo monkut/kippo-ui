@@ -7,7 +7,7 @@ import {
   type ProjectMonthlyCost,
 } from "~/components/infra-cost-display";
 import { projectsList } from "~/lib/api/generated";
-import type { KippoProject, KippoProjectProjectstatusDisplay } from "~/lib/api/generated";
+import type { KippoProject, ProjectProgressStatusInline } from "~/lib/api/generated";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
@@ -481,7 +481,7 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
 const EXCEEDING_THRESHOLD = 15;
 
 interface ProjectStatusMeterProps {
-  status: KippoProjectProjectstatusDisplay;
+  status: ProjectProgressStatusInline | null;
 }
 
 function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {

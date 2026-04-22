@@ -3,11 +3,11 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { FeedbackWidget } from "../app/components/feedback-widget";
 
-vi.mock("../app/lib/api/custom-fetch", () => ({
-  customFetch: vi.fn(),
+vi.mock("../app/lib/api/generated/feedback/feedback", () => ({
+  feedbackFeedbackCreate: vi.fn(),
 }));
 
-import { customFetch } from "../app/lib/api/custom-fetch";
+import { feedbackFeedbackCreate } from "../app/lib/api/generated/feedback/feedback";
 
 const waitForElement = async (selector: string, timeout = 3000): Promise<Element | null> => {
   const startTime = Date.now();
@@ -29,7 +29,7 @@ describe("FeedbackWidget", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    vi.mocked(customFetch).mockReset();
+    vi.mocked(feedbackFeedbackCreate).mockReset();
   });
 
   afterEach(() => {
@@ -70,11 +70,11 @@ describe("FeedbackWidget", () => {
   });
 
   test("submits comment-only payload with derived title and default category", async () => {
-    vi.mocked(customFetch).mockResolvedValue({
+    vi.mocked(feedbackFeedbackCreate).mockResolvedValue({
       status: 201,
       data: {},
       headers: new Headers(),
-    });
+    } as Awaited<ReturnType<typeof feedbackFeedbackCreate>>);
 
     root.render(<FeedbackWidget />);
     const openBtn = (await waitForElement(
@@ -96,11 +96,8 @@ describe("FeedbackWidget", () => {
     await flush();
     await flush();
 
-    expect(customFetch).toHaveBeenCalledTimes(1);
-    const [url, options] = vi.mocked(customFetch).mock.calls[0];
-    expect(url).toBe("/api/feedback/feedback/");
-    expect(options.method).toBe("POST");
-    const payload = JSON.parse(options.body as string);
+    expect(feedbackFeedbackCreate).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(feedbackFeedbackCreate).mock.calls[0][0];
     expect(payload.title).toBe("Short title line");
     expect(payload.comment).toBe("Short title line\nmore detail here");
     expect(payload.category).toBe("general");

@@ -1,31 +1,12 @@
 import { useState } from "react";
-import { customFetch } from "~/lib/api/custom-fetch";
+import { feedbackFeedbackCreate } from "~/lib/api/generated/feedback/feedback";
+import { FeedbackCategoryEnum } from "~/lib/api/generated/models";
 
 const MAX_TITLE_LENGTH = 200;
-
-interface FeedbackCreateRequest {
-  category: "general";
-  title: string;
-  comment: string;
-}
-
-interface FeedbackCreateResponse {
-  status: number;
-  data: unknown;
-  headers: Headers;
-}
 
 function deriveTitle(comment: string): string {
   const firstLine = comment.split(/\r?\n/, 1)[0].trim();
   return firstLine.slice(0, MAX_TITLE_LENGTH) || "フィードバック";
-}
-
-async function submitFeedback(payload: FeedbackCreateRequest): Promise<FeedbackCreateResponse> {
-  return customFetch<FeedbackCreateResponse>("/api/feedback/feedback/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
 }
 
 export function FeedbackWidget() {
@@ -48,8 +29,8 @@ export function FeedbackWidget() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const response = await submitFeedback({
-        category: "general",
+      const response = await feedbackFeedbackCreate({
+        category: FeedbackCategoryEnum.general,
         title: deriveTitle(trimmed),
         comment: trimmed,
       });
