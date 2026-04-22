@@ -10,7 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import "@fontsource-variable/inter";
 import "./app.css";
-import { AuthProvider } from "~/lib/auth-context";
+import { FeedbackWidget } from "~/components/feedback-widget";
+import { AuthProvider, useAuth } from "~/lib/auth-context";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,10 +31,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AuthenticatedFeedbackWidget() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <FeedbackWidget />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <Outlet />
+      <AuthenticatedFeedbackWidget />
     </AuthProvider>
   );
 }
