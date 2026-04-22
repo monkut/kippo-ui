@@ -280,6 +280,164 @@ paths:
                   is_staff:
                     type: boolean
           description: ''
+  /api/feedback/feedback/:
+    get:
+      operationId: feedback_feedback_list
+      description: ViewSet for user-submitted Feedback.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeedbackList'
+          description: ''
+    post:
+      operationId: feedback_feedback_create
+      description: ViewSet for user-submitted Feedback.
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+  /api/feedback/feedback/{id}/:
+    get:
+      operationId: feedback_feedback_retrieve
+      description: ViewSet for user-submitted Feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feedback.
+        required: true
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    put:
+      operationId: feedback_feedback_update
+      description: ViewSet for user-submitted Feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feedback.
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    patch:
+      operationId: feedback_feedback_partial_update
+      description: ViewSet for user-submitted Feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feedback.
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedbackRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    delete:
+      operationId: feedback_feedback_destroy
+      description: ViewSet for user-submitted Feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feedback.
+        required: true
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/monthly-assignments/:
     get:
       operationId: monthly_assignments_list
@@ -5299,14 +5457,6 @@ components:
       - feedback
       - id
       - requirement
-    CategoryEnum:
-      enum:
-      - assumption
-      - constraint
-      type: string
-      description: |-
-        * `assumption` - 前提条件
-        * `constraint` - 制約事項
     CurrencyEnum:
       enum:
       - USD
@@ -5344,6 +5494,105 @@ components:
         * `unevaluated` - unevaluated
         * `valid` - valid
         * `invalid` - invalid
+    Feedback:
+      type: object
+      description: Default serializer. Review fields are read-only for non-superusers.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/FeedbackCategoryEnum'
+        title:
+          type: string
+          maxLength: 200
+        comment:
+          type: string
+        organization:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_action:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ReviewActionEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        github_issue_url:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - closed_datetime
+      - comment
+      - created_by
+      - created_by_username
+      - created_datetime
+      - github_issue_url
+      - id
+      - review_action
+      - reviewed_datetime
+      - title
+      - updated_datetime
+    FeedbackCategoryEnum:
+      enum:
+      - bug
+      - feature
+      - general
+      - other
+      type: string
+      description: |-
+        * `bug` - bug
+        * `feature` - feature
+        * `general` - general
+        * `other` - other
+    FeedbackRequest:
+      type: object
+      description: Default serializer. Review fields are read-only for non-superusers.
+      properties:
+        category:
+          $ref: '#/components/schemas/FeedbackCategoryEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        comment:
+          type: string
+          minLength: 1
+        organization:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - comment
+      - title
     FullfillmentScoreEnum:
       enum:
       - 1
@@ -5767,6 +6016,9 @@ components:
       - created_by_display_name
       - created_by_username
       - created_datetime
+    NullEnum:
+      enum:
+      - null
     PaginatedAssumptionEvaluationList:
       type: object
       required:
@@ -5813,6 +6065,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BusinessRequirementEvaluation'
+    PaginatedFeedbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feedback'
     PaginatedKippoProjectList:
       type: object
       required:
@@ -6273,6 +6548,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TechnicalRequirementEvaluation'
+    PatchedFeedbackRequest:
+      type: object
+      description: Default serializer. Review fields are read-only for non-superusers.
+      properties:
+        category:
+          $ref: '#/components/schemas/FeedbackCategoryEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        comment:
+          type: string
+          minLength: 1
+        organization:
+          type: string
+          format: uuid
+          nullable: true
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -6439,7 +6731,7 @@ components:
           type: string
           format: uuid
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/ProjectAssumptionCategoryEnum'
         is_internal:
           type: boolean
           description: 社内のみの場合設定
@@ -6829,7 +7121,7 @@ components:
           type: string
           format: uuid
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/ProjectAssumptionCategoryEnum'
         category_display:
           type: string
           readOnly: true
@@ -6862,6 +7154,14 @@ components:
       - project
       - title
       - updated_datetime
+    ProjectAssumptionCategoryEnum:
+      enum:
+      - assumption
+      - constraint
+      type: string
+      description: |-
+        * `assumption` - 前提条件
+        * `constraint` - 制約事項
     ProjectAssumptionRequest:
       type: object
       properties:
@@ -6869,7 +7169,7 @@ components:
           type: string
           format: uuid
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/ProjectAssumptionCategoryEnum'
         is_internal:
           type: boolean
           description: 社内のみの場合設定
@@ -7903,6 +8203,20 @@ components:
       - day
       - id
       - name
+    ReviewActionEnum:
+      enum:
+      - accepted
+      - rejected
+      - duplicate
+      - needs_info
+      - issue_created
+      type: string
+      description: |-
+        * `accepted` - accepted
+        * `rejected` - rejected
+        * `duplicate` - duplicate
+        * `needs_info` - needs_info
+        * `issue_created` - issue_created
     RoleEnum:
       enum:
       - developer
