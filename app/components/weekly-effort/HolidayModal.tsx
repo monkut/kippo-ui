@@ -6,6 +6,7 @@ import {
 import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
 import { HolidayCalendar } from "./HolidayCalendar";
+import { monthDateRange } from "./utils";
 
 type HolidayModalProps = {
   open: boolean;
@@ -26,13 +27,7 @@ export function HolidayModal({ open, initialDate, onClose, onHolidayCreated }: H
   const fetchHolidaysForMonth = async (dateStr: string) => {
     setIsLoadingHolidays(true);
     try {
-      const date = new Date(`${dateStr}T00:00:00`);
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const dayGte = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, "0")}-01`;
-      const dayLte = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+      const { dayGte, dayLte } = monthDateRange(dateStr);
 
       const [personalRes, publicRes] = await Promise.all([
         personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),

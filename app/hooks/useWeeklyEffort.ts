@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   projectsWeeklyeffortList,
   projectsWeeklyeffortCreate,
@@ -23,7 +23,9 @@ import type {
 import type { FormEntry } from "~/components/weekly-effort/types";
 import {
   createEmptyEntry,
+  formatDateStr,
   getCurrentMonthStart,
+  monthDateRange,
   twoWeekWindow,
 } from "~/components/weekly-effort/utils";
 
@@ -64,7 +66,9 @@ export type UseWeeklyEffortReturn = {
   missingWeeks: string[];
   weekPersonalHolidays: PersonalHoliday[];
   weekPublicHolidays: PublicHoliday[];
-  isLoadingWeekHolidays: boolean;
+  monthPersonalHolidays: PersonalHoliday[];
+  monthPublicHolidays: PublicHoliday[];
+  isLoadingMonthHolidays: boolean;
   templateEntries: FormEntry[];
   createEntries: (entries: FormEntry[], weekStart: string) => Promise<boolean>;
   updateEntryHours: (entryId: number, hours: number, weekStart: string) => Promise<boolean>;
@@ -85,9 +89,10 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [templateEntries, setTemplateEntries] = useState<FormEntry[]>([]);
 
-  const [weekPersonalHolidays, setWeekPersonalHolidays] = useState<PersonalHoliday[]>([]);
-  const [weekPublicHolidays, setWeekPublicHolidays] = useState<PublicHoliday[]>([]);
-  const [isLoadingWeekHolidays, setIsLoadingWeekHolidays] = useState(false);
+  const [monthPersonalHolidays, setMonthPersonalHolidays] = useState<PersonalHoliday[]>([]);
+  const [monthPublicHolidays, setMonthPublicHolidays] = useState<PublicHoliday[]>([]);
+  const [isLoadingMonthHolidays, setIsLoadingMonthHolidays] = useState(false);
+  const lastFetchedMonthRef = useRef<string | null>(null);
 
   const fetchExpectedHours = useCallback(async (weekStartDate: string) => {
     try {
@@ -102,30 +107,41 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     }
   }, []);
 
-  const fetchWeekHolidays = useCallback(async (weekStartDate: string) => {
-    setIsLoadingWeekHolidays(true);
+  const fetchMonthHolidays = useCallback(async (dateStr: string) => {
+    setIsLoadingMonthHolidays(true);
     try {
-      const startDate = new Date(`${weekStartDate}T00:00:00`);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
-
-      const dayGte = weekStartDate;
-      const dayLte = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+      const { dayGte, dayLte } = monthDateRange(dateStr);
 
       const [personalRes, publicRes] = await Promise.all([
         personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      setWeekPersonalHolidays(personalRes.data?.results || []);
-      setWeekPublicHolidays(publicRes.data?.results || []);
+      setMonthPersonalHolidays(personalRes.data?.results || []);
+      setMonthPublicHolidays(publicRes.data?.results || []);
+      lastFetchedMonthRef.current = dateStr.substring(0, 7);
     } catch {
-      setWeekPersonalHolidays([]);
-      setWeekPublicHolidays([]);
+      setMonthPersonalHolidays([]);
+      setMonthPublicHolidays([]);
     } finally {
-      setIsLoadingWeekHolidays(false);
+      setIsLoadingMonthHolidays(false);
     }
   }, []);
+
+  const { weekPersonalHolidays, weekPublicHolidays } = useMemo(() => {
+    const startDate = new Date(`${weekStart}T00:00:00`);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    const endStr = formatDateStr(endDate);
+    return {
+      weekPersonalHolidays: monthPersonalHolidays.filter(
+        (h) => h.day >= weekStart && h.day <= endStr,
+      ),
+      weekPublicHolidays: monthPublicHolidays.filter(
+        (h) => h.day >= weekStart && h.day <= endStr,
+      ),
+    };
+  }, [weekStart, monthPersonalHolidays, monthPublicHolidays]);
 
   // Initial load
   useEffect(() => {
@@ -201,7 +217,9 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
 
     const updateWeekData = async () => {
       fetchExpectedHours(weekStart);
-      fetchWeekHolidays(weekStart);
+      if (lastFetchedMonthRef.current !== weekStart.substring(0, 7)) {
+        fetchMonthHolidays(weekStart);
+      }
 
       const window = twoWeekWindow(weekStart);
 
@@ -237,7 +255,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     // `projects` intentionally omitted: including it causes a duplicate-fetch cascade on initial mount (#44).
     // `projects` is set exactly once by Effect 1; the runtime early return above still gates first invocation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart, fetchExpectedHours, fetchWeekHolidays, user]);
+  }, [weekStart, fetchExpectedHours, fetchMonthHolidays, user]);
 
   const createEntries = useCallback(
     async (entries: FormEntry[], currentWeekStart: string): Promise<boolean> => {
@@ -380,10 +398,10 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     async (currentWeekStart: string) => {
       await Promise.all([
         fetchExpectedHours(currentWeekStart),
-        fetchWeekHolidays(currentWeekStart),
+        fetchMonthHolidays(currentWeekStart),
       ]);
     },
-    [fetchExpectedHours, fetchWeekHolidays],
+    [fetchExpectedHours, fetchMonthHolidays],
   );
 
   return {
@@ -399,7 +417,9 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     missingWeeks,
     weekPersonalHolidays,
     weekPublicHolidays,
-    isLoadingWeekHolidays,
+    monthPersonalHolidays,
+    monthPublicHolidays,
+    isLoadingMonthHolidays,
     templateEntries,
     createEntries,
     updateEntryHours,
