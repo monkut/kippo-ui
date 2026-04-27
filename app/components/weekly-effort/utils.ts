@@ -28,6 +28,13 @@ export function formatDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export function monthDateRange(dateStr: string): { dayGte: string; dayLte: string } {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return { dayGte: formatDateStr(firstDay), dayLte: formatDateStr(lastDay) };
+}
+
 /**
  * Returns a date range covering the previous week and the given week.
  * Range: weekStart - 7 days ... weekStart + 6 days (inclusive).

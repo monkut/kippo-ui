@@ -35,7 +35,9 @@ export default function WeeklyEffort() {
     missingWeeks,
     weekPersonalHolidays,
     weekPublicHolidays,
-    isLoadingWeekHolidays,
+    monthPersonalHolidays,
+    monthPublicHolidays,
+    isLoadingMonthHolidays,
     templateEntries,
     createEntries,
     updateEntryHours,
@@ -126,7 +128,7 @@ export default function WeeklyEffort() {
                 </div>
                 <p className="text-sm text-gray-500 mt-1">週開始日: {weekStart}</p>
 
-                {!isLoadingWeekHolidays &&
+                {!isLoadingMonthHolidays &&
                   (weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <div className="text-xs font-medium text-gray-500 mb-2">今週の休日</div>
@@ -158,8 +160,8 @@ export default function WeeklyEffort() {
                 <WeekCalendar
                   weekStart={weekStart}
                   onWeekSelect={setWeekStart}
-                  personalHolidays={weekPersonalHolidays}
-                  publicHolidays={weekPublicHolidays}
+                  personalHolidays={monthPersonalHolidays}
+                  publicHolidays={monthPublicHolidays}
                 />
                 <div className="mt-3 flex gap-4 text-xs">
                   <div className="flex items-center gap-1">
