@@ -137,9 +137,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       weekPersonalHolidays: monthPersonalHolidays.filter(
         (h) => h.day >= weekStart && h.day <= endStr,
       ),
-      weekPublicHolidays: monthPublicHolidays.filter(
-        (h) => h.day >= weekStart && h.day <= endStr,
-      ),
+      weekPublicHolidays: monthPublicHolidays.filter((h) => h.day >= weekStart && h.day <= endStr),
     };
   }, [weekStart, monthPersonalHolidays, monthPublicHolidays]);
 
