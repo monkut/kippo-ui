@@ -12,6 +12,9 @@ export default defineConfig({
           include: ["tests/**/*.unit.{test,spec}.{ts,tsx}"],
           name: "unit",
           environment: "node",
+          // Pin the timezone so date-handling tests (#52) are reproducible
+          // regardless of the developer's machine.
+          env: { TZ: "Asia/Tokyo" },
         },
       },
       {
