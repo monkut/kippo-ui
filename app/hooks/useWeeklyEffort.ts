@@ -162,6 +162,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
             monthlyAssignmentsList({ month: getCurrentMonthStart() }),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
             weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
+            fetchMonthHolidays(weekStart),
           ]);
 
         setProjects(allProjects);
