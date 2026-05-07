@@ -386,7 +386,7 @@ export function SurveyStatusIcon({ surveyUser }: { surveyUser: SurveyUserInline 
         strokeWidth="2"
         stroke="currentColor"
       >
-        <title>アンケート未割り当て</title>
+        <title>user not considered: &lt;= 3% effort in project</title>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
       </svg>
     );

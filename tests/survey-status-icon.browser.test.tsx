@@ -45,9 +45,9 @@ describe("SurveyStatusIcon", () => {
     container.remove();
   });
 
-  test("renders 'not assigned' icon when surveyUser is undefined", async () => {
+  test("renders 'not assigned' icon with effort-threshold reason when surveyUser is undefined", async () => {
     root.render(<SurveyStatusIcon surveyUser={undefined} />);
-    expect(await waitForTitle(container)).toBe("アンケート未割り当て");
+    expect(await waitForTitle(container)).toBe("user not considered: <= 3% effort in project");
   });
 
   test("renders 'completed' icon when survey_completed is true", async () => {
