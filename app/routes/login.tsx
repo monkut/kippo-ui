@@ -17,7 +17,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate("/projects");
+      navigate("/weekly-effort");
     }
 
     // Check if user was redirected due to expired credentials
@@ -35,7 +35,7 @@ export default function Login() {
 
     try {
       await login(username, password);
-      navigate("/projects");
+      navigate("/weekly-effort");
     } catch (err) {
       console.error("Login failed:", err);
       const errorMessage =
