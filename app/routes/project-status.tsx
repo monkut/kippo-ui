@@ -7,7 +7,11 @@ import {
   type ProjectMonthlyCost,
 } from "~/components/infra-cost-display";
 import { projectsList } from "~/lib/api/generated";
-import type { KippoProject, ProjectProgressStatusInline } from "~/lib/api/generated";
+import type {
+  KippoProject,
+  ProjectProgressStatusInline,
+  SurveyUserInline,
+} from "~/lib/api/generated";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
@@ -369,6 +373,50 @@ function ProjectStatusLayout({
   );
 }
 
+// Surveys are only assigned to effort users with >3% effort, so survey_users
+// may not contain every effort user. Three render states keep the row from
+// going blank when no survey is assigned (issue #33).
+export function SurveyStatusIcon({ surveyUser }: { surveyUser: SurveyUserInline | undefined }) {
+  if (surveyUser === undefined) {
+    return (
+      <svg
+        className="w-4 h-4 text-gray-300"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth="2"
+        stroke="currentColor"
+      >
+        <title>アンケート未割り当て</title>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+      </svg>
+    );
+  }
+  if (surveyUser.survey_completed) {
+    return (
+      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+        <title>アンケート完了</title>
+        <path
+          fillRule="evenodd"
+          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+          clipRule="evenodd"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      className="w-4 h-4 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      stroke="currentColor"
+    >
+      <title>アンケート未完了</title>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  );
+}
+
 interface ProjectSlideProps {
   project: KippoProject;
   monthlyCosts: ProjectMonthlyCost[] | undefined;
@@ -413,48 +461,15 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
           {project.weekly_effort_users && project.weekly_effort_users.length > 0 ? (
             <div className="flex flex-wrap justify-center gap-2">
               {project.weekly_effort_users.map((effortUser) => {
-                // Find survey status for this user (only users with >3% have survey status)
                 const surveyUser = project.survey_users?.find(
                   (s) => s.user_id === effortUser.user_id,
                 );
-                const showSurveyStatus = surveyUser !== undefined;
-                const surveyCompleted = surveyUser?.survey_completed ?? false;
-
                 return (
                   <span
                     key={effortUser.user_id}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
                   >
-                    {showSurveyStatus &&
-                      (surveyCompleted ? (
-                        <svg
-                          className="w-4 h-4 text-green-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <title>アンケート完了</title>
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-4 h-4 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                        >
-                          <title>アンケート未完了</title>
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4.5 12.75l6 6 9-13.5"
-                          />
-                        </svg>
-                      ))}
+                    <SurveyStatusIcon surveyUser={surveyUser} />
                     {effortUser.display_name} ({effortUser.percentage.toFixed(0)}%)
                   </span>
                 );
