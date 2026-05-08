@@ -139,6 +139,19 @@ export function Layout({ children, projectName, projectId, title }: LayoutProps)
                 >
                   週間稼働量
                 </Link>
+                {projectId && (
+                  <Link
+                    to={`/projects/${projectId}/assignments`}
+                    onClick={() => setMenuOpen(false)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive(`/projects/${projectId}/assignments`)
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    プロジェクト割当
+                  </Link>
+                )}
               </div>
             </div>
           </nav>
