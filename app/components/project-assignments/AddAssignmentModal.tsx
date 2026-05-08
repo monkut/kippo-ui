@@ -5,13 +5,13 @@ import type {
 } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
-import { EXCLUDED_USERNAMES, formatMonth } from "./utils";
+import { EXCLUDED_USERNAMES, formatMonth, memberDisplayName } from "./utils";
 
 type AddAssignmentModalProps = {
   open: boolean;
   projectId: string;
   month: string; // first-of-month ISO date "YYYY-MM-01"
-  effortUsernames: ReadonlySet<string>; // members with logged effort on this project
+  effortUsernames: ReadonlySet<string>;
   isSaving: boolean;
   onClose: () => void;
   onSubmit: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
@@ -33,10 +33,7 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
   if (!open) return null;
 
   const handleSubmit = async () => {
-    if (!form.userId) {
-      form.setValidationError("ユーザーを選択してください");
-      return;
-    }
+    if (!form.userId) return;
     const ok = await onSubmit({
       project: projectId,
       user: form.userId,
@@ -50,7 +47,6 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
   return (
     <ModalShell title={`割当を追加 — ${formatMonth(month)}`} onClose={onClose}>
       {fetchError && <ErrorBanner message={fetchError} />}
-      {form.validationError && <ErrorBanner message={form.validationError} />}
       <Fields
         form={form}
         members={orderedMembers}
@@ -79,7 +75,7 @@ function orderMembersForPicker(
     const aHasEffort = effortUsernames.has(a.username) ? 0 : 1;
     const bHasEffort = effortUsernames.has(b.username) ? 0 : 1;
     if (aHasEffort !== bHasEffort) return aHasEffort - bHasEffort;
-    return (a.display_name || a.username).localeCompare(b.display_name || b.username);
+    return memberDisplayName(a).localeCompare(memberDisplayName(b));
   });
 }
 
@@ -198,23 +194,14 @@ function useMonthlyTotalsByUser(open: boolean, month: string): Map<string, numbe
 function useAddAssignmentForm(open: boolean) {
   const [userId, setUserId] = useState("");
   const [percentage, setPercentage] = useState(DEFAULT_PERCENTAGE);
-  const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setUserId("");
     setPercentage(DEFAULT_PERCENTAGE);
-    setValidationError("");
   }, [open]);
 
-  return {
-    userId,
-    setUserId,
-    percentage,
-    setPercentage,
-    validationError,
-    setValidationError,
-  };
+  return { userId, setUserId, percentage, setPercentage };
 }
 
 function ModalShell({
@@ -255,7 +242,7 @@ function memberOptionLabel(
 ): string {
   const total = totals.get(member.user_id) ?? 0;
   const prefix = effortUsernames.has(member.username) ? "★ " : "";
-  return `${prefix}${member.display_name || member.username} (${total}%)`;
+  return `${prefix}${memberDisplayName(member)} (${total}%)`;
 }
 
 function UserSelectField({

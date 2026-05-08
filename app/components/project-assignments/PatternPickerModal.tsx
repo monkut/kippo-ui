@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
   KippoProject,
-  OrganizationMember,
   ProjectAssignmentPattern,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
@@ -10,7 +9,7 @@ import {
   projectsSuggestAssignmentsCreate,
 } from "~/lib/api/generated/projects/projects";
 import { PatternCard } from "./PatternCard";
-import { flattenPatternToAssignmentRequests } from "./utils";
+import { flattenPatternToAssignmentRequests, memberDisplayName } from "./utils";
 
 type PatternPickerModalProps = {
   open: boolean;
@@ -138,10 +137,6 @@ function useProjectAssignmentPatterns(open: boolean, projectId: string) {
   }, [open, projectId]);
 
   return { isLoading, error, patterns };
-}
-
-function memberDisplayName(member: OrganizationMember): string {
-  return member.display_name?.trim() || member.username;
 }
 
 function useMemberLookup(open: boolean, projectId: string): Map<string, string> {

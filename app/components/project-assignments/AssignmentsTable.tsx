@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { formatMonth, MAX_PERCENTAGE_PER_MONTH } from "./utils";
+import { assignmentDisplayName, formatMonth, MAX_PERCENTAGE_PER_MONTH } from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
@@ -25,11 +25,7 @@ function AssignmentsTableImpl({
     () =>
       assignments
         .filter((a) => a.month === month)
-        .sort((a, b) =>
-          (a.user_display_name || a.user_username).localeCompare(
-            b.user_display_name || b.user_username,
-          ),
-        ),
+        .sort((a, b) => assignmentDisplayName(a).localeCompare(assignmentDisplayName(b))),
     [assignments, month],
   );
 
@@ -59,26 +55,45 @@ type PopulatedSectionProps = {
   onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
-function PopulatedSection(props: PopulatedSectionProps) {
-  const { month, onAddClick, onSuggestClick } = props;
+function PopulatedSection({
+  month,
+  monthAssignments,
+  isSaving,
+  onAddClick,
+  onSuggestClick,
+  onCellClick,
+  onToggleConfirmed,
+}: PopulatedSectionProps) {
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-lg font-medium text-gray-900">{formatMonth(month)} の割当</h2>
         <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
       </div>
-      <AssignmentsBodyTable {...props} />
+      <AssignmentsBodyTable
+        monthAssignments={monthAssignments}
+        isSaving={isSaving}
+        onCellClick={onCellClick}
+        onToggleConfirmed={onToggleConfirmed}
+      />
       <Legend />
     </section>
   );
 }
+
+type AssignmentsBodyTableProps = {
+  monthAssignments: ProjectMonthlyAssignment[];
+  isSaving: boolean;
+  onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
+  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
+};
 
 function AssignmentsBodyTable({
   monthAssignments,
   isSaving,
   onCellClick,
   onToggleConfirmed,
-}: PopulatedSectionProps) {
+}: AssignmentsBodyTableProps) {
   const monthTotal = monthAssignments.reduce((sum, a) => sum + a.percentage, 0);
   return (
     <table className="w-full text-sm">
@@ -173,10 +188,11 @@ function UserRow({
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
   onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
-  const displayName = assignment.user_display_name || assignment.user_username;
   return (
     <tr className="border-b border-gray-100 last:border-0">
-      <td className="py-2 pr-4 text-gray-900 font-medium whitespace-nowrap">{displayName}</td>
+      <td className="py-2 pr-4 text-gray-900 font-medium whitespace-nowrap">
+        {assignmentDisplayName(assignment)}
+      </td>
       <td className="py-2 px-3 text-right">
         <PercentageCell assignment={assignment} onClick={onCellClick} />
       </td>
@@ -245,7 +261,7 @@ function ConfirmedToggle({
   return (
     <input
       type="checkbox"
-      aria-label={`${assignment.user_display_name || assignment.user_username} の割当を確定`}
+      aria-label={`${assignmentDisplayName(assignment)} の割当を確定`}
       checked={isConfirmed}
       disabled={isSaving || !onToggle}
       onChange={() => onToggle?.(assignment)}

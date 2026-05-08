@@ -46,9 +46,11 @@ export default function ProjectAssignments() {
 
 type State = ReturnType<typeof useProjectAssignments>;
 
-function effortUsernamesFromProject(project: KippoProject | null): ReadonlySet<string> {
-  if (!project) return new Set();
-  return new Set(project.weekly_effort_users.map((u) => u.username));
+function useEffortUsernames(project: KippoProject | null): ReadonlySet<string> {
+  return useMemo(
+    () => new Set(project?.weekly_effort_users.map((u) => u.username) ?? []),
+    [project],
+  );
 }
 
 function Body({ projectId, state }: { projectId: string | undefined; state: State }) {
@@ -56,13 +58,9 @@ function Body({ projectId, state }: { projectId: string | undefined; state: Stat
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
-  const effortUsernames = useMemo(() => effortUsernamesFromProject(state.project), [state.project]);
-
-  const handleToggleConfirmed = async (assignment: ProjectMonthlyAssignment) => {
-    await state.updateAssignment(assignment.id, {
-      is_confirmed: !(assignment.is_confirmed ?? false),
-    });
-  };
+  const effortUsernames = useEffortUsernames(state.project);
+  const handleToggleConfirmed = (a: ProjectMonthlyAssignment) =>
+    state.updateAssignment(a.id, { is_confirmed: !(a.is_confirmed ?? false) });
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -115,24 +113,7 @@ type ModalsProps = {
   setEditTarget: (target: ProjectMonthlyAssignment | null) => void;
 };
 
-function Modals(props: ModalsProps) {
-  const { projectId, state, editTarget, setEditTarget } = props;
-  return (
-    <>
-      {projectId && <ProjectScopedModals {...props} projectId={projectId} />}
-      <EditAssignmentModal
-        open={editTarget !== null}
-        assignment={editTarget}
-        isSaving={state.isSaving}
-        onClose={() => setEditTarget(null)}
-        onSave={state.updateAssignment}
-        onDelete={state.deleteAssignment}
-      />
-    </>
-  );
-}
-
-function ProjectScopedModals({
+function Modals({
   projectId,
   state,
   month,
@@ -141,24 +122,38 @@ function ProjectScopedModals({
   setAddOpen,
   suggestOpen,
   setSuggestOpen,
-}: ModalsProps & { projectId: string }) {
+  editTarget,
+  setEditTarget,
+}: ModalsProps) {
   return (
     <>
-      <AddAssignmentModal
-        open={addOpen}
-        projectId={projectId}
-        month={month}
-        effortUsernames={effortUsernames}
+      {projectId && (
+        <AddAssignmentModal
+          open={addOpen}
+          projectId={projectId}
+          month={month}
+          effortUsernames={effortUsernames}
+          isSaving={state.isSaving}
+          onClose={() => setAddOpen(false)}
+          onSubmit={state.createAssignment}
+        />
+      )}
+      {projectId && (
+        <PatternPickerModal
+          open={suggestOpen}
+          projectId={projectId}
+          project={state.project}
+          onClose={() => setSuggestOpen(false)}
+          onAcceptPattern={state.bulkCreateAssignments}
+        />
+      )}
+      <EditAssignmentModal
+        open={editTarget !== null}
+        assignment={editTarget}
         isSaving={state.isSaving}
-        onClose={() => setAddOpen(false)}
-        onSubmit={state.createAssignment}
-      />
-      <PatternPickerModal
-        open={suggestOpen}
-        projectId={projectId}
-        project={state.project}
-        onClose={() => setSuggestOpen(false)}
-        onAcceptPattern={state.bulkCreateAssignments}
+        onClose={() => setEditTarget(null)}
+        onSave={state.updateAssignment}
+        onDelete={state.deleteAssignment}
       />
     </>
   );
