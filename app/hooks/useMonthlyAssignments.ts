@@ -6,6 +6,7 @@ import type {
 } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
+import { EXCLUDED_USERNAMES } from "~/components/project-assignments/utils";
 
 export type UseMonthlyAssignmentsState = {
   isLoading: boolean;
@@ -16,9 +17,6 @@ export type UseMonthlyAssignmentsState = {
 };
 
 const FETCH_ERROR = "データの取得に失敗しました";
-
-/** Usernames of system / placeholder accounts that should never appear in the matrix. */
-const EXCLUDED_USERNAMES = new Set(["(unassigned)", "admin", "kiconia-api", "luca.pacioli"]);
 
 /** Fetch members for one project per unique organization, then dedupe by user_id. */
 async function fetchOrgMembersForProjects(projects: KippoProject[]): Promise<OrganizationMember[]> {

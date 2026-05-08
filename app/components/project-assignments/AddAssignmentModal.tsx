@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   OrganizationMember,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
-import { firstOfNextMonth } from "./utils";
+import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
+import { EXCLUDED_USERNAMES, formatMonth } from "./utils";
 
 type AddAssignmentModalProps = {
   open: boolean;
   projectId: string;
+  month: string; // first-of-month ISO date "YYYY-MM-01"
+  effortUsernames: ReadonlySet<string>; // members with logged effort on this project
   isSaving: boolean;
   onClose: () => void;
   onSubmit: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
@@ -17,30 +20,42 @@ type AddAssignmentModalProps = {
 const DEFAULT_PERCENTAGE = 50;
 
 export function AddAssignmentModal(props: AddAssignmentModalProps) {
-  const { open, projectId, isSaving, onClose, onSubmit } = props;
+  const { open, projectId, month, effortUsernames, isSaving, onClose, onSubmit } = props;
   const { members, isLoadingMembers, fetchError } = useOrgMembers(open, projectId);
+  const totals = useMonthlyTotalsByUser(open, month);
+  const orderedMembers = useMemo(
+    () => orderMembersForPicker(members, effortUsernames),
+    [members, effortUsernames],
+  );
   const form = useAddAssignmentForm(open);
-  useDefaultUserSelection(open, members, form.userId, form.setUserId);
+  useDefaultUserSelection(open, orderedMembers, form.userId, form.setUserId);
 
   if (!open) return null;
 
   const handleSubmit = async () => {
-    const validationError = validateForm(form);
-    if (validationError) {
-      form.setValidationError(validationError);
+    if (!form.userId) {
+      form.setValidationError("ユーザーを選択してください");
       return;
     }
-    const ok = await onSubmit(formToRequest(projectId, form));
+    const ok = await onSubmit({
+      project: projectId,
+      user: form.userId,
+      month,
+      percentage: form.percentage,
+      is_confirmed: false,
+    });
     if (ok) onClose();
   };
 
   return (
-    <ModalShell title="割当を追加" onClose={onClose}>
+    <ModalShell title={`割当を追加 — ${formatMonth(month)}`} onClose={onClose}>
       {fetchError && <ErrorBanner message={fetchError} />}
       {form.validationError && <ErrorBanner message={form.validationError} />}
       <Fields
         form={form}
-        members={members}
+        members={orderedMembers}
+        totals={totals}
+        effortUsernames={effortUsernames}
         isSaving={isSaving}
         isLoadingMembers={isLoadingMembers}
       />
@@ -48,11 +63,24 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
         onCancel={onClose}
         onSubmit={handleSubmit}
         isSaving={isSaving}
-        submitDisabled={members.length === 0 || isLoadingMembers}
+        submitDisabled={orderedMembers.length === 0 || isLoadingMembers}
         submitLabel="追加"
       />
     </ModalShell>
   );
+}
+
+function orderMembersForPicker(
+  members: OrganizationMember[],
+  effortUsernames: ReadonlySet<string>,
+): OrganizationMember[] {
+  const filtered = members.filter((m) => !EXCLUDED_USERNAMES.has(m.username));
+  return [...filtered].sort((a, b) => {
+    const aHasEffort = effortUsernames.has(a.username) ? 0 : 1;
+    const bHasEffort = effortUsernames.has(b.username) ? 0 : 1;
+    if (aHasEffort !== bHasEffort) return aHasEffort - bHasEffort;
+    return (a.display_name || a.username).localeCompare(b.display_name || b.username);
+  });
 }
 
 function useDefaultUserSelection(
@@ -69,33 +97,18 @@ function useDefaultUserSelection(
   }, [open, members]);
 }
 
-function validateForm(form: ReturnType<typeof useAddAssignmentForm>): string {
-  if (!form.userId) return "ユーザーを選択してください";
-  if (!form.month) return "月を入力してください";
-  return "";
-}
-
-function formToRequest(
-  projectId: string,
-  form: ReturnType<typeof useAddAssignmentForm>,
-): ProjectMonthlyAssignmentRequest {
-  return {
-    project: projectId,
-    user: form.userId,
-    month: normalizeToFirstOfMonth(form.month),
-    percentage: form.percentage,
-    is_confirmed: form.isConfirmed,
-  };
-}
-
 function Fields({
   form,
   members,
+  totals,
+  effortUsernames,
   isSaving,
   isLoadingMembers,
 }: {
   form: ReturnType<typeof useAddAssignmentForm>;
   members: OrganizationMember[];
+  totals: Map<string, number>;
+  effortUsernames: ReadonlySet<string>;
   isSaving: boolean;
   isLoadingMembers: boolean;
 }) {
@@ -105,12 +118,12 @@ function Fields({
         value={form.userId}
         onChange={form.setUserId}
         members={members}
+        totals={totals}
+        effortUsernames={effortUsernames}
         disabled={isSaving || isLoadingMembers}
         isLoading={isLoadingMembers}
       />
-      <MonthField value={form.month} onChange={form.setMonth} disabled={isSaving} />
       <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
-      <ConfirmedField value={form.isConfirmed} onChange={form.setIsConfirmed} disabled={isSaving} />
     </div>
   );
 }
@@ -140,13 +153,13 @@ function useOrgMembers(open: boolean, projectId: string) {
     setFetchError("");
     setMembers([]);
     let cancelled = false;
-    fetchOrgMembers(projectId).then((result) => {
-      if (cancelled) return result;
+    (async () => {
+      const result = await fetchOrgMembers(projectId);
+      if (cancelled) return;
       setMembers(result.members);
       setFetchError(result.error);
       setIsLoadingMembers(false);
-      return result;
-    });
+    })();
     return () => {
       cancelled = true;
     };
@@ -155,31 +168,50 @@ function useOrgMembers(open: boolean, projectId: string) {
   return { members, isLoadingMembers, fetchError };
 }
 
+function useMonthlyTotalsByUser(open: boolean, month: string): Map<string, number> {
+  const [totals, setTotals] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchAllMonthlyAssignments({ month });
+        if (cancelled) return;
+        const next = new Map<string, number>();
+        for (const a of data) {
+          next.set(a.user, (next.get(a.user) ?? 0) + a.percentage);
+        }
+        setTotals(next);
+      } catch {
+        // Best-effort: leave totals empty if fetch fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, month]);
+
+  return totals;
+}
+
 function useAddAssignmentForm(open: boolean) {
   const [userId, setUserId] = useState("");
-  const [month, setMonth] = useState(firstOfNextMonth(new Date()));
   const [percentage, setPercentage] = useState(DEFAULT_PERCENTAGE);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setUserId("");
-    setMonth(firstOfNextMonth(new Date()));
     setPercentage(DEFAULT_PERCENTAGE);
-    setIsConfirmed(false);
     setValidationError("");
   }, [open]);
 
   return {
     userId,
     setUserId,
-    month,
-    setMonth,
     percentage,
     setPercentage,
-    isConfirmed,
-    setIsConfirmed,
     validationError,
     setValidationError,
   };
@@ -216,23 +248,40 @@ function ErrorBanner({ message }: { message: string }) {
   return <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>;
 }
 
+function memberOptionLabel(
+  member: OrganizationMember,
+  totals: Map<string, number>,
+  effortUsernames: ReadonlySet<string>,
+): string {
+  const total = totals.get(member.user_id) ?? 0;
+  const prefix = effortUsernames.has(member.username) ? "★ " : "";
+  return `${prefix}${member.display_name || member.username} (${total}%)`;
+}
+
 function UserSelectField({
   value,
   onChange,
   members,
+  totals,
+  effortUsernames,
   disabled,
   isLoading,
 }: {
   value: string;
   onChange: (v: string) => void;
   members: OrganizationMember[];
+  totals: Map<string, number>;
+  effortUsernames: ReadonlySet<string>;
   disabled: boolean;
   isLoading: boolean;
 }) {
   return (
     <div>
       <label htmlFor="add-assignment-user" className="block text-sm font-medium text-gray-700 mb-1">
-        ユーザー
+        ユーザー{" "}
+        <span className="text-xs font-normal text-gray-500">
+          (★ = この月の他プロジェクト割当合計)
+        </span>
       </label>
       <select
         id="add-assignment-user"
@@ -245,40 +294,10 @@ function UserSelectField({
         {!isLoading && members.length === 0 && <option value="">(対象ユーザーがいません)</option>}
         {members.map((member) => (
           <option key={member.user_id} value={member.user_id}>
-            {member.display_name}
+            {memberOptionLabel(member, totals, effortUsernames)}
           </option>
         ))}
       </select>
-    </div>
-  );
-}
-
-function MonthField({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor="add-assignment-month"
-        className="block text-sm font-medium text-gray-700 mb-1"
-      >
-        月 (月初日)
-      </label>
-      <input
-        id="add-assignment-month"
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-      <p className="mt-1 text-xs text-gray-500">月初日 (YYYY-MM-01) で保存されます。</p>
     </div>
   );
 }
@@ -309,32 +328,6 @@ function PercentageField({
         disabled={disabled}
         className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
-    </div>
-  );
-}
-
-function ConfirmedField({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex items-center">
-      <input
-        type="checkbox"
-        id="add-assignment-confirmed"
-        checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-        disabled={disabled}
-        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-      />
-      <label htmlFor="add-assignment-confirmed" className="ml-2 block text-sm text-gray-700">
-        確定済みとして登録
-      </label>
     </div>
   );
 }
@@ -372,9 +365,4 @@ function ModalActions({
       </button>
     </div>
   );
-}
-
-function normalizeToFirstOfMonth(dateStr: string): string {
-  if (!dateStr) return dateStr;
-  return `${dateStr.slice(0, 7)}-01`;
 }

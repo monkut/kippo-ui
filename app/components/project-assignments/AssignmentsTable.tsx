@@ -1,79 +1,132 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import {
-  buildGrid,
-  formatMonth,
-  MAX_PERCENTAGE_PER_MONTH,
-  type CellState,
-  type GridRow,
-} from "./utils";
+import { formatMonth, MAX_PERCENTAGE_PER_MONTH } from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
+  month: string; // first-of-month ISO date "YYYY-MM-01"
+  isSaving: boolean;
   onAddClick?: () => void;
   onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
+  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 function AssignmentsTableImpl({
   assignments,
+  month,
+  isSaving,
   onAddClick,
   onSuggestClick,
   onCellClick,
+  onToggleConfirmed,
 }: AssignmentsTableProps) {
-  const { months, byUser, monthTotals, byCellId } = useMemo(() => {
-    const grid = buildGrid(assignments);
-    const cellLookup = new Map<string, ProjectMonthlyAssignment>();
-    for (const assignment of assignments) {
-      if (assignment.month) cellLookup.set(`${assignment.user}|${assignment.month}`, assignment);
-    }
-    return { ...grid, byCellId: cellLookup };
-  }, [assignments]);
+  const monthAssignments = useMemo(
+    () =>
+      assignments
+        .filter((a) => a.month === month)
+        .sort((a, b) =>
+          (a.user_display_name || a.user_username).localeCompare(
+            b.user_display_name || b.user_username,
+          ),
+        ),
+    [assignments, month],
+  );
 
-  if (assignments.length === 0) {
-    return <EmptyState onAddClick={onAddClick} onSuggestClick={onSuggestClick} />;
+  if (monthAssignments.length === 0) {
+    return <EmptyState month={month} onAddClick={onAddClick} onSuggestClick={onSuggestClick} />;
   }
+  return (
+    <PopulatedSection
+      month={month}
+      monthAssignments={monthAssignments}
+      isSaving={isSaving}
+      onAddClick={onAddClick}
+      onSuggestClick={onSuggestClick}
+      onCellClick={onCellClick}
+      onToggleConfirmed={onToggleConfirmed}
+    />
+  );
+}
 
+type PopulatedSectionProps = {
+  month: string;
+  monthAssignments: ProjectMonthlyAssignment[];
+  isSaving: boolean;
+  onAddClick?: () => void;
+  onSuggestClick?: () => void;
+  onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
+  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
+};
+
+function PopulatedSection(props: PopulatedSectionProps) {
+  const { month, onAddClick, onSuggestClick } = props;
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
+        <h2 className="text-lg font-medium text-gray-900">{formatMonth(month)} の割当</h2>
         <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
       </div>
-      <table className="w-full text-sm">
-        <TableHeader months={months} />
-        <tbody>
-          {byUser.map((row) => (
-            <UserRow
-              key={row.userKey}
-              row={row}
-              months={months}
-              byCellId={byCellId}
-              onCellClick={onCellClick}
-            />
-          ))}
-        </tbody>
-        <TableFooter months={months} monthTotals={monthTotals} />
-      </table>
+      <AssignmentsBodyTable {...props} />
       <Legend />
     </section>
   );
 }
 
+function AssignmentsBodyTable({
+  monthAssignments,
+  isSaving,
+  onCellClick,
+  onToggleConfirmed,
+}: PopulatedSectionProps) {
+  const monthTotal = monthAssignments.reduce((sum, a) => sum + a.percentage, 0);
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
+          <th className="py-2 pr-4">ユーザー</th>
+          <th className="py-2 px-3 text-right min-w-[6rem]">割当</th>
+          <th className="py-2 px-3 text-center min-w-[5rem]">確定</th>
+        </tr>
+      </thead>
+      <tbody>
+        {monthAssignments.map((assignment) => (
+          <UserRow
+            key={assignment.id}
+            assignment={assignment}
+            isSaving={isSaving}
+            onCellClick={onCellClick}
+            onToggleConfirmed={onToggleConfirmed}
+          />
+        ))}
+      </tbody>
+      <tfoot>
+        <tr className="border-t-2 border-gray-300 text-xs">
+          <td className="py-2 pr-4 text-gray-500 font-medium">月合計</td>
+          <MonthTotalCell total={monthTotal} />
+          <td />
+        </tr>
+      </tfoot>
+    </table>
+  );
+}
+
 function EmptyState({
+  month,
   onAddClick,
   onSuggestClick,
 }: {
+  month: string;
   onAddClick?: () => void;
   onSuggestClick?: () => void;
 }) {
   return (
     <section className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
+        <h2 className="text-lg font-medium text-gray-900">{formatMonth(month)} の割当</h2>
         <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
       </div>
-      <p className="text-sm text-gray-500">割当はまだ登録されていません。</p>
+      <p className="text-sm text-gray-500">この月の割当はまだ登録されていません。</p>
     </section>
   );
 }
@@ -109,67 +162,28 @@ function Toolbar({
   );
 }
 
-function TableHeader({ months }: { months: string[] }) {
-  return (
-    <thead>
-      <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-        <th className="py-2 pr-4">ユーザー</th>
-        {months.map((month) => (
-          <th key={month} className="py-2 px-3 text-right">
-            {formatMonth(month)}
-          </th>
-        ))}
-      </tr>
-    </thead>
-  );
-}
-
 function UserRow({
-  row,
-  months,
-  byCellId,
+  assignment,
+  isSaving,
   onCellClick,
+  onToggleConfirmed,
 }: {
-  row: GridRow;
-  months: string[];
-  byCellId: Map<string, ProjectMonthlyAssignment>;
+  assignment: ProjectMonthlyAssignment;
+  isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
+  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
+  const displayName = assignment.user_display_name || assignment.user_username;
   return (
     <tr className="border-b border-gray-100 last:border-0">
-      <td className="py-2 pr-4 text-gray-900 font-medium whitespace-nowrap">{row.displayName}</td>
-      {months.map((month) => {
-        const assignment = byCellId.get(`${row.userKey}|${month}`);
-        return (
-          <td key={month} className="py-2 px-3 text-right">
-            <PercentageCell
-              cell={row.cells.get(month)}
-              assignment={assignment}
-              onClick={onCellClick}
-            />
-          </td>
-        );
-      })}
+      <td className="py-2 pr-4 text-gray-900 font-medium whitespace-nowrap">{displayName}</td>
+      <td className="py-2 px-3 text-right">
+        <PercentageCell assignment={assignment} onClick={onCellClick} />
+      </td>
+      <td className="py-2 px-3 text-center">
+        <ConfirmedToggle assignment={assignment} isSaving={isSaving} onToggle={onToggleConfirmed} />
+      </td>
     </tr>
-  );
-}
-
-function TableFooter({
-  months,
-  monthTotals,
-}: {
-  months: string[];
-  monthTotals: Map<string, number>;
-}) {
-  return (
-    <tfoot>
-      <tr className="border-t-2 border-gray-300 text-xs">
-        <td className="py-2 pr-4 text-gray-500 font-medium">月合計</td>
-        {months.map((month) => (
-          <MonthTotalCell key={month} total={monthTotals.get(month) ?? 0} />
-        ))}
-      </tr>
-    </tfoot>
   );
 }
 
@@ -186,22 +200,20 @@ function MonthTotalCell({ total }: { total: number }) {
 }
 
 function PercentageCell({
-  cell,
   assignment,
   onClick,
 }: {
-  cell: CellState | undefined;
-  assignment?: ProjectMonthlyAssignment;
+  assignment: ProjectMonthlyAssignment;
   onClick?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
-  if (!cell) return <span className="text-gray-300">—</span>;
-  const styles = cell.isConfirmed
+  const isConfirmed = assignment.is_confirmed ?? false;
+  const styles = isConfirmed
     ? "bg-indigo-100 text-indigo-800 border border-indigo-200 hover:bg-indigo-200"
     : "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200 hover:bg-indigo-100";
   const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`;
-  const tooltip = cell.isConfirmed ? "確定済み (クリックで編集)" : "未確定 / 予測 (クリックで編集)";
+  const tooltip = isConfirmed ? "確定済み (クリックで編集)" : "未確定 / 予測 (クリックで編集)";
 
-  if (assignment && onClick) {
+  if (onClick) {
     return (
       <button
         type="button"
@@ -209,14 +221,37 @@ function PercentageCell({
         className={sharedClass}
         title={tooltip}
       >
-        {cell.percentage}%
+        {assignment.percentage}%
       </button>
     );
   }
   return (
-    <span className={sharedClass} title={cell.isConfirmed ? "確定済み" : "未確定 (予測)"}>
-      {cell.percentage}%
+    <span className={sharedClass} title={isConfirmed ? "確定済み" : "未確定 (予測)"}>
+      {assignment.percentage}%
     </span>
+  );
+}
+
+function ConfirmedToggle({
+  assignment,
+  isSaving,
+  onToggle,
+}: {
+  assignment: ProjectMonthlyAssignment;
+  isSaving: boolean;
+  onToggle?: (assignment: ProjectMonthlyAssignment) => void;
+}) {
+  const isConfirmed = assignment.is_confirmed ?? false;
+  return (
+    <input
+      type="checkbox"
+      aria-label={`${assignment.user_display_name || assignment.user_username} の割当を確定`}
+      checked={isConfirmed}
+      disabled={isSaving || !onToggle}
+      onChange={() => onToggle?.(assignment)}
+      title={isConfirmed ? "クリックで未確定に戻す" : "クリックで確定済みにする"}
+      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:cursor-not-allowed"
+    />
   );
 }
 

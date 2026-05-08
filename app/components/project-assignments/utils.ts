@@ -33,6 +33,14 @@ export function flattenPatternToAssignmentRequests(
 
 export const MAX_PERCENTAGE_PER_MONTH = 100;
 
+/** Usernames of system / placeholder accounts hidden from project-assignment UIs. */
+export const EXCLUDED_USERNAMES: ReadonlySet<string> = new Set([
+  "(unassigned)",
+  "admin",
+  "kiconia-api",
+  "luca.pacioli",
+]);
+
 export type CellState = {
   percentage: number;
   isConfirmed: boolean;
