@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { addMonths, firstOfMonth } from "./utils";
+import { addMonths, firstOfMonth, formatMonth } from "./utils";
 
 type MonthPickerProps = {
   month: string; // first-of-month ISO date "YYYY-MM-01"
@@ -20,7 +20,7 @@ function MonthPickerImpl({ month, onChange }: MonthPickerProps) {
       >
         ◀
       </button>
-      <span className="text-lg font-semibold text-gray-900 min-w-[7rem] text-center">{month.slice(0, 7)}</span>
+      <span className="text-lg font-semibold text-gray-900 min-w-[7rem] text-center">{formatMonth(month)}</span>
       <button
         type="button"
         onClick={() => onChange(addMonths(month, 1))}

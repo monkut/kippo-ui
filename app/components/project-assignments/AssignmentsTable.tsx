@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { buildGrid, formatMonth, type CellState, type GridRow } from "./utils";
+import { buildGrid, formatMonth, MAX_PERCENTAGE_PER_MONTH, type CellState, type GridRow } from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
@@ -8,8 +8,6 @@ type AssignmentsTableProps = {
   onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
-
-const MAX_PERCENTAGE_PER_MONTH = 100;
 
 function AssignmentsTableImpl({ assignments, onAddClick, onSuggestClick, onCellClick }: AssignmentsTableProps) {
   const { months, byUser, monthTotals, byCellId } = useMemo(() => {

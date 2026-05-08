@@ -20,7 +20,6 @@ export type {
   Grid,
   GridRow,
   MonthlyMatrix,
-  MonthlyMatrixCell,
   MonthlyMatrixRow,
   MonthlyMatrixUser,
 } from "./utils";

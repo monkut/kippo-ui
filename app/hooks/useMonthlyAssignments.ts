@@ -1,43 +1,63 @@
-import { useCallback, useEffect, useState } from "react";
-import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
+import { useEffect, useState } from "react";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { projectsList } from "~/lib/api/generated/projects/projects";
+import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
 
 export type UseMonthlyAssignmentsState = {
   isLoading: boolean;
   error: string;
   projects: KippoProject[];
   assignments: ProjectMonthlyAssignment[];
-  refresh: () => Promise<void>;
 };
 
-/** Org-level monthly snapshot loader: active projects + assignments for one month. */
+const FETCH_ERROR = "データの取得に失敗しました";
+
 export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [assignments, setAssignments] = useState<ProjectMonthlyAssignment[]>([]);
-
-  const fetchAll = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const [projectsRes, assignmentsRes] = await Promise.all([
-        projectsList({ is_active: true }),
-        monthlyAssignmentsList({ month }),
-      ]);
-      setProjects(projectsRes.data?.results ?? []);
-      setAssignments(assignmentsRes.data?.results ?? []);
-    } catch {
-      setError("データの取得に失敗しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [month]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    let alive = true;
+    setProjectsLoading(true);
+    (async () => {
+      try {
+        const data = await fetchAllProjects({ is_active: true });
+        if (alive) setProjects(data);
+      } catch {
+        if (alive) setError(FETCH_ERROR);
+      } finally {
+        if (alive) setProjectsLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  return { isLoading, error, projects, assignments, refresh: fetchAll };
+  useEffect(() => {
+    let alive = true;
+    setAssignmentsLoading(true);
+    (async () => {
+      try {
+        const data = await fetchAllMonthlyAssignments({ month });
+        if (alive) setAssignments(data);
+      } catch {
+        if (alive) setError(FETCH_ERROR);
+      } finally {
+        if (alive) setAssignmentsLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [month]);
+
+  return {
+    isLoading: projectsLoading || assignmentsLoading,
+    error,
+    projects,
+    assignments,
+  };
 }

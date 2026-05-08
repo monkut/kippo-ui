@@ -3,7 +3,8 @@ import { Link } from "react-router";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import {
   buildMonthlyMatrix,
-  type MonthlyMatrixCell,
+  MAX_PERCENTAGE_PER_MONTH,
+  type CellState,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
 } from "./utils";
@@ -13,7 +14,14 @@ type MonthlyAssignmentMatrixProps = {
   assignments: ProjectMonthlyAssignment[];
 };
 
-const MAX_USER_TOTAL_PERCENTAGE = 100;
+const CONFIRMED_CELL = {
+  className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
+  title: "確定済み",
+} as const;
+const UNCONFIRMED_CELL = {
+  className: "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200",
+  title: "未確定 (予測)",
+} as const;
 
 function MonthlyAssignmentMatrixImpl({ projects, assignments }: MonthlyAssignmentMatrixProps) {
   const matrix = useMemo(() => buildMonthlyMatrix(projects, assignments), [projects, assignments]);
@@ -64,6 +72,7 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
 }
 
 function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatrixUser[] }) {
+  const idPrefix = row.project.id.slice(0, 8);
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top">
       <td className="py-2 pr-4">
@@ -73,7 +82,7 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
         >
           {row.project.name}
         </Link>
-        <div className="text-[11px] text-gray-400 font-mono mt-0.5">{row.project.id.slice(0, 8)}…</div>
+        <div className="text-[11px] text-gray-400 font-mono mt-0.5">{idPrefix}…</div>
       </td>
       <td className="py-2 px-3 text-xs text-gray-600">
         <div>{row.project.start_date ?? "—"}</div>
@@ -89,15 +98,13 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
   );
 }
 
-function PercentageCell({ cell }: { cell: MonthlyMatrixCell | undefined }) {
+function PercentageCell({ cell }: { cell: CellState | undefined }) {
   if (!cell) return <span className="text-gray-300">—</span>;
-  const styles = cell.isConfirmed
-    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
-    : "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200";
+  const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}
-      title={cell.isConfirmed ? "確定済み" : "未確定 (予測)"}
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`}
+      title={style.title}
     >
       {cell.percentage}%
     </span>
@@ -108,11 +115,12 @@ function Footer({ users, userTotals }: { users: MonthlyMatrixUser[]; userTotals:
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
-        <td className="py-2 pr-4 text-gray-500 font-medium">ユーザー月合計</td>
-        <td />
+        <td colSpan={2} className="py-2 pr-4 text-gray-500 font-medium">
+          ユーザー月合計
+        </td>
         {users.map((user) => {
           const total = userTotals.get(user.user_id) ?? 0;
-          const overAllocated = total > MAX_USER_TOTAL_PERCENTAGE;
+          const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
           return (
             <td
               key={user.user_id}
