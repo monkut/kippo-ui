@@ -1,5 +1,6 @@
 import type {
   KippoProject,
+  OrganizationMember,
   ProjectAssignmentPattern,
   ProjectMonthlyAssignment,
   ProjectMonthlyAssignmentRequest,
@@ -137,22 +138,59 @@ export type MonthlyMatrixRow = {
 
 export type MonthlyMatrix = {
   users: MonthlyMatrixUser[]; // columns, sorted by display_name
-  rows: MonthlyMatrixRow[]; // one row per project with at least one assignment, sorted by project.name
+  rows: MonthlyMatrixRow[]; // one row per project, sorted by project.name
   userTotals: Map<string, number>; // user_id → sum across projects (footer)
 };
 
+export type MonthlyAssignmentMatrixProps = {
+  projects: KippoProject[];
+  assignments: ProjectMonthlyAssignment[];
+  members?: OrganizationMember[];
+};
+
+function memberDisplayName(member: OrganizationMember): string {
+  return member.display_name?.trim() || member.username;
+}
+
+function applyAssignmentToProject(
+  assignment: ProjectMonthlyAssignment,
+  projectCells: Map<string, CellState>,
+  rowTotalsByProject: Map<string, number>,
+): void {
+  const previous = projectCells.get(assignment.user);
+  const merged = mergeAssignmentCell(previous, assignment);
+  projectCells.set(assignment.user, merged);
+  rowTotalsByProject.set(
+    assignment.project,
+    (rowTotalsByProject.get(assignment.project) ?? 0) +
+      (merged.percentage - (previous?.percentage ?? 0)),
+  );
+}
+
 /** Pivot active projects + assignments for a single month into a (project × user → %) matrix.
- * Assignments must be pre-filtered to the month by the caller. Projects without any assignment
- * in `assignments` are dropped from `rows`; assignments referencing a project not in `projects`
- * are dropped. Duplicate (project, user) rows are summed via mergeAssignmentCell.
+ *
+ * Assignments must be pre-filtered to the month by the caller. ALL projects in `projects`
+ * are emitted as rows (sorted by project.name) — projects without assignments render with
+ * empty cells. Assignments referencing a project not in `projects` are dropped. Duplicate
+ * (project, user) rows are summed via mergeAssignmentCell.
+ *
+ * Columns come from `members` when provided (every org member shown, sorted by display_name).
+ * Without members, columns fall back to the union of users found in `assignments`.
  */
 export function buildMonthlyMatrix(
   projects: KippoProject[],
   assignments: ProjectMonthlyAssignment[],
+  members?: OrganizationMember[],
 ): MonthlyMatrix {
   const projectsById = new Map(projects.map((p) => [p.id, p]));
   const cellsByProject = new Map<string, Map<string, CellState>>();
-  const userById = new Map<string, MonthlyMatrixUser>();
+  const rowTotalsByProject = new Map<string, number>();
+  const userById = new Map<string, MonthlyMatrixUser>(
+    (members ?? []).map((m) => [
+      m.user_id,
+      { user_id: m.user_id, display_name: memberDisplayName(m) },
+    ]),
+  );
   const userTotals = new Map<string, number>();
 
   for (const assignment of assignments) {
@@ -162,10 +200,7 @@ export function buildMonthlyMatrix(
       projectCells = new Map();
       cellsByProject.set(assignment.project, projectCells);
     }
-    projectCells.set(
-      assignment.user,
-      mergeAssignmentCell(projectCells.get(assignment.user), assignment),
-    );
+    applyAssignmentToProject(assignment, projectCells, rowTotalsByProject);
     if (!userById.has(assignment.user)) {
       userById.set(assignment.user, {
         user_id: assignment.user,
@@ -178,15 +213,13 @@ export function buildMonthlyMatrix(
   const users = Array.from(userById.values()).sort((a, b) =>
     a.display_name.localeCompare(b.display_name),
   );
-
-  const rows: MonthlyMatrixRow[] = [];
-  for (const [projectId, cells] of cellsByProject) {
-    const project = projectsById.get(projectId);
-    if (!project) continue;
-    const rowTotal = Array.from(cells.values()).reduce((sum, c) => sum + c.percentage, 0);
-    rows.push({ project, cells, rowTotal });
-  }
-  rows.sort((a, b) => a.project.name.localeCompare(b.project.name));
+  const rows: MonthlyMatrixRow[] = projects
+    .map((project) => ({
+      project,
+      cells: cellsByProject.get(project.id) ?? new Map<string, CellState>(),
+      rowTotal: rowTotalsByProject.get(project.id) ?? 0,
+    }))
+    .sort((a, b) => a.project.name.localeCompare(b.project.name));
 
   return { users, rows, userTotals };
 }

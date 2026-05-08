@@ -17,7 +17,7 @@ export default function ProjectAssignmentsMonthly() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
-  const { isLoading, error, projects, assignments } = useMonthlyAssignments(month);
+  const { isLoading, error, projects, assignments, members } = useMonthlyAssignments(month);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -40,7 +40,11 @@ export default function ProjectAssignmentsMonthly() {
         {isLoading ? (
           <LoadingPanel />
         ) : (
-          <MonthlyAssignmentMatrix projects={projects} assignments={assignments} />
+          <MonthlyAssignmentMatrix
+            projects={projects}
+            assignments={assignments}
+            members={members}
+          />
         )}
       </div>
     </Layout>
