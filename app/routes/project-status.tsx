@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
+import { Layout } from "~/components/layout";
 import {
   InfraCostDisplay,
   fetchAllMonthlyCostsForProject,
@@ -12,6 +13,8 @@ import type {
   ProjectProgressStatusInline,
   SurveyUserInline,
 } from "~/lib/api/generated";
+
+const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
@@ -27,7 +30,6 @@ export default function ProjectStatus() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [monthlyCostsByProject, setMonthlyCostsByProject] = useState<
     Record<string, ProjectMonthlyCost[]>
   >({});
@@ -141,16 +143,11 @@ export default function ProjectStatus() {
 
   if (authLoading) {
     return (
-      <ProjectStatusLayout
-        user={null}
-        isLoading={true}
-        menuOpen={menuOpen}
-        setMenuOpen={setMenuOpen}
-      >
-        <div className="flex justify-center items-center h-full">
+      <Layout title="Kippo プロジェクト状況" fullHeight>
+        <div className="flex-1 flex justify-center items-center">
           <div className="text-gray-500">読み込み中...</div>
         </div>
-      </ProjectStatusLayout>
+      </Layout>
     );
   }
 
@@ -159,12 +156,7 @@ export default function ProjectStatus() {
   }
 
   return (
-    <ProjectStatusLayout
-      user={user}
-      isLoading={false}
-      menuOpen={menuOpen}
-      setMenuOpen={setMenuOpen}
-    >
+    <Layout title="Kippo プロジェクト状況" fullHeight>
       {error && (
         <div className="rounded-md bg-red-50 p-4 mb-4">
           <div className="text-sm text-red-800">{error}</div>
@@ -262,114 +254,7 @@ export default function ProjectStatus() {
           </div>
         </div>
       )}
-    </ProjectStatusLayout>
-  );
-}
-
-interface ProjectStatusLayoutProps {
-  children: React.ReactNode;
-  user: { username: string } | null;
-  isLoading: boolean;
-  menuOpen: boolean;
-  setMenuOpen: (open: boolean) => void;
-}
-
-const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
-
-function ProjectStatusLayout({
-  children,
-  user,
-  isLoading,
-  menuOpen,
-  setMenuOpen,
-}: ProjectStatusLayoutProps) {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-              >
-                <span className="sr-only">メニュー</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                >
-                  <title>メニュー</title>
-                  {menuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                    />
-                  )}
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex-1 flex justify-center items-center">
-              <span className="text-xl font-bold text-gray-900">Kippo プロジェクト状況</span>
-            </div>
-
-            <div className="flex items-center">
-              {isLoading ? (
-                <div className="text-sm text-gray-500">読み込み中...</div>
-              ) : user ? (
-                <span className="text-sm text-gray-600">{user.username}</span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {menuOpen && (
-          <nav className="border-t border-gray-200 bg-white">
-            <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2">
-              <div className="flex flex-col space-y-1">
-                <a
-                  href={`${urlPrefix}/admin/`}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
-                  KIPPO
-                </a>
-                <a
-                  href={`${urlPrefix}/ui/projects`}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
-                  要件管理
-                </a>
-                <a
-                  href={`${urlPrefix}/ui/weekly-effort`}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
-                  週間稼働量
-                </a>
-                <a
-                  href={`${urlPrefix}/ui/project-status`}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-indigo-100 text-indigo-700"
-                >
-                  プロジェクト状況
-                </a>
-              </div>
-            </div>
-          </nav>
-        )}
-      </header>
-
-      <main className="flex-1 flex flex-col">{children}</main>
-    </div>
+    </Layout>
   );
 }
 
