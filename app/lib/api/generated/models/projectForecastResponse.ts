@@ -7,10 +7,19 @@
  */
 
 export interface ProjectForecastResponse {
-  /** @nullable */
+  /**
+     * Day-precision completion date; null when the project has no future assignments to project from.
+     * @nullable
+     */
   estimated_completion_date: string | null;
-  /** @nullable */
+  /**
+     * Days between estimated_completion_date and target_date. Positive = behind target; negative = ahead.
+     * @nullable
+     */
   delta_from_target_date_days: number | null;
-  /** @nullable */
+  /**
+     * Echo of project.target_date for client-side delta computation.
+     * @nullable
+     */
   target_date: string | null;
 }
