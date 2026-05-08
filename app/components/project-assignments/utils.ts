@@ -1,4 +1,55 @@
-import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type { ProjectMonthlyAssignment, ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
+
+// Local types for the suggest-assignments response. The kippo backend currently emits
+// `patterns: unknown[]` in OpenAPI (a generic JSONField on the inline_serializer); a typed
+// schema is tracked in monkut/kippo#231. Until that lands, we declare the shape here to
+// mirror the backend's Pydantic ProjectAssignmentPattern model.
+
+export type SuggestedPatternMember = {
+  user_id: string;
+  is_past_member: boolean;
+  monthly_percentages: Record<string, number>; // { "YYYY-MM-DD": percentage }
+};
+
+export type SuggestedPatternConflict = {
+  user_id: string;
+  month: string; // "YYYY-MM-DD"
+  reason: string;
+};
+
+export type SuggestedPattern = {
+  pattern_ids: string[];
+  label: string;
+  estimated_completion: string | null; // ISO date
+  infeasible: boolean;
+  conflicts: SuggestedPatternConflict[];
+  members: SuggestedPatternMember[];
+};
+
+/** Flatten a suggested pattern into a list of ProjectMonthlyAssignmentRequest payloads.
+ *
+ * Each (member × month → percentage) becomes one row, posted as `is_confirmed=False`
+ * (per kippo#224 C1: accepted patterns materialize as projections; PMs toggle to
+ * confirmed manually).
+ */
+export function flattenPatternToAssignmentRequests(
+  pattern: SuggestedPattern,
+  projectId: string,
+): ProjectMonthlyAssignmentRequest[] {
+  const requests: ProjectMonthlyAssignmentRequest[] = [];
+  for (const member of pattern.members) {
+    for (const [month, percentage] of Object.entries(member.monthly_percentages)) {
+      requests.push({
+        project: projectId,
+        user: member.user_id,
+        month,
+        percentage,
+        is_confirmed: false,
+      });
+    }
+  }
+  return requests;
+}
 
 export type CellState = {
   percentage: number;
