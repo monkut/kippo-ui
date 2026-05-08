@@ -1,4 +1,5 @@
 import type {
+  KippoProject,
   ProjectAssignmentPattern,
   ProjectMonthlyAssignment,
   ProjectMonthlyAssignmentRequest,
@@ -29,6 +30,8 @@ export function flattenPatternToAssignmentRequests(
   return requests;
 }
 
+export const MAX_PERCENTAGE_PER_MONTH = 100;
+
 export type CellState = {
   percentage: number;
   isConfirmed: boolean;
@@ -46,6 +49,21 @@ export type Grid = {
   monthTotals: Map<string, number>;
 };
 
+/** Merge a duplicate (user, month/project) row: sum %, downgrade isConfirmed if any contributor is unconfirmed. */
+function mergeAssignmentCell(
+  existing: CellState | undefined,
+  assignment: ProjectMonthlyAssignment,
+): CellState {
+  return {
+    percentage: (existing?.percentage ?? 0) + assignment.percentage,
+    isConfirmed: (existing?.isConfirmed ?? true) && (assignment.is_confirmed ?? false),
+  };
+}
+
+function assignmentDisplayName(assignment: ProjectMonthlyAssignment): string {
+  return assignment.user_display_name?.trim() || assignment.user_username;
+}
+
 /** Pivot a flat assignment list into a (user × month → percentage) grid. */
 export function buildGrid(assignments: ProjectMonthlyAssignment[]): Grid {
   const monthsSet = new Set<string>();
@@ -57,20 +75,12 @@ export function buildGrid(assignments: ProjectMonthlyAssignment[]): Grid {
     monthsSet.add(assignment.month);
 
     const userKey = assignment.user;
-    const displayName = assignment.user_display_name?.trim() || assignment.user_username;
     const row = userGrid.get(userKey) ?? {
       userKey,
-      displayName,
+      displayName: assignmentDisplayName(assignment),
       cells: new Map<string, CellState>(),
     };
-    const existing = row.cells.get(assignment.month);
-    // If a user has multiple rows for the same month on this project (data anomaly),
-    // sum the percentages and treat the cell as confirmed only if every contributing
-    // row is confirmed.
-    row.cells.set(assignment.month, {
-      percentage: (existing?.percentage ?? 0) + assignment.percentage,
-      isConfirmed: (existing?.isConfirmed ?? true) && (assignment.is_confirmed ?? false),
-    });
+    row.cells.set(assignment.month, mergeAssignmentCell(row.cells.get(assignment.month), assignment));
     userGrid.set(userKey, row);
 
     monthTotals.set(assignment.month, (monthTotals.get(assignment.month) ?? 0) + assignment.percentage);
@@ -88,14 +98,82 @@ export function formatMonth(month: string): string {
   return month.slice(0, 7);
 }
 
-/** First-of-month ISO date for the month after `reference`. Wraps December → next year. */
-export function firstOfNextMonth(reference: Date): string {
+export function firstOfMonth(reference: Date): string {
   const year = reference.getFullYear();
-  const month = reference.getMonth() + 1; // JS months are 0-indexed
-  if (month === 12) {
-    return `${year + 1}-01-01`;
+  const month = (reference.getMonth() + 1).toString().padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+export function addMonths(monthStart: string, delta: number): string {
+  const [yearStr, monthStr] = monthStart.split("-");
+  const totalMonths = Number(yearStr) * 12 + (Number(monthStr) - 1) + delta;
+  const year = Math.floor(totalMonths / 12);
+  const month = ((totalMonths % 12) + 1).toString().padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+export function firstOfNextMonth(reference: Date): string {
+  return addMonths(firstOfMonth(reference), 1);
+}
+
+export type MonthlyMatrixUser = {
+  user_id: string;
+  display_name: string;
+};
+
+export type MonthlyMatrixRow = {
+  project: KippoProject;
+  cells: Map<string, CellState>; // user_id → cell
+  rowTotal: number;
+};
+
+export type MonthlyMatrix = {
+  users: MonthlyMatrixUser[]; // columns, sorted by display_name
+  rows: MonthlyMatrixRow[]; // one row per project with at least one assignment, sorted by project.name
+  userTotals: Map<string, number>; // user_id → sum across projects (footer)
+};
+
+/** Pivot active projects + assignments for a single month into a (project × user → %) matrix.
+ * Assignments must be pre-filtered to the month by the caller. Projects without any assignment
+ * in `assignments` are dropped from `rows`; assignments referencing a project not in `projects`
+ * are dropped. Duplicate (project, user) rows are summed via mergeAssignmentCell.
+ */
+export function buildMonthlyMatrix(
+  projects: KippoProject[],
+  assignments: ProjectMonthlyAssignment[],
+): MonthlyMatrix {
+  const projectsById = new Map(projects.map((p) => [p.id, p]));
+  const cellsByProject = new Map<string, Map<string, CellState>>();
+  const userById = new Map<string, MonthlyMatrixUser>();
+  const userTotals = new Map<string, number>();
+
+  for (const assignment of assignments) {
+    if (!projectsById.has(assignment.project)) continue;
+    let projectCells = cellsByProject.get(assignment.project);
+    if (!projectCells) {
+      projectCells = new Map();
+      cellsByProject.set(assignment.project, projectCells);
+    }
+    projectCells.set(assignment.user, mergeAssignmentCell(projectCells.get(assignment.user), assignment));
+    if (!userById.has(assignment.user)) {
+      userById.set(assignment.user, {
+        user_id: assignment.user,
+        display_name: assignmentDisplayName(assignment),
+      });
+    }
+    userTotals.set(assignment.user, (userTotals.get(assignment.user) ?? 0) + assignment.percentage);
   }
-  // month + 1 is already the next-month value (1-12), and we want it 0-padded.
-  const nextMonth = (month + 1).toString().padStart(2, "0");
-  return `${year}-${nextMonth}-01`;
+
+  const users = Array.from(userById.values()).sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  const rows: MonthlyMatrixRow[] = [];
+  for (const [projectId, cells] of cellsByProject) {
+    const project = projectsById.get(projectId);
+    if (!project) continue;
+    const rowTotal = Array.from(cells.values()).reduce((sum, c) => sum + c.percentage, 0);
+    rows.push({ project, cells, rowTotal });
+  }
+  rows.sort((a, b) => a.project.name.localeCompare(b.project.name));
+
+  return { users, rows, userTotals };
 }
