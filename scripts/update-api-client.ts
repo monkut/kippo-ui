@@ -32,6 +32,8 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+import { GitHubRateLimitError, HTTP_STATUS_TOO_MANY_REQUESTS, isRateLimited } from "./github-rate-limit";
+
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
@@ -40,7 +42,7 @@ async function fetchWithRetry(
   const response = await fetch(url, options);
 
   // Retry on 5xx errors (server errors) or 429 (rate limit)
-  if ((response.status >= 500 || response.status === 429) && retries > 0) {
+  if ((response.status >= 500 || response.status === HTTP_STATUS_TOO_MANY_REQUESTS) && retries > 0) {
     const delay = RETRY_DELAY_MS * (MAX_RETRIES - retries + 1);
     console.log(
       `Request failed with ${response.status}, retrying in ${delay}ms... (${retries} retries left)`,
@@ -69,6 +71,10 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
 
   const response = await fetchWithRetry(GITHUB_API_URL, { headers });
 
+  if (isRateLimited(response)) {
+    // Don't retry — rate-limit reset is up to 60 minutes; the user needs to act.
+    throw new GitHubRateLimitError();
+  }
   if (!response.ok) {
     throw new Error(`Failed to fetch release info: ${response.status} ${response.statusText}`);
   }
@@ -109,7 +115,9 @@ function generateApiClient(): void {
   console.log("Generating API client with orval...");
 
   try {
-    execSync("npx orval --config ./orval.config.cjs", {
+    // Use `pnpm exec` to stay consistent with the rest of the repo's tooling
+    // (package.json's generate_api_client script + pnpm-lock.yaml).
+    execSync("pnpm exec orval --config ./orval.config.cjs", {
       cwd: PROJECT_ROOT,
       stdio: "inherit",
     });
