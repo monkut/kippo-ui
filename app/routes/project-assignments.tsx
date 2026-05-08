@@ -34,7 +34,7 @@ export default function ProjectAssignmentsMonthly() {
 
   return (
     <Layout title="月別プロジェクト割当">
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full max-w-[90vw] mx-auto">
         <MonthPicker month={month} onChange={setMonth} />
         {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
         {isLoading ? (

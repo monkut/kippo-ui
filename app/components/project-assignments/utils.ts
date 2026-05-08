@@ -33,6 +33,14 @@ export function flattenPatternToAssignmentRequests(
 
 export const MAX_PERCENTAGE_PER_MONTH = 100;
 
+/** Usernames of system / placeholder accounts hidden from project-assignment UIs. */
+export const EXCLUDED_USERNAMES: ReadonlySet<string> = new Set([
+  "(unassigned)",
+  "admin",
+  "kiconia-api",
+  "luca.pacioli",
+]);
+
 export type CellState = {
   percentage: number;
   isConfirmed: boolean;
@@ -61,8 +69,12 @@ function mergeAssignmentCell(
   };
 }
 
-function assignmentDisplayName(assignment: ProjectMonthlyAssignment): string {
+export function assignmentDisplayName(assignment: ProjectMonthlyAssignment): string {
   return assignment.user_display_name?.trim() || assignment.user_username;
+}
+
+export function memberDisplayName(member: OrganizationMember): string {
+  return member.display_name?.trim() || member.username;
 }
 
 /** Pivot a flat assignment list into a (user × month → percentage) grid. */
@@ -147,10 +159,6 @@ export type MonthlyAssignmentMatrixProps = {
   assignments: ProjectMonthlyAssignment[];
   members?: OrganizationMember[];
 };
-
-function memberDisplayName(member: OrganizationMember): string {
-  return member.display_name?.trim() || member.username;
-}
 
 function applyAssignmentToProject(
   assignment: ProjectMonthlyAssignment,

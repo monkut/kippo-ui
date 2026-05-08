@@ -6,6 +6,7 @@ import type {
 } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
+import { EXCLUDED_USERNAMES } from "~/components/project-assignments/utils";
 
 export type UseMonthlyAssignmentsState = {
   isLoading: boolean;
@@ -60,7 +61,7 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
         if (!alive) return;
         setProjects(projectData);
         const orgMembers = await fetchOrgMembersForProjects(projectData);
-        if (alive) setMembers(orgMembers);
+        if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {
@@ -86,7 +87,7 @@ function useAssignmentsForMonth(month: string) {
     (async () => {
       try {
         const data = await fetchAllMonthlyAssignments({ month });
-        if (alive) setAssignments(data);
+        if (alive) setAssignments(data.filter((a) => !EXCLUDED_USERNAMES.has(a.user_username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {

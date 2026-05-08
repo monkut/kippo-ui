@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { Layout } from "~/components/layout";
 import {
   AddAssignmentModal,
   AssignmentsTable,
   EditAssignmentModal,
+  firstOfMonth,
   ForecastBar,
+  MonthPicker,
   PatternPickerModal,
 } from "~/components/project-assignments";
-import { Layout } from "~/components/layout";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
-import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { useAuth } from "~/lib/auth-context";
 
 export function meta() {
@@ -44,16 +46,28 @@ export default function ProjectAssignments() {
 
 type State = ReturnType<typeof useProjectAssignments>;
 
+function useEffortUsernames(project: KippoProject | null): ReadonlySet<string> {
+  return useMemo(
+    () => new Set(project?.weekly_effort_users.map((u) => u.username) ?? []),
+    [project],
+  );
+}
+
 function Body({ projectId, state }: { projectId: string | undefined; state: State }) {
   const [addOpen, setAddOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
+  const [month, setMonth] = useState(() => firstOfMonth(new Date()));
+  const effortUsernames = useEffortUsernames(state.project);
+  const handleToggleConfirmed = (a: ProjectMonthlyAssignment) =>
+    state.updateAssignment(a.id, { is_confirmed: !(a.is_confirmed ?? false) });
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {state.error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{state.error}</div>
       )}
+      <MonthPicker month={month} onChange={setMonth} />
       {state.isLoading ? (
         <LoadingPanel />
       ) : (
@@ -61,15 +75,20 @@ function Body({ projectId, state }: { projectId: string | undefined; state: Stat
           <ForecastBar forecast={state.forecast} forecastError={state.forecastError} />
           <AssignmentsTable
             assignments={state.assignments}
+            month={month}
+            isSaving={state.isSaving}
             onAddClick={() => setAddOpen(true)}
             onSuggestClick={() => setSuggestOpen(true)}
             onCellClick={setEditTarget}
+            onToggleConfirmed={handleToggleConfirmed}
           />
         </>
       )}
       <Modals
         projectId={projectId}
         state={state}
+        month={month}
+        effortUsernames={effortUsernames}
         addOpen={addOpen}
         setAddOpen={setAddOpen}
         suggestOpen={suggestOpen}
@@ -81,43 +100,52 @@ function Body({ projectId, state }: { projectId: string | undefined; state: Stat
   );
 }
 
-function Modals({
-  projectId,
-  state,
-  addOpen,
-  setAddOpen,
-  suggestOpen,
-  setSuggestOpen,
-  editTarget,
-  setEditTarget,
-}: {
+type ModalsProps = {
   projectId: string | undefined;
   state: State;
+  month: string;
+  effortUsernames: ReadonlySet<string>;
   addOpen: boolean;
   setAddOpen: (open: boolean) => void;
   suggestOpen: boolean;
   setSuggestOpen: (open: boolean) => void;
   editTarget: ProjectMonthlyAssignment | null;
   setEditTarget: (target: ProjectMonthlyAssignment | null) => void;
-}) {
+};
+
+function Modals({
+  projectId,
+  state,
+  month,
+  effortUsernames,
+  addOpen,
+  setAddOpen,
+  suggestOpen,
+  setSuggestOpen,
+  editTarget,
+  setEditTarget,
+}: ModalsProps) {
   return (
     <>
       {projectId && (
-        <>
-          <AddAssignmentModal
-            open={addOpen}
-            projectId={projectId}
-            isSaving={state.isSaving}
-            onClose={() => setAddOpen(false)}
-            onSubmit={state.createAssignment}
-          />
-          <PatternPickerModal
-            open={suggestOpen}
-            projectId={projectId}
-            onClose={() => setSuggestOpen(false)}
-            onAcceptPattern={state.bulkCreateAssignments}
-          />
-        </>
+        <AddAssignmentModal
+          open={addOpen}
+          projectId={projectId}
+          month={month}
+          effortUsernames={effortUsernames}
+          isSaving={state.isSaving}
+          onClose={() => setAddOpen(false)}
+          onSubmit={state.createAssignment}
+        />
+      )}
+      {projectId && (
+        <PatternPickerModal
+          open={suggestOpen}
+          projectId={projectId}
+          project={state.project}
+          onClose={() => setSuggestOpen(false)}
+          onAcceptPattern={state.bulkCreateAssignments}
+        />
       )}
       <EditAssignmentModal
         open={editTarget !== null}

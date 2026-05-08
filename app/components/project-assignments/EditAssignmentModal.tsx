@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type {
-  ProjectMonthlyAssignment,
   PatchedProjectMonthlyAssignmentRequest,
+  ProjectMonthlyAssignment,
 } from "~/lib/api/generated/models";
 
 type EditAssignmentModalProps = {
@@ -20,10 +20,7 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
   if (!open || !assignment) return null;
 
   const handleSave = async () => {
-    const ok = await onSave(assignment.id, {
-      percentage: form.percentage,
-      is_confirmed: form.isConfirmed,
-    });
+    const ok = await onSave(assignment.id, { percentage: form.percentage });
     if (ok) onClose();
   };
   const handleDelete = async () => {
@@ -40,18 +37,7 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
   return (
     <ModalShell title="割当を編集" onClose={onClose}>
       <ReadOnlyHeader assignment={assignment} />
-      <div className="space-y-4">
-        <PercentageField
-          value={form.percentage}
-          onChange={form.setPercentage}
-          disabled={isSaving}
-        />
-        <ConfirmedField
-          value={form.isConfirmed}
-          onChange={form.setIsConfirmed}
-          disabled={isSaving}
-        />
-      </div>
+      <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
       <ModalActions
         onDelete={handleDelete}
         onCancel={onClose}
@@ -64,14 +50,12 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
 
 function useEditForm(open: boolean, assignment: ProjectMonthlyAssignment | null) {
   const [percentage, setPercentage] = useState(0);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   useEffect(() => {
     if (open && assignment) {
       setPercentage(assignment.percentage);
-      setIsConfirmed(assignment.is_confirmed ?? false);
     }
   }, [open, assignment]);
-  return { percentage, setPercentage, isConfirmed, setIsConfirmed };
+  return { percentage, setPercentage };
 }
 
 function ReadOnlyHeader({ assignment }: { assignment: ProjectMonthlyAssignment }) {
@@ -183,32 +167,6 @@ function PercentageField({
         disabled={disabled}
         className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
-    </div>
-  );
-}
-
-function ConfirmedField({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex items-center">
-      <input
-        type="checkbox"
-        id="edit-assignment-confirmed"
-        checked={value}
-        onChange={(e) => onChange(e.target.checked)}
-        disabled={disabled}
-        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-      />
-      <label htmlFor="edit-assignment-confirmed" className="ml-2 block text-sm text-gray-700">
-        確定済み
-      </label>
     </div>
   );
 }
