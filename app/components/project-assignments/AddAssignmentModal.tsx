@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import type { ProjectMonthlyAssignment, ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
-import { extractProjectMembers, firstOfNextMonth } from "./utils";
+import type { OrganizationMember, ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
+import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
+import { firstOfNextMonth } from "./utils";
 
 type AddAssignmentModalProps = {
   open: boolean;
   projectId: string;
-  existingAssignments: ProjectMonthlyAssignment[];
   isSaving: boolean;
   onClose: () => void;
   onSubmit: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
@@ -14,55 +14,135 @@ type AddAssignmentModalProps = {
 const DEFAULT_PERCENTAGE = 50;
 
 export function AddAssignmentModal(props: AddAssignmentModalProps) {
-  const { open, projectId, existingAssignments, isSaving, onClose, onSubmit } = props;
-  const members = extractProjectMembers(existingAssignments);
-  const form = useAddAssignmentForm(open, members);
+  const { open, projectId, isSaving, onClose, onSubmit } = props;
+  const { members, isLoadingMembers, fetchError } = useOrgMembers(open, projectId);
+  const form = useAddAssignmentForm(open);
+  useDefaultUserSelection(open, members, form.userId, form.setUserId);
 
   if (!open) return null;
 
   const handleSubmit = async () => {
-    if (!form.userId) {
-      form.setValidationError("ユーザーを選択してください");
+    const validationError = validateForm(form);
+    if (validationError) {
+      form.setValidationError(validationError);
       return;
     }
-    if (!form.month) {
-      form.setValidationError("月を入力してください");
-      return;
-    }
-    const ok = await onSubmit({
-      project: projectId,
-      user: form.userId,
-      month: normalizeToFirstOfMonth(form.month),
-      percentage: form.percentage,
-      is_confirmed: form.isConfirmed,
-    });
+    const ok = await onSubmit(formToRequest(projectId, form));
     if (ok) onClose();
   };
 
-  const hasMembers = members.length > 0;
-
   return (
     <ModalShell title="割当を追加" onClose={onClose}>
-      {!hasMembers && <NoMembersHint />}
+      {fetchError && <ErrorBanner message={fetchError} />}
       {form.validationError && <ErrorBanner message={form.validationError} />}
-      <div className="space-y-4">
-        <UserSelectField value={form.userId} onChange={form.setUserId} members={members} disabled={isSaving} />
-        <MonthField value={form.month} onChange={form.setMonth} disabled={isSaving} />
-        <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
-        <ConfirmedField value={form.isConfirmed} onChange={form.setIsConfirmed} disabled={isSaving} />
-      </div>
+      <Fields form={form} members={members} isSaving={isSaving} isLoadingMembers={isLoadingMembers} />
       <ModalActions
         onCancel={onClose}
         onSubmit={handleSubmit}
         isSaving={isSaving}
-        submitDisabled={!hasMembers}
+        submitDisabled={members.length === 0 || isLoadingMembers}
         submitLabel="追加"
       />
     </ModalShell>
   );
 }
 
-function useAddAssignmentForm(open: boolean, members: ReturnType<typeof extractProjectMembers>) {
+function useDefaultUserSelection(
+  open: boolean,
+  members: OrganizationMember[],
+  userId: string,
+  setUserId: (v: string) => void,
+) {
+  useEffect(() => {
+    if (open && members.length > 0 && !userId) {
+      setUserId(members[0].user_id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, members]);
+}
+
+function validateForm(form: ReturnType<typeof useAddAssignmentForm>): string {
+  if (!form.userId) return "ユーザーを選択してください";
+  if (!form.month) return "月を入力してください";
+  return "";
+}
+
+function formToRequest(projectId: string, form: ReturnType<typeof useAddAssignmentForm>): ProjectMonthlyAssignmentRequest {
+  return {
+    project: projectId,
+    user: form.userId,
+    month: normalizeToFirstOfMonth(form.month),
+    percentage: form.percentage,
+    is_confirmed: form.isConfirmed,
+  };
+}
+
+function Fields({
+  form,
+  members,
+  isSaving,
+  isLoadingMembers,
+}: {
+  form: ReturnType<typeof useAddAssignmentForm>;
+  members: OrganizationMember[];
+  isSaving: boolean;
+  isLoadingMembers: boolean;
+}) {
+  return (
+    <div className="space-y-4">
+      <UserSelectField
+        value={form.userId}
+        onChange={form.setUserId}
+        members={members}
+        disabled={isSaving || isLoadingMembers}
+        isLoading={isLoadingMembers}
+      />
+      <MonthField value={form.month} onChange={form.setMonth} disabled={isSaving} />
+      <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
+      <ConfirmedField value={form.isConfirmed} onChange={form.setIsConfirmed} disabled={isSaving} />
+    </div>
+  );
+}
+
+async function fetchOrgMembers(projectId: string): Promise<{ members: OrganizationMember[]; error: string }> {
+  try {
+    const response = await projectsMembersRetrieve(projectId);
+    if (response.status === 200) {
+      return { members: response.data.members ?? [], error: "" };
+    }
+    return { members: [], error: "組織メンバーの取得に失敗しました" };
+  } catch {
+    return { members: [], error: "組織メンバーの取得に失敗しました" };
+  }
+}
+
+function useOrgMembers(open: boolean, projectId: string) {
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setIsLoadingMembers(true);
+    setFetchError("");
+    setMembers([]);
+    let cancelled = false;
+    fetchOrgMembers(projectId).then((result) => {
+      if (cancelled) return result;
+      setMembers(result.members);
+      setFetchError(result.error);
+      setIsLoadingMembers(false);
+      return result;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectId]);
+
+  return { members, isLoadingMembers, fetchError };
+}
+
+function useAddAssignmentForm(open: boolean) {
   const [userId, setUserId] = useState("");
   const [month, setMonth] = useState(firstOfNextMonth(new Date()));
   const [percentage, setPercentage] = useState(DEFAULT_PERCENTAGE);
@@ -71,13 +151,11 @@ function useAddAssignmentForm(open: boolean, members: ReturnType<typeof extractP
 
   useEffect(() => {
     if (!open) return;
-    setUserId(members[0]?.user_id ?? "");
+    setUserId("");
     setMonth(firstOfNextMonth(new Date()));
     setPercentage(DEFAULT_PERCENTAGE);
     setIsConfirmed(false);
     setValidationError("");
-    // members derives from props.existingAssignments — re-derived per render is fine here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   return {
@@ -113,18 +191,8 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
   );
 }
 
-function NoMembersHint() {
-  return (
-    <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-      このプロジェクトにはまだ割当ユーザーがいません。新しいユーザーの追加は、現在kippo管理画面で行ってください。
-    </div>
-  );
-}
-
 function ErrorBanner({ message }: { message: string }) {
-  return (
-    <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>
-  );
+  return <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>;
 }
 
 function UserSelectField({
@@ -132,11 +200,13 @@ function UserSelectField({
   onChange,
   members,
   disabled,
+  isLoading,
 }: {
   value: string;
   onChange: (v: string) => void;
-  members: ReturnType<typeof extractProjectMembers>;
+  members: OrganizationMember[];
   disabled: boolean;
+  isLoading: boolean;
 }) {
   return (
     <div>
@@ -150,7 +220,8 @@ function UserSelectField({
         disabled={disabled || members.length === 0}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
       >
-        {members.length === 0 && <option value="">(対象ユーザーがいません)</option>}
+        {isLoading && <option value="">読み込み中...</option>}
+        {!isLoading && members.length === 0 && <option value="">(対象ユーザーがいません)</option>}
         {members.map((member) => (
           <option key={member.user_id} value={member.user_id}>
             {member.display_name}
