@@ -1,13 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
   buildGrid,
-  extractProjectMembers,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
-  type SuggestedPattern,
 } from "~/components/project-assignments/utils";
-import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type { ProjectAssignmentPattern, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 
 // Mirror of the kippo backend ProjectMonthlyAssignment shape for fixture brevity.
 function makeAssignment(overrides: Partial<ProjectMonthlyAssignment>): ProjectMonthlyAssignment {
@@ -144,38 +142,6 @@ describe("formatMonth", () => {
   });
 });
 
-describe("extractProjectMembers", () => {
-  test("returns empty list for empty input", () => {
-    expect(extractProjectMembers([])).toEqual([]);
-  });
-
-  test("deduplicates by user_id", () => {
-    const members = extractProjectMembers([
-      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "Alice", month: "2026-06-01" }),
-      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "Alice", month: "2026-07-01" }),
-      makeAssignment({ user: "u-2", user_username: "bob", user_display_name: "Bob", month: "2026-06-01" }),
-    ]);
-    expect(members).toHaveLength(2);
-    expect(members.map((m) => m.user_id).sort()).toEqual(["u-1", "u-2"]);
-  });
-
-  test("sorts members by display name", () => {
-    const members = extractProjectMembers([
-      makeAssignment({ user: "u-c", user_display_name: "Charlie", month: "2026-06-01" }),
-      makeAssignment({ user: "u-a", user_display_name: "Alice", month: "2026-06-01" }),
-      makeAssignment({ user: "u-b", user_display_name: "Bob", month: "2026-06-01" }),
-    ]);
-    expect(members.map((m) => m.display_name)).toEqual(["Alice", "Bob", "Charlie"]);
-  });
-
-  test("falls back to username when display_name is empty", () => {
-    const members = extractProjectMembers([
-      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "", month: "2026-06-01" }),
-    ]);
-    expect(members[0].display_name).toBe("alice");
-  });
-});
-
 describe("firstOfNextMonth", () => {
   test("returns first-of-next-month for mid-month input", () => {
     expect(firstOfNextMonth(new Date(2026, 5, 15))).toBe("2026-07-01"); // June 15 → July 1
@@ -190,7 +156,7 @@ describe("firstOfNextMonth", () => {
   });
 });
 
-function makePattern(overrides: Partial<SuggestedPattern> = {}): SuggestedPattern {
+function makePattern(overrides: Partial<ProjectAssignmentPattern> = {}): ProjectAssignmentPattern {
   return {
     pattern_ids: ["P1-max-reuse"],
     label: "test",

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { projectsSuggestAssignmentsCreate } from "~/lib/api/generated/projects/projects";
-import type { ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
+import type {
+  ProjectAssignmentPattern,
+  ProjectMonthlyAssignmentRequest,
+} from "~/lib/api/generated/models";
 import { PatternCard } from "./PatternCard";
-import { flattenPatternToAssignmentRequests, type SuggestedPattern } from "./utils";
+import { flattenPatternToAssignmentRequests } from "./utils";
 
 type PatternPickerModalProps = {
   open: boolean;
@@ -13,7 +16,7 @@ type PatternPickerModalProps = {
 
 export function PatternPickerModal(props: PatternPickerModalProps) {
   const { open, projectId, onClose, onAcceptPattern } = props;
-  const { isLoading, error, patterns } = useSuggestedPatterns(open, projectId);
+  const { isLoading, error, patterns } = useProjectAssignmentPatterns(open, projectId);
   const [isAccepting, setIsAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
 
@@ -23,7 +26,7 @@ export function PatternPickerModal(props: PatternPickerModalProps) {
 
   if (!open) return null;
 
-  const handleAccept = async (pattern: SuggestedPattern) => {
+  const handleAccept = async (pattern: ProjectAssignmentPattern) => {
     if (pattern.members.length === 0) return;
     if (
       !window.confirm(
@@ -60,16 +63,15 @@ export function PatternPickerModal(props: PatternPickerModalProps) {
   );
 }
 
-async function fetchSuggestedPatterns(projectId: string): Promise<{ patterns: SuggestedPattern[]; error: string }> {
+async function fetchProjectAssignmentPatterns(
+  projectId: string,
+): Promise<{ patterns: ProjectAssignmentPattern[]; error: string }> {
   try {
     const response = await projectsSuggestAssignmentsCreate(projectId, {});
     if (response.status !== 200) {
       return { patterns: [], error: "候補パターンの取得に失敗しました" };
     }
-    // SuggestAssignmentsResponse.patterns is `unknown[]` in the generated client
-    // (kippo#231 will type it). Cast to the local SuggestedPattern shape.
-    const data = response.data as { patterns?: SuggestedPattern[] };
-    return { patterns: data.patterns ?? [], error: "" };
+    return { patterns: response.data.patterns ?? [], error: "" };
   } catch (err) {
     const status = (err as { response?: { status?: number } })?.response?.status;
     if (status === 400) {
@@ -79,10 +81,10 @@ async function fetchSuggestedPatterns(projectId: string): Promise<{ patterns: Su
   }
 }
 
-function useSuggestedPatterns(open: boolean, projectId: string) {
+function useProjectAssignmentPatterns(open: boolean, projectId: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [patterns, setPatterns] = useState<SuggestedPattern[]>([]);
+  const [patterns, setPatterns] = useState<ProjectAssignmentPattern[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,7 +92,7 @@ function useSuggestedPatterns(open: boolean, projectId: string) {
     setError("");
     setPatterns([]);
     let cancelled = false;
-    fetchSuggestedPatterns(projectId).then((result) => {
+    fetchProjectAssignmentPatterns(projectId).then((result) => {
       if (cancelled) return;
       setPatterns(result.patterns);
       setError(result.error);
@@ -142,9 +144,9 @@ function Body({
 }: {
   isLoading: boolean;
   error: string;
-  patterns: SuggestedPattern[];
+  patterns: ProjectAssignmentPattern[];
   isAccepting: boolean;
-  onAccept: (pattern: SuggestedPattern) => void;
+  onAccept: (pattern: ProjectAssignmentPattern) => void;
 }) {
   if (error) {
     return <div className="rounded-md bg-red-50 p-4 text-sm text-red-800 mb-4">{error}</div>;
