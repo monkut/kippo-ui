@@ -26,6 +26,12 @@ export class GitHubRateLimitError extends Error {
  * The Python-side counterpart (`kippo/manage.py update_ui`) has the same gap;
  * see the project CLAUDE.md.
  */
-export function isRateLimited(response: { status: number; headers: { get: (name: string) => string | null } }): boolean {
-  return response.status === HTTP_STATUS_FORBIDDEN && response.headers.get("x-ratelimit-remaining") === "0";
+export function isRateLimited(response: {
+  status: number;
+  headers: { get: (name: string) => string | null };
+}): boolean {
+  return (
+    response.status === HTTP_STATUS_FORBIDDEN &&
+    response.headers.get("x-ratelimit-remaining") === "0"
+  );
 }

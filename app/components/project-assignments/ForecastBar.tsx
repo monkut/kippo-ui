@@ -29,14 +29,18 @@ function ForecastBarImpl({ forecast, forecastError }: ForecastBarProps) {
     <section className="bg-white shadow rounded-lg p-6">
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
         <div>
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">完了予測日</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            完了予測日
+          </div>
           <div className="text-2xl font-bold text-indigo-600 mt-1">
             {forecast.estimated_completion_date ?? "—"}
           </div>
         </div>
         {forecast.target_date && (
           <div>
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">目標終了日</div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              目標終了日
+            </div>
             <div className="text-lg font-medium text-gray-700 mt-1">{forecast.target_date}</div>
           </div>
         )}
@@ -63,12 +67,11 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 }
 
 function Badge({ tone, children }: { tone: "green" | "red"; children: React.ReactNode }) {
-  const palette =
-    tone === "green"
-      ? "bg-green-100 text-green-800"
-      : "bg-red-100 text-red-800";
+  const palette = tone === "green" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${palette}`}>
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${palette}`}
+    >
       {children}
     </span>
   );

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import type { ProjectMonthlyAssignment, PatchedProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
+import type {
+  ProjectMonthlyAssignment,
+  PatchedProjectMonthlyAssignmentRequest,
+} from "~/lib/api/generated/models";
 
 type EditAssignmentModalProps = {
   open: boolean;
@@ -17,11 +20,19 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
   if (!open || !assignment) return null;
 
   const handleSave = async () => {
-    const ok = await onSave(assignment.id, { percentage: form.percentage, is_confirmed: form.isConfirmed });
+    const ok = await onSave(assignment.id, {
+      percentage: form.percentage,
+      is_confirmed: form.isConfirmed,
+    });
     if (ok) onClose();
   };
   const handleDelete = async () => {
-    if (!window.confirm(`${assignment.user_display_name} の ${assignment.month} の割当を削除しますか?`)) return;
+    if (
+      !window.confirm(
+        `${assignment.user_display_name} の ${assignment.month} の割当を削除しますか?`,
+      )
+    )
+      return;
     const ok = await onDelete(assignment.id);
     if (ok) onClose();
   };
@@ -30,10 +41,23 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
     <ModalShell title="割当を編集" onClose={onClose}>
       <ReadOnlyHeader assignment={assignment} />
       <div className="space-y-4">
-        <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
-        <ConfirmedField value={form.isConfirmed} onChange={form.setIsConfirmed} disabled={isSaving} />
+        <PercentageField
+          value={form.percentage}
+          onChange={form.setPercentage}
+          disabled={isSaving}
+        />
+        <ConfirmedField
+          value={form.isConfirmed}
+          onChange={form.setIsConfirmed}
+          disabled={isSaving}
+        />
       </div>
-      <ModalActions onDelete={handleDelete} onCancel={onClose} onSave={handleSave} isSaving={isSaving} />
+      <ModalActions
+        onDelete={handleDelete}
+        onCancel={onClose}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
     </ModalShell>
   );
 }
@@ -106,7 +130,15 @@ function ModalActions({
   );
 }
 
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function ModalShell({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <button

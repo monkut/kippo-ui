@@ -60,7 +60,9 @@ function MembersSection({ members }: { members: ProjectAssignmentPatternMember[]
 }
 
 function MemberRow({ member }: { member: ProjectAssignmentPatternMember }) {
-  const monthEntries = Object.entries(member.monthly_percentages).sort(([a], [b]) => a.localeCompare(b));
+  const monthEntries = Object.entries(member.monthly_percentages).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
   return (
     <div className="text-xs">
       <div className="flex items-center gap-1.5 mb-0.5">
@@ -89,21 +91,18 @@ function ConflictsSection({ conflicts }: { conflicts: ProjectAssignmentPatternCo
   if (conflicts.length === 0) return null;
   return (
     <div className="space-y-1 border-t border-amber-100 pt-2">
-      <h4 className="text-xs font-medium text-amber-700 uppercase tracking-wider">割当競合 ({conflicts.length})</h4>
+      <h4 className="text-xs font-medium text-amber-700 uppercase tracking-wider">
+        割当競合 ({conflicts.length})
+      </h4>
       <ul className="text-xs text-amber-800 space-y-0.5 max-h-24 overflow-y-auto">
         {conflicts.slice(0, 5).map((conflict, idx) => (
-          <li
-            key={`${conflict.user_id}-${conflict.month}-${idx}`}
-            className="flex gap-1"
-          >
+          <li key={`${conflict.user_id}-${conflict.month}-${idx}`} className="flex gap-1">
             <span className="font-mono">{conflict.user_id.slice(0, 8)}…</span>
             <span className="text-amber-700">{formatMonth(conflict.month)}</span>
             <span className="text-amber-600 truncate">{conflict.reason}</span>
           </li>
         ))}
-        {conflicts.length > 5 && (
-          <li className="text-amber-600">…他 {conflicts.length - 5} 件</li>
-        )}
+        {conflicts.length > 5 && <li className="text-amber-600">…他 {conflicts.length - 5} 件</li>}
       </ul>
     </div>
   );

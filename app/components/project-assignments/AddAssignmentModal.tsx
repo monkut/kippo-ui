@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import type { OrganizationMember, ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
+import type {
+  OrganizationMember,
+  ProjectMonthlyAssignmentRequest,
+} from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
 import { firstOfNextMonth } from "./utils";
 
@@ -35,7 +38,12 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
     <ModalShell title="割当を追加" onClose={onClose}>
       {fetchError && <ErrorBanner message={fetchError} />}
       {form.validationError && <ErrorBanner message={form.validationError} />}
-      <Fields form={form} members={members} isSaving={isSaving} isLoadingMembers={isLoadingMembers} />
+      <Fields
+        form={form}
+        members={members}
+        isSaving={isSaving}
+        isLoadingMembers={isLoadingMembers}
+      />
       <ModalActions
         onCancel={onClose}
         onSubmit={handleSubmit}
@@ -67,7 +75,10 @@ function validateForm(form: ReturnType<typeof useAddAssignmentForm>): string {
   return "";
 }
 
-function formToRequest(projectId: string, form: ReturnType<typeof useAddAssignmentForm>): ProjectMonthlyAssignmentRequest {
+function formToRequest(
+  projectId: string,
+  form: ReturnType<typeof useAddAssignmentForm>,
+): ProjectMonthlyAssignmentRequest {
   return {
     project: projectId,
     user: form.userId,
@@ -104,7 +115,9 @@ function Fields({
   );
 }
 
-async function fetchOrgMembers(projectId: string): Promise<{ members: OrganizationMember[]; error: string }> {
+async function fetchOrgMembers(
+  projectId: string,
+): Promise<{ members: OrganizationMember[]; error: string }> {
   try {
     const response = await projectsMembersRetrieve(projectId);
     if (response.status === 200) {
@@ -172,7 +185,15 @@ function useAddAssignmentForm(open: boolean) {
   };
 }
 
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function ModalShell({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <button
@@ -243,7 +264,10 @@ function MonthField({
 }) {
   return (
     <div>
-      <label htmlFor="add-assignment-month" className="block text-sm font-medium text-gray-700 mb-1">
+      <label
+        htmlFor="add-assignment-month"
+        className="block text-sm font-medium text-gray-700 mb-1"
+      >
         月 (月初日)
       </label>
       <input

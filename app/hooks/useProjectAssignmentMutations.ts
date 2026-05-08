@@ -72,5 +72,12 @@ export function useProjectAssignmentMutations(
     [wrap],
   );
 
-  return { isSaving, setError: setHookError, createAssignment, updateAssignment, deleteAssignment, bulkCreateAssignments };
+  return {
+    isSaving,
+    setError: setHookError,
+    createAssignment,
+    updateAssignment,
+    deleteAssignment,
+    bulkCreateAssignments,
+  };
 }

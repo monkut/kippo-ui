@@ -32,7 +32,11 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-import { GitHubRateLimitError, HTTP_STATUS_TOO_MANY_REQUESTS, isRateLimited } from "./github-rate-limit";
+import {
+  GitHubRateLimitError,
+  HTTP_STATUS_TOO_MANY_REQUESTS,
+  isRateLimited,
+} from "./github-rate-limit";
 
 async function fetchWithRetry(
   url: string,
@@ -42,7 +46,10 @@ async function fetchWithRetry(
   const response = await fetch(url, options);
 
   // Retry on 5xx errors (server errors) or 429 (rate limit)
-  if ((response.status >= 500 || response.status === HTTP_STATUS_TOO_MANY_REQUESTS) && retries > 0) {
+  if (
+    (response.status >= 500 || response.status === HTTP_STATUS_TOO_MANY_REQUESTS) &&
+    retries > 0
+  ) {
     const delay = RETRY_DELAY_MS * (MAX_RETRIES - retries + 1);
     console.log(
       `Request failed with ${response.status}, retrying in ${delay}ms... (${retries} retries left)`,

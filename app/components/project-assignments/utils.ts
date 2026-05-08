@@ -80,15 +80,23 @@ export function buildGrid(assignments: ProjectMonthlyAssignment[]): Grid {
       displayName: assignmentDisplayName(assignment),
       cells: new Map<string, CellState>(),
     };
-    row.cells.set(assignment.month, mergeAssignmentCell(row.cells.get(assignment.month), assignment));
+    row.cells.set(
+      assignment.month,
+      mergeAssignmentCell(row.cells.get(assignment.month), assignment),
+    );
     userGrid.set(userKey, row);
 
-    monthTotals.set(assignment.month, (monthTotals.get(assignment.month) ?? 0) + assignment.percentage);
+    monthTotals.set(
+      assignment.month,
+      (monthTotals.get(assignment.month) ?? 0) + assignment.percentage,
+    );
   }
 
   return {
     months: Array.from(monthsSet).sort(),
-    byUser: Array.from(userGrid.values()).sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    byUser: Array.from(userGrid.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    ),
     monthTotals,
   };
 }
@@ -154,7 +162,10 @@ export function buildMonthlyMatrix(
       projectCells = new Map();
       cellsByProject.set(assignment.project, projectCells);
     }
-    projectCells.set(assignment.user, mergeAssignmentCell(projectCells.get(assignment.user), assignment));
+    projectCells.set(
+      assignment.user,
+      mergeAssignmentCell(projectCells.get(assignment.user), assignment),
+    );
     if (!userById.has(assignment.user)) {
       userById.set(assignment.user, {
         user_id: assignment.user,
@@ -164,7 +175,9 @@ export function buildMonthlyMatrix(
     userTotals.set(assignment.user, (userTotals.get(assignment.user) ?? 0) + assignment.percentage);
   }
 
-  const users = Array.from(userById.values()).sort((a, b) => a.display_name.localeCompare(b.display_name));
+  const users = Array.from(userById.values()).sort((a, b) =>
+    a.display_name.localeCompare(b.display_name),
+  );
 
   const rows: MonthlyMatrixRow[] = [];
   for (const [projectId, cells] of cellsByProject) {

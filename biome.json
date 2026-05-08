@@ -36,6 +36,7 @@
       "!**/*.min.js",
       "!pnpm-lock.yaml",
       "!.react-router/**",
+      "!.claude/**",
       "!app/lib/api/generated/**"
     ]
   }

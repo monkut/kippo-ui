@@ -7,10 +7,7 @@ import type {
   ProjectMonthlyAssignment,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
-import {
-  projectsForecastRetrieve,
-  projectsRetrieve,
-} from "~/lib/api/generated/projects/projects";
+import { projectsForecastRetrieve, projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import { useProjectAssignmentMutations } from "./useProjectAssignmentMutations";
 
 export type UseProjectAssignmentsState = {
@@ -29,7 +26,8 @@ export type UseProjectAssignmentsState = {
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
 };
 
-const FORECAST_400_MESSAGE = "プロジェクトの開始日が設定されていないため、完了予測を計算できません。";
+const FORECAST_400_MESSAGE =
+  "プロジェクトの開始日が設定されていないため、完了予測を計算できません。";
 
 type ForecastResponseOr400 =
   | { status: 200; data: ProjectForecastResponse }
