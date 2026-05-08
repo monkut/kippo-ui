@@ -1,30 +1,72 @@
 import { useEffect, useState } from "react";
-import { projectsSuggestAssignmentsCreate } from "~/lib/api/generated/projects/projects";
 import type {
+  KippoProject,
+  OrganizationMember,
   ProjectAssignmentPattern,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
+import {
+  projectsMembersRetrieve,
+  projectsSuggestAssignmentsCreate,
+} from "~/lib/api/generated/projects/projects";
 import { PatternCard } from "./PatternCard";
 import { flattenPatternToAssignmentRequests } from "./utils";
 
 type PatternPickerModalProps = {
   open: boolean;
   projectId: string;
+  project: KippoProject | null;
   onClose: () => void;
   onAcceptPattern: (requests: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
 };
 
 export function PatternPickerModal(props: PatternPickerModalProps) {
-  const { open, projectId, onClose, onAcceptPattern } = props;
+  const { open, projectId, project, onClose, onAcceptPattern } = props;
   const { isLoading, error, patterns } = useProjectAssignmentPatterns(open, projectId);
+  const memberLookup = useMemberLookup(open, projectId);
+  const { isAccepting, acceptError, handleAccept } = useAcceptPattern({
+    open,
+    projectId,
+    onAcceptPattern,
+    onClose,
+  });
+
+  if (!open) return null;
+
+  return (
+    <ModalShell onClose={onClose}>
+      <Header project={project} />
+      <Body
+        isLoading={isLoading}
+        error={error || acceptError}
+        patterns={patterns}
+        memberLookup={memberLookup}
+        targetDate={project?.target_date ?? null}
+        isAccepting={isAccepting}
+        onAccept={handleAccept}
+      />
+      <Footer onClose={onClose} isAccepting={isAccepting} />
+    </ModalShell>
+  );
+}
+
+function useAcceptPattern({
+  open,
+  projectId,
+  onAcceptPattern,
+  onClose,
+}: {
+  open: boolean;
+  projectId: string;
+  onAcceptPattern: (requests: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
+  onClose: () => void;
+}) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
 
   useEffect(() => {
     if (open) setAcceptError("");
   }, [open]);
-
-  if (!open) return null;
 
   const handleAccept = async (pattern: ProjectAssignmentPattern) => {
     if (pattern.members.length === 0) return;
@@ -48,19 +90,7 @@ export function PatternPickerModal(props: PatternPickerModalProps) {
     }
   };
 
-  return (
-    <ModalShell onClose={onClose}>
-      <Header />
-      <Body
-        isLoading={isLoading}
-        error={error || acceptError}
-        patterns={patterns}
-        isAccepting={isAccepting}
-        onAccept={handleAccept}
-      />
-      <Footer onClose={onClose} isAccepting={isAccepting} />
-    </ModalShell>
-  );
+  return { isAccepting, acceptError, handleAccept };
 }
 
 async function fetchProjectAssignmentPatterns(
@@ -95,18 +125,46 @@ function useProjectAssignmentPatterns(open: boolean, projectId: string) {
     setError("");
     setPatterns([]);
     let cancelled = false;
-    fetchProjectAssignmentPatterns(projectId).then((result) => {
+    (async () => {
+      const result = await fetchProjectAssignmentPatterns(projectId);
       if (cancelled) return;
       setPatterns(result.patterns);
       setError(result.error);
       setIsLoading(false);
-    });
+    })();
     return () => {
       cancelled = true;
     };
   }, [open, projectId]);
 
   return { isLoading, error, patterns };
+}
+
+function memberDisplayName(member: OrganizationMember): string {
+  return member.display_name?.trim() || member.username;
+}
+
+function useMemberLookup(open: boolean, projectId: string): Map<string, string> {
+  const [lookup, setLookup] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const response = await projectsMembersRetrieve(projectId);
+      if (cancelled || response.status !== 200) return;
+      const next = new Map<string, string>();
+      for (const member of response.data.members ?? []) {
+        next.set(member.user_id, memberDisplayName(member));
+      }
+      setLookup(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectId]);
+
+  return lookup;
 }
 
 function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
@@ -127,10 +185,28 @@ function ModalShell({ onClose, children }: { onClose: () => void; children: Reac
   );
 }
 
-function Header() {
+function Header({ project }: { project: KippoProject | null }) {
+  const targetDate = project?.target_date ?? null;
+  const targetMonth = targetDate ? targetDate.slice(0, 7) : null;
   return (
     <div className="mb-4">
-      <h3 className="text-lg font-medium text-gray-900">候補パターン</h3>
+      <h3 className="text-lg font-medium text-gray-900">
+        候補パターン{project ? `: ${project.name}` : ""}
+      </h3>
+      {(targetDate || targetMonth) && (
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+          {targetDate && (
+            <span>
+              目標期日: <span className="font-medium text-gray-900">{targetDate}</span>
+            </span>
+          )}
+          {targetMonth && (
+            <span>
+              対象月: <span className="font-medium text-gray-900">{targetMonth}</span>
+            </span>
+          )}
+        </div>
+      )}
       <p className="text-xs text-gray-500 mt-1">
         プロジェクトの完了予測日に近い順に表示されます。採用すると、未確定の割当として登録されます。
       </p>
@@ -142,12 +218,16 @@ function Body({
   isLoading,
   error,
   patterns,
+  memberLookup,
+  targetDate,
   isAccepting,
   onAccept,
 }: {
   isLoading: boolean;
   error: string;
   patterns: ProjectAssignmentPattern[];
+  memberLookup: Map<string, string>;
+  targetDate: string | null;
   isAccepting: boolean;
   onAccept: (pattern: ProjectAssignmentPattern) => void;
 }) {
@@ -172,6 +252,8 @@ function Body({
         <PatternCard
           key={pattern.pattern_ids.join("-")}
           pattern={pattern}
+          memberLookup={memberLookup}
+          targetDate={targetDate}
           isAccepting={isAccepting}
           onAccept={onAccept}
         />

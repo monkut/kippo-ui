@@ -114,6 +114,7 @@ function Modals({
           <PatternPickerModal
             open={suggestOpen}
             projectId={projectId}
+            project={state.project}
             onClose={() => setSuggestOpen(false)}
             onAcceptPattern={state.bulkCreateAssignments}
           />
