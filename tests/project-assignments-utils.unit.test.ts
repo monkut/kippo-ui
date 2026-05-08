@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { buildGrid, formatMonth } from "~/components/project-assignments/utils";
+import {
+  buildGrid,
+  extractProjectMembers,
+  firstOfNextMonth,
+  formatMonth,
+} from "~/components/project-assignments/utils";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 
 // Mirror of the kippo backend ProjectMonthlyAssignment shape for fixture brevity.
@@ -134,5 +139,51 @@ describe("formatMonth", () => {
 
   test("handles month with two-digit value", () => {
     expect(formatMonth("2026-12-01")).toBe("2026-12");
+  });
+});
+
+describe("extractProjectMembers", () => {
+  test("returns empty list for empty input", () => {
+    expect(extractProjectMembers([])).toEqual([]);
+  });
+
+  test("deduplicates by user_id", () => {
+    const members = extractProjectMembers([
+      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "Alice", month: "2026-06-01" }),
+      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "Alice", month: "2026-07-01" }),
+      makeAssignment({ user: "u-2", user_username: "bob", user_display_name: "Bob", month: "2026-06-01" }),
+    ]);
+    expect(members).toHaveLength(2);
+    expect(members.map((m) => m.user_id).sort()).toEqual(["u-1", "u-2"]);
+  });
+
+  test("sorts members by display name", () => {
+    const members = extractProjectMembers([
+      makeAssignment({ user: "u-c", user_display_name: "Charlie", month: "2026-06-01" }),
+      makeAssignment({ user: "u-a", user_display_name: "Alice", month: "2026-06-01" }),
+      makeAssignment({ user: "u-b", user_display_name: "Bob", month: "2026-06-01" }),
+    ]);
+    expect(members.map((m) => m.display_name)).toEqual(["Alice", "Bob", "Charlie"]);
+  });
+
+  test("falls back to username when display_name is empty", () => {
+    const members = extractProjectMembers([
+      makeAssignment({ user: "u-1", user_username: "alice", user_display_name: "", month: "2026-06-01" }),
+    ]);
+    expect(members[0].display_name).toBe("alice");
+  });
+});
+
+describe("firstOfNextMonth", () => {
+  test("returns first-of-next-month for mid-month input", () => {
+    expect(firstOfNextMonth(new Date(2026, 5, 15))).toBe("2026-07-01"); // June 15 → July 1
+  });
+
+  test("rolls over December to January of the next year", () => {
+    expect(firstOfNextMonth(new Date(2026, 11, 31))).toBe("2027-01-01"); // Dec 31 → Jan 1 next year
+  });
+
+  test("zero-pads single-digit months", () => {
+    expect(firstOfNextMonth(new Date(2026, 0, 15))).toBe("2026-02-01"); // Jan → Feb
   });
 });
