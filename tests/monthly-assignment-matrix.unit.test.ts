@@ -4,7 +4,11 @@ import {
   buildMonthlyMatrix,
   firstOfMonth,
 } from "~/components/project-assignments/utils";
-import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type {
+  KippoProject,
+  OrganizationMember,
+  ProjectMonthlyAssignment,
+} from "~/lib/api/generated/models";
 
 function makeProject(
   id: string,
@@ -19,6 +23,18 @@ function makeProject(
     target_date: "2026-12-31",
     ...overrides,
   } as unknown as KippoProject;
+}
+
+function makeMember(overrides: Partial<OrganizationMember> = {}): OrganizationMember {
+  return {
+    user_id: "u-1",
+    username: "alice",
+    display_name: "Alice",
+    github_login: "alice-gh",
+    is_developer: true,
+    is_project_manager: false,
+    ...overrides,
+  };
 }
 
 function makeAssignment(overrides: Partial<ProjectMonthlyAssignment>): ProjectMonthlyAssignment {
@@ -41,7 +57,7 @@ function makeAssignment(overrides: Partial<ProjectMonthlyAssignment>): ProjectMo
   };
 }
 
-describe("buildMonthlyMatrix: empty + single", () => {
+describe("buildMonthlyMatrix: projects in rows", () => {
   test("returns empty matrix for empty inputs", () => {
     const m = buildMonthlyMatrix([], []);
     expect(m.users).toEqual([]);
@@ -49,22 +65,50 @@ describe("buildMonthlyMatrix: empty + single", () => {
     expect(m.userTotals.size).toBe(0);
   });
 
-  test("excludes projects with no assignments in the month", () => {
+  test("includes all active projects, even when they have no assignments", () => {
     const m = buildMonthlyMatrix(
       [makeProject("p-1", "P1"), makeProject("p-2", "P2")],
       [makeAssignment({ project: "p-1", user: "u-1", percentage: 50 })],
     );
-    expect(m.rows).toHaveLength(1);
-    expect(m.rows[0].project.id).toBe("p-1");
+    expect(m.rows).toHaveLength(2);
+    const p2 = m.rows.find((r) => r.project.id === "p-2");
+    expect(p2?.cells.size).toBe(0);
+    expect(p2?.rowTotal).toBe(0);
   });
 
   test("excludes assignments whose project isn't in the active set", () => {
     const m = buildMonthlyMatrix(
-      [makeProject("p-1", "P1")],
+      [],
       [makeAssignment({ project: "p-other", user: "u-1", percentage: 25 })],
     );
     expect(m.rows).toEqual([]);
     expect(m.users).toEqual([]);
+  });
+});
+
+describe("buildMonthlyMatrix: members in columns", () => {
+  test("includes all org members as columns when provided, regardless of assignments", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [makeAssignment({ project: "p-1", user: "u-1", user_display_name: "Alice", percentage: 50 })],
+      [
+        makeMember({ user_id: "u-1", display_name: "Alice" }),
+        makeMember({ user_id: "u-2", display_name: "Bob" }),
+        makeMember({ user_id: "u-3", display_name: "Carol" }),
+      ],
+    );
+    expect(m.users.map((u) => u.display_name)).toEqual(["Alice", "Bob", "Carol"]);
+    expect(m.rows[0].cells.get("u-1")?.percentage).toBe(50);
+    expect(m.rows[0].cells.get("u-2")).toBeUndefined();
+  });
+
+  test("falls back to username when member display_name is empty", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [],
+      [makeMember({ user_id: "u-1", username: "alice", display_name: "" })],
+    );
+    expect(m.users[0].display_name).toBe("alice");
   });
 });
 

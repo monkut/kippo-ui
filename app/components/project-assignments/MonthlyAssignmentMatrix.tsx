@@ -1,18 +1,13 @@
 import { memo, useMemo } from "react";
 import { Link } from "react-router";
-import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import {
   buildMonthlyMatrix,
   MAX_PERCENTAGE_PER_MONTH,
   type CellState,
+  type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
 } from "./utils";
-
-type MonthlyAssignmentMatrixProps = {
-  projects: KippoProject[];
-  assignments: ProjectMonthlyAssignment[];
-};
 
 const CONFIRMED_CELL = {
   className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
@@ -23,8 +18,15 @@ const UNCONFIRMED_CELL = {
   title: "未確定 (予測)",
 } as const;
 
-function MonthlyAssignmentMatrixImpl({ projects, assignments }: MonthlyAssignmentMatrixProps) {
-  const matrix = useMemo(() => buildMonthlyMatrix(projects, assignments), [projects, assignments]);
+function MonthlyAssignmentMatrixImpl({
+  projects,
+  assignments,
+  members,
+}: MonthlyAssignmentMatrixProps) {
+  const matrix = useMemo(
+    () => buildMonthlyMatrix(projects, assignments, members),
+    [projects, assignments, members],
+  );
 
   if (matrix.rows.length === 0) {
     return <EmptyState />;
@@ -32,6 +34,9 @@ function MonthlyAssignmentMatrixImpl({ projects, assignments }: MonthlyAssignmen
 
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+      <p className="text-xs text-gray-500 mb-3">
+        プロジェクト名をクリックして割当の追加・編集を行います。
+      </p>
       <table className="w-full text-sm">
         <Header users={matrix.users} />
         <tbody>
@@ -49,7 +54,7 @@ function MonthlyAssignmentMatrixImpl({ projects, assignments }: MonthlyAssignmen
 function EmptyState() {
   return (
     <section className="bg-white shadow rounded-lg p-6">
-      <p className="text-sm text-gray-500">この月に割当のあるプロジェクトはありません。</p>
+      <p className="text-sm text-gray-500">アクティブなプロジェクトはありません。</p>
     </section>
   );
 }
@@ -58,8 +63,10 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
   return (
     <thead>
       <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-        <th className="py-2 pr-4 min-w-[14rem]">プロジェクト</th>
-        <th className="py-2 px-3 min-w-[8rem]">期間</th>
+        <th className="py-2 pr-4 min-w-[7rem]">プロジェクトID</th>
+        <th className="py-2 pr-4 min-w-[14rem]">プロジェクト名</th>
+        <th className="py-2 px-3 min-w-[6rem]">開始日</th>
+        <th className="py-2 px-3 min-w-[6rem]">終了日</th>
         {users.map((user) => (
           <th key={user.user_id} className="py-2 px-3 text-right min-w-[5rem]">
             {user.display_name}
@@ -74,20 +81,19 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
 function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatrixUser[] }) {
   const idPrefix = row.project.id.slice(0, 8);
   return (
-    <tr className="border-b border-gray-100 last:border-0 align-top">
+    <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
+      <td className="py-2 pr-4 text-[11px] text-gray-500 font-mono">{idPrefix}…</td>
       <td className="py-2 pr-4">
         <Link
           to={`/projects/${row.project.id}/assignments`}
+          title={`${row.project.name} の割当を編集`}
           className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
           {row.project.name}
         </Link>
-        <div className="text-[11px] text-gray-400 font-mono mt-0.5">{idPrefix}…</div>
       </td>
-      <td className="py-2 px-3 text-xs text-gray-600">
-        <div>{row.project.start_date ?? "—"}</div>
-        <div>{row.project.target_date ?? "—"}</div>
-      </td>
+      <td className="py-2 px-3 text-xs text-gray-600">{row.project.start_date ?? "—"}</td>
+      <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
       {users.map((user) => (
         <td key={user.user_id} className="py-2 px-3 text-right">
           <PercentageCell cell={row.cells.get(user.user_id)} />
@@ -121,7 +127,7 @@ function Footer({
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
-        <td colSpan={2} className="py-2 pr-4 text-gray-500 font-medium">
+        <td colSpan={4} className="py-2 pr-4 text-gray-500 font-medium">
           ユーザー月合計
         </td>
         {users.map((user) => {
