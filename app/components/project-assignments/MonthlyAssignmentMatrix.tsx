@@ -63,7 +63,7 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
     <thead>
       <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
         <th className="py-2 pr-4 min-w-[7rem]">プロジェクトID</th>
-        <th className="py-2 pr-4 min-w-[14rem]">プロジェクト名</th>
+        <th className="py-2 pr-4 whitespace-nowrap">プロジェクト名</th>
         <th className="py-2 px-3 min-w-[6rem]">開始日</th>
         <th className="py-2 px-3 min-w-[6rem]">終了日</th>
         <th className="py-2 px-3 min-w-[5rem] text-right">月合計</th>
@@ -91,7 +91,7 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
       <td className="py-2 pr-4">
         <CopyableProjectId projectId={row.project.id} />
       </td>
-      <td className="py-2 pr-4">
+      <td className="py-2 pr-4 whitespace-nowrap">
         <Link
           to={`/projects/${row.project.id}/assignments`}
           title="クリックして割当を追加・編集"

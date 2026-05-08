@@ -160,6 +160,29 @@ export type MonthlyAssignmentMatrixProps = {
   members?: OrganizationMember[];
 };
 
+/** Sort comparator matching ActiveKippoProjectAdmin (kippo/projects/admin.py:1117):
+ *
+ * 1. anon-project phase first (admin shows non-project entries first)
+ * 2. confidence descending (nulls/undefined last)
+ * 3. target_date ascending (nulls/undefined last)
+ * 4. name ascending
+ */
+export function compareActiveKippoProjects(a: KippoProject, b: KippoProject): number {
+  const aAnon = a.phase === "anon-project" ? 0 : 1;
+  const bAnon = b.phase === "anon-project" ? 0 : 1;
+  if (aAnon !== bAnon) return aAnon - bAnon;
+
+  const aConfidence = a.confidence ?? -Infinity;
+  const bConfidence = b.confidence ?? -Infinity;
+  if (aConfidence !== bConfidence) return bConfidence - aConfidence;
+
+  const aTarget = a.target_date ?? "9999-99-99";
+  const bTarget = b.target_date ?? "9999-99-99";
+  if (aTarget !== bTarget) return aTarget.localeCompare(bTarget);
+
+  return a.name.localeCompare(b.name);
+}
+
 function applyAssignmentToProject(
   assignment: ProjectMonthlyAssignment,
   projectCells: Map<string, CellState>,
@@ -227,7 +250,7 @@ export function buildMonthlyMatrix(
       cells: cellsByProject.get(project.id) ?? new Map<string, CellState>(),
       rowTotal: rowTotalsByProject.get(project.id) ?? 0,
     }))
-    .sort((a, b) => a.project.name.localeCompare(b.project.name));
+    .sort((a, b) => compareActiveKippoProjects(a.project, b.project));
 
   return { users, rows, userTotals };
 }
