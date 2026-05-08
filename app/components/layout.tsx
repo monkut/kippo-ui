@@ -7,11 +7,12 @@ interface LayoutProps {
   projectName?: string;
   projectId?: string;
   title?: string;
+  fullHeight?: boolean;
 }
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
-export function Layout({ children, projectName, projectId, title }: LayoutProps) {
+export function Layout({ children, projectName, projectId, title, fullHeight }: LayoutProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,7 +20,7 @@ export function Layout({ children, projectName, projectId, title }: LayoutProps)
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${fullHeight ? "flex flex-col" : ""}`}>
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -156,7 +157,9 @@ export function Layout({ children, projectName, projectId, title }: LayoutProps)
         )}
       </header>
 
-      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className={fullHeight ? "flex-1 flex flex-col" : "mx-auto px-4 sm:px-6 lg:px-8 py-8"}>
+        {children}
+      </main>
     </div>
   );
 }
