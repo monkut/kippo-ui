@@ -1,6 +1,12 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { buildGrid, formatMonth, MAX_PERCENTAGE_PER_MONTH, type CellState, type GridRow } from "./utils";
+import {
+  buildGrid,
+  formatMonth,
+  MAX_PERCENTAGE_PER_MONTH,
+  type CellState,
+  type GridRow,
+} from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
@@ -9,7 +15,12 @@ type AssignmentsTableProps = {
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
-function AssignmentsTableImpl({ assignments, onAddClick, onSuggestClick, onCellClick }: AssignmentsTableProps) {
+function AssignmentsTableImpl({
+  assignments,
+  onAddClick,
+  onSuggestClick,
+  onCellClick,
+}: AssignmentsTableProps) {
   const { months, byUser, monthTotals, byCellId } = useMemo(() => {
     const grid = buildGrid(assignments);
     const cellLookup = new Map<string, ProjectMonthlyAssignment>();
@@ -33,7 +44,13 @@ function AssignmentsTableImpl({ assignments, onAddClick, onSuggestClick, onCellC
         <TableHeader months={months} />
         <tbody>
           {byUser.map((row) => (
-            <UserRow key={row.userKey} row={row} months={months} byCellId={byCellId} onCellClick={onCellClick} />
+            <UserRow
+              key={row.userKey}
+              row={row}
+              months={months}
+              byCellId={byCellId}
+              onCellClick={onCellClick}
+            />
           ))}
         </tbody>
         <TableFooter months={months} monthTotals={monthTotals} />
@@ -43,7 +60,13 @@ function AssignmentsTableImpl({ assignments, onAddClick, onSuggestClick, onCellC
   );
 }
 
-function EmptyState({ onAddClick, onSuggestClick }: { onAddClick?: () => void; onSuggestClick?: () => void }) {
+function EmptyState({
+  onAddClick,
+  onSuggestClick,
+}: {
+  onAddClick?: () => void;
+  onSuggestClick?: () => void;
+}) {
   return (
     <section className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
@@ -55,7 +78,13 @@ function EmptyState({ onAddClick, onSuggestClick }: { onAddClick?: () => void; o
   );
 }
 
-function Toolbar({ onAddClick, onSuggestClick }: { onAddClick?: () => void; onSuggestClick?: () => void }) {
+function Toolbar({
+  onAddClick,
+  onSuggestClick,
+}: {
+  onAddClick?: () => void;
+  onSuggestClick?: () => void;
+}) {
   return (
     <div className="flex gap-2">
       {onSuggestClick && (
@@ -113,7 +142,11 @@ function UserRow({
         const assignment = byCellId.get(`${row.userKey}|${month}`);
         return (
           <td key={month} className="py-2 px-3 text-right">
-            <PercentageCell cell={row.cells.get(month)} assignment={assignment} onClick={onCellClick} />
+            <PercentageCell
+              cell={row.cells.get(month)}
+              assignment={assignment}
+              onClick={onCellClick}
+            />
           </td>
         );
       })}
@@ -121,7 +154,13 @@ function UserRow({
   );
 }
 
-function TableFooter({ months, monthTotals }: { months: string[]; monthTotals: Map<string, number> }) {
+function TableFooter({
+  months,
+  monthTotals,
+}: {
+  months: string[];
+  monthTotals: Map<string, number>;
+}) {
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
@@ -164,7 +203,12 @@ function PercentageCell({
 
   if (assignment && onClick) {
     return (
-      <button type="button" onClick={() => onClick(assignment)} className={sharedClass} title={tooltip}>
+      <button
+        type="button"
+        onClick={() => onClick(assignment)}
+        className={sharedClass}
+        title={tooltip}
+      >
         {cell.percentage}%
       </button>
     );

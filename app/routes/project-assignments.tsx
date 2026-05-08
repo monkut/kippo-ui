@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Layout } from "~/components/layout";
-import { MonthPicker, MonthlyAssignmentMatrix, firstOfMonth } from "~/components/project-assignments";
+import {
+  MonthPicker,
+  MonthlyAssignmentMatrix,
+  firstOfMonth,
+} from "~/components/project-assignments";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
 import { useAuth } from "~/lib/auth-context";
 

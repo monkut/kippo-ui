@@ -51,7 +51,9 @@ function Body({ projectId, state }: { projectId: string | undefined; state: Stat
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {state.error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{state.error}</div>}
+      {state.error && (
+        <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{state.error}</div>
+      )}
       {state.isLoading ? (
         <LoadingPanel />
       ) : (

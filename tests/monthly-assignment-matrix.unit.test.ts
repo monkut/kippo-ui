@@ -1,8 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { addMonths, buildMonthlyMatrix, firstOfMonth } from "~/components/project-assignments/utils";
+import {
+  addMonths,
+  buildMonthlyMatrix,
+  firstOfMonth,
+} from "~/components/project-assignments/utils";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 
-function makeProject(id: string, name: string, overrides: Partial<KippoProject> = {}): KippoProject {
+function makeProject(
+  id: string,
+  name: string,
+  overrides: Partial<KippoProject> = {},
+): KippoProject {
   // Cast through unknown — KippoProject has many required fields the matrix doesn't read.
   return {
     id,
@@ -42,9 +50,10 @@ describe("buildMonthlyMatrix: empty + single", () => {
   });
 
   test("excludes projects with no assignments in the month", () => {
-    const m = buildMonthlyMatrix([makeProject("p-1", "P1"), makeProject("p-2", "P2")], [
-      makeAssignment({ project: "p-1", user: "u-1", percentage: 50 }),
-    ]);
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1"), makeProject("p-2", "P2")],
+      [makeAssignment({ project: "p-1", user: "u-1", percentage: 50 })],
+    );
     expect(m.rows).toHaveLength(1);
     expect(m.rows[0].project.id).toBe("p-1");
   });
@@ -125,7 +134,14 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
   test("falls back to username when display_name is empty", () => {
     const m = buildMonthlyMatrix(
       [makeProject("p-1", "P1")],
-      [makeAssignment({ project: "p-1", user: "u-1", user_username: "alice", user_display_name: "" })],
+      [
+        makeAssignment({
+          project: "p-1",
+          user: "u-1",
+          user_username: "alice",
+          user_display_name: "",
+        }),
+      ],
     );
     expect(m.users[0].display_name).toBe("alice");
   });

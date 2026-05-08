@@ -20,7 +20,9 @@ function MonthPickerImpl({ month, onChange }: MonthPickerProps) {
       >
         ◀
       </button>
-      <span className="text-lg font-semibold text-gray-900 min-w-[7rem] text-center">{formatMonth(month)}</span>
+      <span className="text-lg font-semibold text-gray-900 min-w-[7rem] text-center">
+        {formatMonth(month)}
+      </span>
       <button
         type="button"
         onClick={() => onChange(addMonths(month, 1))}

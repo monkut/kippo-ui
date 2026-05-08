@@ -5,7 +5,10 @@ import {
   flattenPatternToAssignmentRequests,
   formatMonth,
 } from "~/components/project-assignments/utils";
-import type { ProjectAssignmentPattern, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type {
+  ProjectAssignmentPattern,
+  ProjectMonthlyAssignment,
+} from "~/lib/api/generated/models";
 
 // Mirror of the kippo backend ProjectMonthlyAssignment shape for fixture brevity.
 function makeAssignment(overrides: Partial<ProjectMonthlyAssignment>): ProjectMonthlyAssignment {
@@ -38,9 +41,24 @@ describe("buildGrid: empty + single-user shapes", () => {
 
   test("groups assignments by user and month", () => {
     const grid = buildGrid([
-      makeAssignment({ user: "user-1", user_display_name: "Alice", month: "2026-06-01", percentage: 50 }),
-      makeAssignment({ user: "user-1", user_display_name: "Alice", month: "2026-07-01", percentage: 60 }),
-      makeAssignment({ user: "user-2", user_display_name: "Bob", month: "2026-06-01", percentage: 30 }),
+      makeAssignment({
+        user: "user-1",
+        user_display_name: "Alice",
+        month: "2026-06-01",
+        percentage: 50,
+      }),
+      makeAssignment({
+        user: "user-1",
+        user_display_name: "Alice",
+        month: "2026-07-01",
+        percentage: 60,
+      }),
+      makeAssignment({
+        user: "user-2",
+        user_display_name: "Bob",
+        month: "2026-06-01",
+        percentage: 30,
+      }),
     ]);
 
     expect(grid.months).toEqual(["2026-06-01", "2026-07-01"]);
@@ -58,7 +76,12 @@ describe("buildGrid: empty + single-user shapes", () => {
 
   test("falls back to username when display_name is empty", () => {
     const grid = buildGrid([
-      makeAssignment({ user: "user-1", user_display_name: "", user_username: "alice", month: "2026-06-01" }),
+      makeAssignment({
+        user: "user-1",
+        user_display_name: "",
+        user_username: "alice",
+        month: "2026-06-01",
+      }),
     ]);
 
     expect(grid.byUser[0].displayName).toBe("alice");
@@ -172,7 +195,11 @@ describe("flattenPatternToAssignmentRequests: row generation", () => {
   test("emits one request per (member × month) entry", () => {
     const pattern = makePattern({
       members: [
-        { user_id: "user-1", is_past_member: true, monthly_percentages: { "2026-06-01": 50, "2026-07-01": 60 } },
+        {
+          user_id: "user-1",
+          is_past_member: true,
+          monthly_percentages: { "2026-06-01": 50, "2026-07-01": 60 },
+        },
         { user_id: "user-2", is_past_member: false, monthly_percentages: { "2026-06-01": 30 } },
       ],
     });
@@ -181,17 +208,26 @@ describe("flattenPatternToAssignmentRequests: row generation", () => {
 
   test("preserves project, user, month, percentage fields", () => {
     const pattern = makePattern({
-      members: [{ user_id: "user-42", is_past_member: false, monthly_percentages: { "2026-08-01": 75 } }],
+      members: [
+        { user_id: "user-42", is_past_member: false, monthly_percentages: { "2026-08-01": 75 } },
+      ],
     });
     const [request] = flattenPatternToAssignmentRequests(pattern, "proj-99");
-    expect(request).toMatchObject({ project: "proj-99", user: "user-42", month: "2026-08-01", percentage: 75 });
+    expect(request).toMatchObject({
+      project: "proj-99",
+      user: "user-42",
+      month: "2026-08-01",
+      percentage: 75,
+    });
   });
 });
 
 describe("flattenPatternToAssignmentRequests: confirmation + edge cases", () => {
   test("posts as is_confirmed=false (kippo#224 C1)", () => {
     const pattern = makePattern({
-      members: [{ user_id: "user-1", is_past_member: true, monthly_percentages: { "2026-06-01": 50 } }],
+      members: [
+        { user_id: "user-1", is_past_member: true, monthly_percentages: { "2026-06-01": 50 } },
+      ],
     });
     expect(flattenPatternToAssignmentRequests(pattern, "proj-1")[0].is_confirmed).toBe(false);
   });

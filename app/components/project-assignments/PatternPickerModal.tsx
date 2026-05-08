@@ -75,7 +75,10 @@ async function fetchProjectAssignmentPatterns(
   } catch (err) {
     const status = (err as { response?: { status?: number } })?.response?.status;
     if (status === 400) {
-      return { patterns: [], error: "プロジェクトの開始日が設定されていないため、候補パターンを生成できません。" };
+      return {
+        patterns: [],
+        error: "プロジェクトの開始日が設定されていないため、候補パターンを生成できません。",
+      };
     }
     return { patterns: [], error: "候補パターンの取得に失敗しました" };
   }
@@ -152,7 +155,9 @@ function Body({
     return <div className="rounded-md bg-red-50 p-4 text-sm text-red-800 mb-4">{error}</div>;
   }
   if (isLoading) {
-    return <div className="flex justify-center items-center h-40 text-gray-500">パターンを生成中...</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500">パターンを生成中...</div>
+    );
   }
   if (patterns.length === 0) {
     return (

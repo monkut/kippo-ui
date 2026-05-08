@@ -111,7 +111,13 @@ function PercentageCell({ cell }: { cell: CellState | undefined }) {
   );
 }
 
-function Footer({ users, userTotals }: { users: MonthlyMatrixUser[]; userTotals: Map<string, number> }) {
+function Footer({
+  users,
+  userTotals,
+}: {
+  users: MonthlyMatrixUser[];
+  userTotals: Map<string, number>;
+}) {
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
