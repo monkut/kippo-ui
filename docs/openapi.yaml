@@ -1878,9 +1878,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectForecastResponse'
-          description: ''
+          description: Forecast payload — estimated completion date plus delta vs
+            target_date.
         '400':
-          description: project.start_date is required to compute the forecast
+          description: project.start_date is required to compute the forecast.
+  /api/projects/{id}/members/:
+    get:
+      operationId: projects_members_retrieve
+      description: Active members of the project's organization. Lists every KippoUser
+        with an OrganizationMembership in the project's org, filtered by KippoUser.is_active=True.
+        Used by kippo-ui's add-assignment picker so day-zero projects can pick from
+        anyone in the org rather than only users already on the project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMembersResponse'
+          description: Members of the project's organization eligible for assignment.
   /api/projects/{id}/suggest-assignments/:
     post:
       operationId: projects_suggest_assignments_create
@@ -1903,12 +1931,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1918,9 +1940,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuggestAssignmentsResponse'
-          description: ''
+          description: 0–3 candidate patterns, ranked by closeness to project.target_date
+            (feasible patterns first). Greenfield projects skip the P1-max-reuse pattern.
         '400':
-          description: project.start_date is required to compute suggestions
+          description: project.start_date is required to compute suggestions.
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -6309,6 +6332,34 @@ components:
     NullEnum:
       enum:
       - null
+    OrganizationMember:
+      type: object
+      description: |-
+        Minimal projection of a `KippoUser` + their `OrganizationMembership` for use as a
+        user-picker source on the kippo-ui add-assignment modal (kippo-ui#57). Per kippo#233.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: KippoUser primary key.
+        username:
+          type: string
+        display_name:
+          type: string
+          description: Composed first + last + (github_login).
+        github_login:
+          type: string
+        is_developer:
+          type: boolean
+        is_project_manager:
+          type: boolean
+      required:
+      - display_name
+      - github_login
+      - is_developer
+      - is_project_manager
+      - user_id
+      - username
     PaginatedAssumptionEvaluationList:
       type: object
       required:
@@ -7356,6 +7407,91 @@ components:
       - feedback
       - id
       - requirement
+    ProjectAssignmentPattern:
+      type: object
+      description: |-
+        A complete suggested project-assignment pattern. Mirrors the Pydantic
+        `ProjectAssignmentPattern` shape from `projects.definitions`. Per kippo#231.
+
+        `pattern_ids` carries every strategy key that produced this pattern after dedup
+        (kippo#227 S3) — typically one entry, e.g. `['P1-max-reuse']`, but multiple when
+        strategies converged on the same members + monthly_percentages.
+      properties:
+        pattern_ids:
+          type: array
+          items:
+            type: string
+          description: Strategy keys that produced this pattern (one entry, or several
+            after dedup).
+        label:
+          type: string
+          description: Human-readable label derived from pattern_ids.
+        estimated_completion:
+          type: string
+          format: date
+          nullable: true
+          description: Day-precision completion date; null when the pattern can't
+            reach the allocated effort.
+        infeasible:
+          type: boolean
+          description: True when the pattern overshoots target_date or breaches the
+            per-user 100% cap.
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAssignmentPatternConflict'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectAssignmentPatternMember'
+      required:
+      - conflicts
+      - estimated_completion
+      - infeasible
+      - label
+      - members
+      - pattern_ids
+    ProjectAssignmentPatternConflict:
+      type: object
+      description: An over-allocation conflict surfaced by the suggester for a (user
+        × month) cell.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        month:
+          type: string
+          format: date
+          description: First-of-month ISO date.
+        reason:
+          type: string
+      required:
+      - month
+      - reason
+      - user_id
+    ProjectAssignmentPatternMember:
+      type: object
+      description: |-
+        One member of a suggested assignment pattern. Mirrors the Pydantic
+        `ProjectAssignmentPatternMember` shape from `projects.definitions`.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: KippoUser primary key.
+        is_past_member:
+          type: boolean
+          description: True when the user already has a row on this project.
+        monthly_percentages:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Per-month percentage allocation. Keys are first-of-month ISO
+            dates ('YYYY-MM-01').
+      required:
+      - is_past_member
+      - monthly_percentages
+      - user_id
     ProjectAssignmentRate:
       type: object
       description: Serializer for ProjectAssignmentRate model.
@@ -7883,17 +8019,31 @@ components:
           type: string
           format: date
           nullable: true
+          description: Day-precision completion date; null when the project has no
+            future assignments to project from.
         delta_from_target_date_days:
           type: integer
           nullable: true
+          description: Days between estimated_completion_date and target_date. Positive
+            = behind target; negative = ahead.
         target_date:
           type: string
           format: date
           nullable: true
+          description: Echo of project.target_date for client-side delta computation.
       required:
       - delta_from_target_date_days
       - estimated_completion_date
       - target_date
+    ProjectMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationMember'
+      required:
+      - members
     ProjectMonthlyAssignment:
       type: object
       description: Serializer for ProjectMonthlyAssignment model.
@@ -8692,12 +8842,15 @@ components:
           type: string
           format: date
           nullable: true
+          description: First-of-month ISO date to start projecting from. When omitted,
+            defaults to the first day of the month after the current date.
     SuggestAssignmentsResponse:
       type: object
       properties:
         patterns:
           type: array
-          items: {}
+          items:
+            $ref: '#/components/schemas/ProjectAssignmentPattern'
       required:
       - patterns
     SurveyUserInline:

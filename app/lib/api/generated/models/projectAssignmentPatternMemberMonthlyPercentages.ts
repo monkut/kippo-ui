@@ -5,8 +5,8 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
-import type { ProjectAssignmentPattern } from './projectAssignmentPattern';
 
-export interface SuggestAssignmentsResponse {
-  patterns: ProjectAssignmentPattern[];
-}
+/**
+ * Per-month percentage allocation. Keys are first-of-month ISO dates ('YYYY-MM-01').
+ */
+export type ProjectAssignmentPatternMemberMonthlyPercentages = {[key: string]: number};

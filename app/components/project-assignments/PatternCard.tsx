@@ -1,11 +1,15 @@
 import { memo } from "react";
-import type { SuggestedPattern, SuggestedPatternConflict, SuggestedPatternMember } from "./utils";
+import type {
+  ProjectAssignmentPattern,
+  ProjectAssignmentPatternConflict,
+  ProjectAssignmentPatternMember,
+} from "~/lib/api/generated/models";
 import { formatMonth } from "./utils";
 
 type PatternCardProps = {
-  pattern: SuggestedPattern;
+  pattern: ProjectAssignmentPattern;
   isAccepting: boolean;
-  onAccept: (pattern: SuggestedPattern) => void;
+  onAccept: (pattern: ProjectAssignmentPattern) => void;
 };
 
 function PatternCardImpl({ pattern, isAccepting, onAccept }: PatternCardProps) {
@@ -19,7 +23,7 @@ function PatternCardImpl({ pattern, isAccepting, onAccept }: PatternCardProps) {
   );
 }
 
-function CardHeader({ pattern }: { pattern: SuggestedPattern }) {
+function CardHeader({ pattern }: { pattern: ProjectAssignmentPattern }) {
   return (
     <div>
       <div className="flex items-start justify-between gap-2">
@@ -39,7 +43,7 @@ function CardHeader({ pattern }: { pattern: SuggestedPattern }) {
   );
 }
 
-function MembersSection({ members }: { members: SuggestedPatternMember[] }) {
+function MembersSection({ members }: { members: ProjectAssignmentPatternMember[] }) {
   if (members.length === 0) {
     return <p className="text-sm text-gray-500">メンバーが選定できませんでした。</p>;
   }
@@ -55,7 +59,7 @@ function MembersSection({ members }: { members: SuggestedPatternMember[] }) {
   );
 }
 
-function MemberRow({ member }: { member: SuggestedPatternMember }) {
+function MemberRow({ member }: { member: ProjectAssignmentPatternMember }) {
   const monthEntries = Object.entries(member.monthly_percentages).sort(([a], [b]) => a.localeCompare(b));
   return (
     <div className="text-xs">
@@ -81,7 +85,7 @@ function MemberRow({ member }: { member: SuggestedPatternMember }) {
   );
 }
 
-function ConflictsSection({ conflicts }: { conflicts: SuggestedPatternConflict[] }) {
+function ConflictsSection({ conflicts }: { conflicts: ProjectAssignmentPatternConflict[] }) {
   if (conflicts.length === 0) return null;
   return (
     <div className="space-y-1 border-t border-amber-100 pt-2">
@@ -110,9 +114,9 @@ function AcceptButton({
   isAccepting,
   onAccept,
 }: {
-  pattern: SuggestedPattern;
+  pattern: ProjectAssignmentPattern;
   isAccepting: boolean;
-  onAccept: (pattern: SuggestedPattern) => void;
+  onAccept: (pattern: ProjectAssignmentPattern) => void;
 }) {
   return (
     <button

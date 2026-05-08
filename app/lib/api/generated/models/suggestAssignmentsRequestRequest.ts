@@ -7,6 +7,9 @@
  */
 
 export interface SuggestAssignmentsRequestRequest {
-  /** @nullable */
+  /**
+     * First-of-month ISO date to start projecting from. When omitted, defaults to the first day of the month after the current date.
+     * @nullable
+     */
   from_month?: string | null;
 }

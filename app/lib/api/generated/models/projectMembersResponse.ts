@@ -5,8 +5,8 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
-import type { ProjectAssignmentPattern } from './projectAssignmentPattern';
+import type { OrganizationMember } from './organizationMember';
 
-export interface SuggestAssignmentsResponse {
-  patterns: ProjectAssignmentPattern[];
+export interface ProjectMembersResponse {
+  members: OrganizationMember[];
 }

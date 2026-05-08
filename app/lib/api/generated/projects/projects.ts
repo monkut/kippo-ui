@@ -13,6 +13,7 @@ import type {
   PatchedKippoProjectRequest,
   PatchedProjectWeeklyEffortRequest,
   ProjectForecastResponse,
+  ProjectMembersResponse,
   ProjectWeeklyEffort,
   ProjectWeeklyEffortRequest,
   ProjectsListParams,
@@ -362,6 +363,41 @@ export const getProjectsForecastRetrieveUrl = (id: string,) => {
 export const projectsForecastRetrieve = async (id: string, options?: RequestInit): Promise<projectsForecastRetrieveResponse> => {
 
   return customFetch<projectsForecastRetrieveResponse>(getProjectsForecastRetrieveUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Active members of the project's organization. Lists every KippoUser with an OrganizationMembership in the project's org, filtered by KippoUser.is_active=True. Used by kippo-ui's add-assignment picker so day-zero projects can pick from anyone in the org rather than only users already on the project.
+ */
+export type projectsMembersRetrieveResponse200 = {
+  data: ProjectMembersResponse
+  status: 200
+}
+
+export type projectsMembersRetrieveResponseSuccess = (projectsMembersRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsMembersRetrieveResponse = (projectsMembersRetrieveResponseSuccess)
+
+export const getProjectsMembersRetrieveUrl = (id: string,) => {
+
+
+
+
+  return `/api/projects/${id}/members/`
+}
+
+export const projectsMembersRetrieve = async (id: string, options?: RequestInit): Promise<projectsMembersRetrieveResponse> => {
+
+  return customFetch<projectsMembersRetrieveResponse>(getProjectsMembersRetrieveUrl(id),
   {
     ...options,
     method: 'GET'

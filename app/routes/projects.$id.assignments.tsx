@@ -105,7 +105,6 @@ function Modals({
           <AddAssignmentModal
             open={addOpen}
             projectId={projectId}
-            existingAssignments={state.assignments}
             isSaving={state.isSaving}
             onClose={() => setAddOpen(false)}
             onSubmit={state.createAssignment}

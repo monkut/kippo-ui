@@ -1,30 +1,8 @@
-import type { ProjectMonthlyAssignment, ProjectMonthlyAssignmentRequest } from "~/lib/api/generated/models";
-
-// Local types for the suggest-assignments response. The kippo backend currently emits
-// `patterns: unknown[]` in OpenAPI (a generic JSONField on the inline_serializer); a typed
-// schema is tracked in monkut/kippo#231. Until that lands, we declare the shape here to
-// mirror the backend's Pydantic ProjectAssignmentPattern model.
-
-export type SuggestedPatternMember = {
-  user_id: string;
-  is_past_member: boolean;
-  monthly_percentages: Record<string, number>; // { "YYYY-MM-DD": percentage }
-};
-
-export type SuggestedPatternConflict = {
-  user_id: string;
-  month: string; // "YYYY-MM-DD"
-  reason: string;
-};
-
-export type SuggestedPattern = {
-  pattern_ids: string[];
-  label: string;
-  estimated_completion: string | null; // ISO date
-  infeasible: boolean;
-  conflicts: SuggestedPatternConflict[];
-  members: SuggestedPatternMember[];
-};
+import type {
+  ProjectAssignmentPattern,
+  ProjectMonthlyAssignment,
+  ProjectMonthlyAssignmentRequest,
+} from "~/lib/api/generated/models";
 
 /** Flatten a suggested pattern into a list of ProjectMonthlyAssignmentRequest payloads.
  *
@@ -33,7 +11,7 @@ export type SuggestedPattern = {
  * confirmed manually).
  */
 export function flattenPatternToAssignmentRequests(
-  pattern: SuggestedPattern,
+  pattern: ProjectAssignmentPattern,
   projectId: string,
 ): ProjectMonthlyAssignmentRequest[] {
   const requests: ProjectMonthlyAssignmentRequest[] = [];
@@ -108,31 +86,6 @@ export function buildGrid(assignments: ProjectMonthlyAssignment[]): Grid {
 /** "2026-04-01" → "2026-04". */
 export function formatMonth(month: string): string {
   return month.slice(0, 7);
-}
-
-export type ProjectMember = {
-  user_id: string;
-  username: string;
-  display_name: string;
-};
-
-/** Extract the unique set of project members from existing assignments, sorted by display name.
- *
- * Phase 3c (#57) doesn't have a kippo backend users-list endpoint, so the picker for "add
- * assignment" is sourced from users who already appear in this project's assignment rows.
- * Adding genuinely-new users to a project requires a backend follow-up to expose
- * `OrganizationMembership` users. */
-export function extractProjectMembers(assignments: ProjectMonthlyAssignment[]): ProjectMember[] {
-  const seen = new Map<string, ProjectMember>();
-  for (const assignment of assignments) {
-    if (seen.has(assignment.user)) continue;
-    seen.set(assignment.user, {
-      user_id: assignment.user,
-      username: assignment.user_username,
-      display_name: assignment.user_display_name?.trim() || assignment.user_username,
-    });
-  }
-  return Array.from(seen.values()).sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
 /** First-of-month ISO date for the month after `reference`. Wraps December → next year. */
