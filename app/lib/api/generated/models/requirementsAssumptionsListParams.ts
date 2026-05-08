@@ -17,6 +17,10 @@ category?: RequirementsAssumptionsListCategory;
  */
 page?: number;
 /**
+ * Number of results to return per page.
+ */
+page_size?: number;
+/**
  * Filter by project UUID
  */
 project?: string;

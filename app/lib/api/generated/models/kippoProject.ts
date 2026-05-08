@@ -5,6 +5,8 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
+import type { GithubRepositoryInline } from './githubRepositoryInline';
+import type { KippoProjectCategoryEnum } from './kippoProjectCategoryEnum';
 import type { LatestCommentInline } from './latestCommentInline';
 import type { PhaseEnum } from './phaseEnum';
 import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline';
@@ -40,13 +42,17 @@ export interface KippoProject {
      * @maximum 100
      */
   confidence?: number;
-  /** @maxLength 256 */
-  category?: string;
+  category?: KippoProjectCategoryEnum;
   /**
-     * Run '/invite {ORG.slack_command_name}' to enable channel notification
+     * Conversation Channel — invite the organization's slack bot to enable channel notification
      * @maxLength 80
      */
   slack_channel_name?: string;
+  /**
+     * Notification Channel for crawler / batch / development notifications (separate from the conversation channel)
+     * @maxLength 80
+     */
+  slack_notification_channel_name?: string;
   /**
      * Project Manager assigned to the project
      * @nullable
@@ -66,6 +72,7 @@ export interface KippoProject {
   github_project_html_url?: string;
   /** @maxLength 255 */
   github_project_api_nodeid?: string;
+  readonly github_repositories: readonly GithubRepositoryInline[];
   /**
      * Estimated Staff Days needed for Project Completion
      * @minimum 0
@@ -94,7 +101,12 @@ export interface KippoProject {
      * URL of where documents for the projects are maintained
      * @maxLength 200
      */
-  document_url?: string;
+  document_folder_url?: string;
+  /**
+     * DocBase tag used by the crawler to fetch matching posts
+     * @maxLength 64
+     */
+  docbase_tag?: string;
   /** Define the problem that the project is set out to solve. */
   problem_definition?: string;
   /** Update when survey is issued! */

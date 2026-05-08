@@ -5,6 +5,7 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
+import type { KippoProjectCategoryEnum } from './kippoProjectCategoryEnum';
 import type { PhaseEnum } from './phaseEnum';
 
 /**
@@ -33,16 +34,17 @@ export interface PatchedKippoProjectRequest {
      * @maximum 100
      */
   confidence?: number;
+  category?: KippoProjectCategoryEnum;
   /**
-     * @minLength 1
-     * @maxLength 256
-     */
-  category?: string;
-  /**
-     * Run '/invite {ORG.slack_command_name}' to enable channel notification
+     * Conversation Channel — invite the organization's slack bot to enable channel notification
      * @maxLength 80
      */
   slack_channel_name?: string;
+  /**
+     * Notification Channel for crawler / batch / development notifications (separate from the conversation channel)
+     * @maxLength 80
+     */
+  slack_notification_channel_name?: string;
   /**
      * Project Manager assigned to the project
      * @nullable
@@ -84,7 +86,12 @@ export interface PatchedKippoProjectRequest {
      * URL of where documents for the projects are maintained
      * @maxLength 200
      */
-  document_url?: string;
+  document_folder_url?: string;
+  /**
+     * DocBase tag used by the crawler to fetch matching posts
+     * @maxLength 64
+     */
+  docbase_tag?: string;
   /** Define the problem that the project is set out to solve. */
   problem_definition?: string;
   /** Update when survey is issued! */

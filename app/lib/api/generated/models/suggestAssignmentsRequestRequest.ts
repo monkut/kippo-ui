@@ -6,13 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type FeedbackFeedbackListParams = {
-/**
- * A page number within the paginated result set.
- */
-page?: number;
-/**
- * Number of results to return per page.
- */
-page_size?: number;
-};
+export interface SuggestAssignmentsRequestRequest {
+  /** @nullable */
+  from_month?: string | null;
+}

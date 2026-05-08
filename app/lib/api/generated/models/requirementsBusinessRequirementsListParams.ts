@@ -16,6 +16,10 @@ category?: number;
  */
 page?: number;
 /**
+ * Number of results to return per page.
+ */
+page_size?: number;
+/**
  * Filter by problem definition ID
  */
 problem?: number;

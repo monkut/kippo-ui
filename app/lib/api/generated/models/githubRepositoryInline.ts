@@ -6,13 +6,9 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type RequirementsAssumptionsEvaluationsListParams = {
 /**
- * A page number within the paginated result set.
+ * Inline serializer for GithubRepository links in OpenAPI schema.
  */
-page?: number;
-/**
- * Number of results to return per page.
- */
-page_size?: number;
-};
+export interface GithubRepositoryInline {
+  repository_url: string;
+}
