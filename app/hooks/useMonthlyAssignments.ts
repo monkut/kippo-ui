@@ -17,6 +17,9 @@ export type UseMonthlyAssignmentsState = {
 
 const FETCH_ERROR = "データの取得に失敗しました";
 
+/** Usernames of system / placeholder accounts that should never appear in the matrix. */
+const EXCLUDED_USERNAMES = new Set(["(unassigned)", "admin", "kiconia-api", "luca.pacioli"]);
+
 /** Fetch members for one project per unique organization, then dedupe by user_id. */
 async function fetchOrgMembersForProjects(projects: KippoProject[]): Promise<OrganizationMember[]> {
   const projectByOrg = new Map<string, string>();
@@ -60,7 +63,7 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
         if (!alive) return;
         setProjects(projectData);
         const orgMembers = await fetchOrgMembersForProjects(projectData);
-        if (alive) setMembers(orgMembers);
+        if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {
@@ -86,7 +89,7 @@ function useAssignmentsForMonth(month: string) {
     (async () => {
       try {
         const data = await fetchAllMonthlyAssignments({ month });
-        if (alive) setAssignments(data);
+        if (alive) setAssignments(data.filter((a) => !EXCLUDED_USERNAMES.has(a.user_username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {

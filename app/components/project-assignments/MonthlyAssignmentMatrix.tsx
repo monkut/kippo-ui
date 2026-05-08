@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   buildMonthlyMatrix,
@@ -18,6 +18,8 @@ const UNCONFIRMED_CELL = {
   title: "未確定 (予測)",
 } as const;
 
+const FIXED_HEADER_COL_COUNT = 5;
+
 function MonthlyAssignmentMatrixImpl({
   projects,
   assignments,
@@ -34,9 +36,6 @@ function MonthlyAssignmentMatrixImpl({
 
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-      <p className="text-xs text-gray-500 mb-3">
-        プロジェクト名をクリックして割当の追加・編集を行います。
-      </p>
       <table className="w-full text-sm">
         <Header users={matrix.users} />
         <tbody>
@@ -62,31 +61,40 @@ function EmptyState() {
 function Header({ users }: { users: MonthlyMatrixUser[] }) {
   return (
     <thead>
-      <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
+      <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
         <th className="py-2 pr-4 min-w-[7rem]">プロジェクトID</th>
         <th className="py-2 pr-4 min-w-[14rem]">プロジェクト名</th>
         <th className="py-2 px-3 min-w-[6rem]">開始日</th>
         <th className="py-2 px-3 min-w-[6rem]">終了日</th>
+        <th className="py-2 px-3 min-w-[5rem] text-right">月合計</th>
         {users.map((user) => (
-          <th key={user.user_id} className="py-2 px-3 text-right min-w-[5rem]">
-            {user.display_name}
+          <th
+            key={user.user_id}
+            className="py-2 px-1 text-left align-bottom h-32 min-w-[1.75rem] normal-case tracking-normal"
+          >
+            <span
+              className="[writing-mode:sideways-lr] inline-block text-[11px] font-medium text-gray-700 whitespace-nowrap"
+              title={user.display_name}
+            >
+              {user.display_name}
+            </span>
           </th>
         ))}
-        <th className="py-2 pl-3 text-right">月合計</th>
       </tr>
     </thead>
   );
 }
 
 function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatrixUser[] }) {
-  const idPrefix = row.project.id.slice(0, 8);
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
-      <td className="py-2 pr-4 text-[11px] text-gray-500 font-mono">{idPrefix}…</td>
+      <td className="py-2 pr-4">
+        <CopyableProjectId projectId={row.project.id} />
+      </td>
       <td className="py-2 pr-4">
         <Link
           to={`/projects/${row.project.id}/assignments`}
-          title={`${row.project.name} の割当を編集`}
+          title="クリックして割当を追加・編集"
           className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
           {row.project.name}
@@ -94,13 +102,39 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
       </td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.start_date ?? "—"}</td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
+      <td className="py-2 px-3 text-right font-medium text-gray-700">{row.rowTotal}%</td>
       {users.map((user) => (
-        <td key={user.user_id} className="py-2 px-3 text-right">
+        <td key={user.user_id} className="py-2 px-1 text-center">
           <PercentageCell cell={row.cells.get(user.user_id)} />
         </td>
       ))}
-      <td className="py-2 pl-3 text-right font-medium text-gray-700">{row.rowTotal}%</td>
     </tr>
+  );
+}
+
+function CopyableProjectId({ projectId }: { projectId: string }) {
+  const [copied, setCopied] = useState(false);
+  const idPrefix = projectId.slice(0, 8);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(projectId);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable — silently no-op; full ID still visible via title.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title={copied ? "コピーしました" : `${projectId} (クリックでコピー)`}
+      className="text-[11px] font-mono text-gray-500 hover:text-indigo-600 cursor-pointer"
+    >
+      {copied ? "✓ コピー済" : `${idPrefix}…`}
+    </button>
   );
 }
 
@@ -127,7 +161,7 @@ function Footer({
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
-        <td colSpan={4} className="py-2 pr-4 text-gray-500 font-medium">
+        <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
           ユーザー月合計
         </td>
         {users.map((user) => {
@@ -136,14 +170,13 @@ function Footer({
           return (
             <td
               key={user.user_id}
-              className={`py-2 px-3 text-right font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
+              className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
               title={overAllocated ? `${total}% — 100%を超えています` : undefined}
             >
               {total}%{overAllocated ? " ⚠" : ""}
             </td>
           );
         })}
-        <td />
       </tr>
     </tfoot>
   );
