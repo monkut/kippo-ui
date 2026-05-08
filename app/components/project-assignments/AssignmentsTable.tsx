@@ -4,25 +4,45 @@ import { buildGrid, formatMonth, type CellState, type GridRow } from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
+  onAddClick?: () => void;
+  onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 const MAX_PERCENTAGE_PER_MONTH = 100;
 
-function AssignmentsTableImpl({ assignments }: AssignmentsTableProps) {
-  const { months, byUser, monthTotals } = useMemo(() => buildGrid(assignments), [assignments]);
+function AssignmentsTableImpl({ assignments, onAddClick, onCellClick }: AssignmentsTableProps) {
+  const { months, byUser, monthTotals, byCellId } = useMemo(() => {
+    const grid = buildGrid(assignments);
+    const cellLookup = new Map<string, ProjectMonthlyAssignment>();
+    for (const assignment of assignments) {
+      if (assignment.month) cellLookup.set(`${assignment.user}|${assignment.month}`, assignment);
+    }
+    return { ...grid, byCellId: cellLookup };
+  }, [assignments]);
 
   if (assignments.length === 0) {
-    return <EmptyState />;
+    return <EmptyState onAddClick={onAddClick} />;
   }
 
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">月次割当</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
+        {onAddClick && (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+          >
+            + 割当を追加
+          </button>
+        )}
+      </div>
       <table className="w-full text-sm">
         <TableHeader months={months} />
         <tbody>
           {byUser.map((row) => (
-            <UserRow key={row.userKey} row={row} months={months} />
+            <UserRow key={row.userKey} row={row} months={months} byCellId={byCellId} onCellClick={onCellClick} />
           ))}
         </tbody>
         <TableFooter months={months} monthTotals={monthTotals} />
@@ -32,10 +52,21 @@ function AssignmentsTableImpl({ assignments }: AssignmentsTableProps) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onAddClick }: { onAddClick?: () => void }) {
   return (
     <section className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-2">月次割当</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
+        {onAddClick && (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+          >
+            + 割当を追加
+          </button>
+        )}
+      </div>
       <p className="text-sm text-gray-500">割当はまだ登録されていません。</p>
     </section>
   );
@@ -56,15 +87,28 @@ function TableHeader({ months }: { months: string[] }) {
   );
 }
 
-function UserRow({ row, months }: { row: GridRow; months: string[] }) {
+function UserRow({
+  row,
+  months,
+  byCellId,
+  onCellClick,
+}: {
+  row: GridRow;
+  months: string[];
+  byCellId: Map<string, ProjectMonthlyAssignment>;
+  onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
+}) {
   return (
     <tr className="border-b border-gray-100 last:border-0">
       <td className="py-2 pr-4 text-gray-900 font-medium whitespace-nowrap">{row.displayName}</td>
-      {months.map((month) => (
-        <td key={month} className="py-2 px-3 text-right">
-          <PercentageCell cell={row.cells.get(month)} />
-        </td>
-      ))}
+      {months.map((month) => {
+        const assignment = byCellId.get(`${row.userKey}|${month}`);
+        return (
+          <td key={month} className="py-2 px-3 text-right">
+            <PercentageCell cell={row.cells.get(month)} assignment={assignment} onClick={onCellClick} />
+          </td>
+        );
+      })}
     </tr>
   );
 }
@@ -94,16 +138,31 @@ function MonthTotalCell({ total }: { total: number }) {
   );
 }
 
-function PercentageCell({ cell }: { cell: CellState | undefined }) {
+function PercentageCell({
+  cell,
+  assignment,
+  onClick,
+}: {
+  cell: CellState | undefined;
+  assignment?: ProjectMonthlyAssignment;
+  onClick?: (assignment: ProjectMonthlyAssignment) => void;
+}) {
   if (!cell) return <span className="text-gray-300">—</span>;
   const styles = cell.isConfirmed
-    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
-    : "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200";
+    ? "bg-indigo-100 text-indigo-800 border border-indigo-200 hover:bg-indigo-200"
+    : "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200 hover:bg-indigo-100";
+  const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`;
+  const tooltip = cell.isConfirmed ? "確定済み (クリックで編集)" : "未確定 / 予測 (クリックで編集)";
+
+  if (assignment && onClick) {
+    return (
+      <button type="button" onClick={() => onClick(assignment)} className={sharedClass} title={tooltip}>
+        {cell.percentage}%
+      </button>
+    );
+  }
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}
-      title={cell.isConfirmed ? "確定済み" : "未確定 (予測)"}
-    >
+    <span className={sharedClass} title={cell.isConfirmed ? "確定済み" : "未確定 (予測)"}>
       {cell.percentage}%
     </span>
   );
