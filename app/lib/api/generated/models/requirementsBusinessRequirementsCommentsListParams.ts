@@ -12,6 +12,10 @@ export type RequirementsBusinessRequirementsCommentsListParams = {
  */
 page?: number;
 /**
+ * Number of results to return per page.
+ */
+page_size?: number;
+/**
  * Return only top-level comments (no replies)
  */
 top_level_only?: boolean;

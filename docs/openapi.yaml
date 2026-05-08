@@ -29,6 +29,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: project
         schema:
@@ -291,6 +297,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - feedback
       security:
@@ -485,6 +497,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -803,6 +821,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: project
         schema:
@@ -1082,6 +1106,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - personal-holidays
       security:
@@ -1310,6 +1340,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -1585,6 +1621,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - projects
       security:
@@ -1811,6 +1853,74 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/projects/{id}/forecast/:
+    get:
+      operationId: projects_forecast_retrieve
+      description: Estimated completion date for the project, derived from logged
+        effort + future ProjectMonthlyAssignment rows. Returns 400 if the project
+        has no start_date set.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectForecastResponse'
+          description: ''
+        '400':
+          description: project.start_date is required to compute the forecast
+  /api/projects/{id}/suggest-assignments/:
+    post:
+      operationId: projects_suggest_assignments_create
+      description: Generate up to 3 candidate assignment patterns for the project.
+        Patterns vary along a continuity gradient (max past-member reuse / blend /
+        most-available pool). Returns 400 if the project has no start_date set. See
+        monkut/kippo#224 B1-B13.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクト.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuggestAssignmentsRequestRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestAssignmentsResponse'
+          description: ''
+        '400':
+          description: project.start_date is required to compute suggestions
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -1839,6 +1949,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -2137,6 +2253,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - public-holidays
       security:
@@ -2213,6 +2335,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: project
         schema:
@@ -2282,6 +2410,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -2565,6 +2699,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: project
         schema:
@@ -2804,6 +2944,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: problem
         schema:
@@ -2899,6 +3045,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -3216,6 +3368,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - requirements
       security:
@@ -3508,6 +3666,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: project
         schema:
@@ -3745,6 +3909,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: path
         name: problem_definition_pk
         schema:
@@ -3880,6 +4050,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -4123,6 +4299,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -4403,6 +4585,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: path
         name: technical_requirement_pk
         schema:
@@ -4670,6 +4858,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: path
         name: technical_requirement_pk
         schema:
@@ -4905,6 +5099,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: path
         name: technical_requirement_pk
         schema:
@@ -5000,6 +5200,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: path
@@ -5607,6 +5813,15 @@ components:
         * `3` - 3
         * `4` - 4
         * `5` - 5
+    GithubRepositoryInline:
+      type: object
+      description: Inline serializer for GithubRepository links in OpenAPI schema.
+      properties:
+        repository_url:
+          type: string
+          format: uri
+      required:
+      - repository_url
     GrowthScoreEnum:
       enum:
       - 1
@@ -5632,6 +5847,7 @@ components:
         organization:
           type: string
           format: uuid
+          title: 組織
         organization_name:
           type: string
           readOnly: true
@@ -5646,11 +5862,13 @@ components:
         columnset:
           type: string
           format: uuid
+          title: カラムセット
           description: ProjectColumnSet to use if/when a related Github project is
             created through Kippo
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'
+          title: フェーズ
           description: |-
             State or phase of the project
 
@@ -5662,19 +5880,30 @@ components:
           type: integer
           maximum: 100
           minimum: 0
+          title: 確度
           description: 0-100, Confidence level of the project proceeding to the next
             phase
         category:
-          type: string
-          maxLength: 256
+          allOf:
+          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
+          title: カテゴリ
         slack_channel_name:
           type: string
-          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
+          title: Slack会話チャンネル名
+          description: Conversation Channel — invite the organization's slack bot
+            to enable channel notification
+          maxLength: 80
+        slack_notification_channel_name:
+          type: string
+          title: Slack通知チャンネル名
+          description: Notification Channel for crawler / batch / development notifications
+            (separate from the conversation channel)
           maxLength: 80
         project_manager:
           type: string
           format: uuid
           nullable: true
+          title: プロジェクトマネージャー
           description: Project Manager assigned to the project
         project_manager_username:
           type: string
@@ -5682,7 +5911,7 @@ components:
           nullable: true
         is_closed:
           type: boolean
-          title: Project is Closed
+          title: プロジェクト終了済み
           description: Manually set when project is complete
         closed_datetime:
           type: string
@@ -5691,25 +5920,33 @@ components:
           nullable: true
         display_as_active:
           type: boolean
+          title: アクティブとして表示
           description: If True, project will be included in the ActiveKippoProject
             List
         display_in_project_report:
           type: boolean
-          title: Display in Project Report Summary (slack)
+          title: プロジェクトレポートサマリ(Slack)に表示
           description: If True, project will be included in the Project Report Summary
         github_project_html_url:
           type: string
           format: uri
+          title: GitHubプロジェクトのHTML URL
           maxLength: 200
         github_project_api_nodeid:
           type: string
-          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          title: GitHubプロジェクトAPIノードID
           maxLength: 255
+        github_repositories:
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubRepositoryInline'
+          readOnly: true
         allocated_staff_days:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
+          title: 割当工数(人日)
           description: Estimated Staff Days needed for Project Completion
         allocated_effort_hours:
           type: number
@@ -5735,18 +5972,24 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        document_url:
+        document_folder_url:
           type: string
           format: uri
-          title: Documentation Location URL
+          title: ドキュメント保管URL
           description: URL of where documents for the projects are maintained
           maxLength: 200
+        docbase_tag:
+          type: string
+          title: DocBaseタグ
+          description: DocBase tag used by the crawler to fetch matching posts
+          maxLength: 64
         problem_definition:
           type: string
-          title: Project Problem Definition
+          title: プロジェクト課題定義
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
+          title: アンケート発行済み
           description: Update when survey is issued!
         assignment_rates:
           type: array
@@ -5790,6 +6033,7 @@ components:
       - closed_datetime
       - columnset
       - created_datetime
+      - github_repositories
       - has_requirements
       - id
       - latest_comment
@@ -5802,6 +6046,30 @@ components:
       - survey_users
       - updated_datetime
       - weekly_effort_users
+    KippoProjectCategoryEnum:
+      enum:
+      - new-proposal
+      - maintenance
+      - poc
+      - instructor
+      - r-and-d
+      - PAO
+      - upsell-improvement
+      - upsell-new-proposal
+      - upsell-new-department
+      - other
+      type: string
+      description: |-
+        * `new-proposal` - 新規提案
+        * `maintenance` - 保守
+        * `poc` - poc
+        * `instructor` - 講師
+        * `r-and-d` - R&D
+        * `PAO` - PAO
+        * `upsell-improvement` - (Upsell) 追加改善・拡張
+        * `upsell-new-proposal` - (Upsell) 新規提案
+        * `upsell-new-department` - (Upsell) 別部署紹介
+        * `other` - その他
     KippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -5809,6 +6077,7 @@ components:
         organization:
           type: string
           format: uuid
+          title: 組織
         name:
           type: string
           minLength: 1
@@ -5818,11 +6087,13 @@ components:
         columnset:
           type: string
           format: uuid
+          title: カラムセット
           description: ProjectColumnSet to use if/when a related Github project is
             created through Kippo
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'
+          title: フェーズ
           description: |-
             State or phase of the project
 
@@ -5834,46 +6105,59 @@ components:
           type: integer
           maximum: 100
           minimum: 0
+          title: 確度
           description: 0-100, Confidence level of the project proceeding to the next
             phase
         category:
-          type: string
-          minLength: 1
-          maxLength: 256
+          allOf:
+          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
+          title: カテゴリ
         slack_channel_name:
           type: string
-          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
+          title: Slack会話チャンネル名
+          description: Conversation Channel — invite the organization's slack bot
+            to enable channel notification
+          maxLength: 80
+        slack_notification_channel_name:
+          type: string
+          title: Slack通知チャンネル名
+          description: Notification Channel for crawler / batch / development notifications
+            (separate from the conversation channel)
           maxLength: 80
         project_manager:
           type: string
           format: uuid
           nullable: true
+          title: プロジェクトマネージャー
           description: Project Manager assigned to the project
         is_closed:
           type: boolean
-          title: Project is Closed
+          title: プロジェクト終了済み
           description: Manually set when project is complete
         display_as_active:
           type: boolean
+          title: アクティブとして表示
           description: If True, project will be included in the ActiveKippoProject
             List
         display_in_project_report:
           type: boolean
-          title: Display in Project Report Summary (slack)
+          title: プロジェクトレポートサマリ(Slack)に表示
           description: If True, project will be included in the Project Report Summary
         github_project_html_url:
           type: string
           format: uri
+          title: GitHubプロジェクトのHTML URL
           maxLength: 200
         github_project_api_nodeid:
           type: string
-          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          title: GitHubプロジェクトAPIノードID
           maxLength: 255
         allocated_staff_days:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
+          title: 割当工数(人日)
           description: Estimated Staff Days needed for Project Completion
         start_date:
           type: string
@@ -5894,18 +6178,24 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        document_url:
+        document_folder_url:
           type: string
           format: uri
-          title: Documentation Location URL
+          title: ドキュメント保管URL
           description: URL of where documents for the projects are maintained
           maxLength: 200
+        docbase_tag:
+          type: string
+          title: DocBaseタグ
+          description: DocBase tag used by the crawler to fetch matching posts
+          maxLength: 64
         problem_definition:
           type: string
-          title: Project Problem Definition
+          title: プロジェクト課題定義
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
+          title: アンケート発行済み
           description: Update when survey is issued!
       required:
       - columnset
@@ -6572,6 +6862,7 @@ components:
         organization:
           type: string
           format: uuid
+          title: 組織
         name:
           type: string
           minLength: 1
@@ -6581,11 +6872,13 @@ components:
         columnset:
           type: string
           format: uuid
+          title: カラムセット
           description: ProjectColumnSet to use if/when a related Github project is
             created through Kippo
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'
+          title: フェーズ
           description: |-
             State or phase of the project
 
@@ -6597,46 +6890,59 @@ components:
           type: integer
           maximum: 100
           minimum: 0
+          title: 確度
           description: 0-100, Confidence level of the project proceeding to the next
             phase
         category:
-          type: string
-          minLength: 1
-          maxLength: 256
+          allOf:
+          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
+          title: カテゴリ
         slack_channel_name:
           type: string
-          description: Run '/invite {ORG.slack_command_name}' to enable channel notification
+          title: Slack会話チャンネル名
+          description: Conversation Channel — invite the organization's slack bot
+            to enable channel notification
+          maxLength: 80
+        slack_notification_channel_name:
+          type: string
+          title: Slack通知チャンネル名
+          description: Notification Channel for crawler / batch / development notifications
+            (separate from the conversation channel)
           maxLength: 80
         project_manager:
           type: string
           format: uuid
           nullable: true
+          title: プロジェクトマネージャー
           description: Project Manager assigned to the project
         is_closed:
           type: boolean
-          title: Project is Closed
+          title: プロジェクト終了済み
           description: Manually set when project is complete
         display_as_active:
           type: boolean
+          title: アクティブとして表示
           description: If True, project will be included in the ActiveKippoProject
             List
         display_in_project_report:
           type: boolean
-          title: Display in Project Report Summary (slack)
+          title: プロジェクトレポートサマリ(Slack)に表示
           description: If True, project will be included in the Project Report Summary
         github_project_html_url:
           type: string
           format: uri
+          title: GitHubプロジェクトのHTML URL
           maxLength: 200
         github_project_api_nodeid:
           type: string
-          title: Github Project API Node ID (GraphQL node ID for ProjectsV2)
+          title: GitHubプロジェクトAPIノードID
           maxLength: 255
         allocated_staff_days:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
+          title: 割当工数(人日)
           description: Estimated Staff Days needed for Project Completion
         start_date:
           type: string
@@ -6657,18 +6963,24 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        document_url:
+        document_folder_url:
           type: string
           format: uri
-          title: Documentation Location URL
+          title: ドキュメント保管URL
           description: URL of where documents for the projects are maintained
           maxLength: 200
+        docbase_tag:
+          type: string
+          title: DocBaseタグ
+          description: DocBase tag used by the crawler to fetch matching posts
+          maxLength: 64
         problem_definition:
           type: string
-          title: Project Problem Definition
+          title: プロジェクト課題定義
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
+          title: アンケート発行済み
           description: Update when survey is issued!
     PatchedKippoProjectUserStatisfactionResultRequest:
       type: object
@@ -7564,6 +7876,24 @@ components:
       - category
       - project
       - title
+    ProjectForecastResponse:
+      type: object
+      properties:
+        estimated_completion_date:
+          type: string
+          format: date
+          nullable: true
+        delta_from_target_date_days:
+          type: integer
+          nullable: true
+        target_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - delta_from_target_date_days
+      - estimated_completion_date
+      - target_date
     ProjectMonthlyAssignment:
       type: object
       description: Serializer for ProjectMonthlyAssignment model.
@@ -8355,6 +8685,21 @@ components:
         * `AZURE` - AZURE
         * `GCP` - GCP
         * `OTHER` - OTHER
+    SuggestAssignmentsRequestRequest:
+      type: object
+      properties:
+        from_month:
+          type: string
+          format: date
+          nullable: true
+    SuggestAssignmentsResponse:
+      type: object
+      properties:
+        patterns:
+          type: array
+          items: {}
+      required:
+      - patterns
     SurveyUserInline:
       type: object
       description: Inline serializer for survey completion user data in OpenAPI schema.

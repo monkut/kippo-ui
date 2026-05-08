@@ -12,10 +12,13 @@ import type {
   PaginatedProjectWeeklyEffortList,
   PatchedKippoProjectRequest,
   PatchedProjectWeeklyEffortRequest,
+  ProjectForecastResponse,
   ProjectWeeklyEffort,
   ProjectWeeklyEffortRequest,
   ProjectsListParams,
-  ProjectsWeeklyeffortListParams
+  ProjectsWeeklyeffortListParams,
+  SuggestAssignmentsRequestRequest,
+  SuggestAssignmentsResponse
 } from '../models';
 
 import { customFetch } from '../../custom-fetch';
@@ -322,6 +325,92 @@ export const projectsDestroy = async (id: string, options?: RequestInit): Promis
     method: 'DELETE'
 
 
+  }
+);}
+
+
+/**
+ * Estimated completion date for the project, derived from logged effort + future ProjectMonthlyAssignment rows. Returns 400 if the project has no start_date set.
+ */
+export type projectsForecastRetrieveResponse200 = {
+  data: ProjectForecastResponse
+  status: 200
+}
+
+export type projectsForecastRetrieveResponse400 = {
+  data: void
+  status: 400
+}
+
+export type projectsForecastRetrieveResponseSuccess = (projectsForecastRetrieveResponse200) & {
+  headers: Headers;
+};
+export type projectsForecastRetrieveResponseError = (projectsForecastRetrieveResponse400) & {
+  headers: Headers;
+};
+
+export type projectsForecastRetrieveResponse = (projectsForecastRetrieveResponseSuccess | projectsForecastRetrieveResponseError)
+
+export const getProjectsForecastRetrieveUrl = (id: string,) => {
+
+
+
+
+  return `/api/projects/${id}/forecast/`
+}
+
+export const projectsForecastRetrieve = async (id: string, options?: RequestInit): Promise<projectsForecastRetrieveResponse> => {
+
+  return customFetch<projectsForecastRetrieveResponse>(getProjectsForecastRetrieveUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Generate up to 3 candidate assignment patterns for the project. Patterns vary along a continuity gradient (max past-member reuse / blend / most-available pool). Returns 400 if the project has no start_date set. See monkut/kippo#224 B1-B13.
+ */
+export type projectsSuggestAssignmentsCreateResponse200 = {
+  data: SuggestAssignmentsResponse
+  status: 200
+}
+
+export type projectsSuggestAssignmentsCreateResponse400 = {
+  data: void
+  status: 400
+}
+
+export type projectsSuggestAssignmentsCreateResponseSuccess = (projectsSuggestAssignmentsCreateResponse200) & {
+  headers: Headers;
+};
+export type projectsSuggestAssignmentsCreateResponseError = (projectsSuggestAssignmentsCreateResponse400) & {
+  headers: Headers;
+};
+
+export type projectsSuggestAssignmentsCreateResponse = (projectsSuggestAssignmentsCreateResponseSuccess | projectsSuggestAssignmentsCreateResponseError)
+
+export const getProjectsSuggestAssignmentsCreateUrl = (id: string,) => {
+
+
+
+
+  return `/api/projects/${id}/suggest-assignments/`
+}
+
+export const projectsSuggestAssignmentsCreate = async (id: string,
+    suggestAssignmentsRequestRequest: SuggestAssignmentsRequestRequest, options?: RequestInit): Promise<projectsSuggestAssignmentsCreateResponse> => {
+
+  return customFetch<projectsSuggestAssignmentsCreateResponse>(getProjectsSuggestAssignmentsCreateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      suggestAssignmentsRequestRequest,)
   }
 );}
 

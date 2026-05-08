@@ -11,4 +11,8 @@ export type RequirementsTechnicalRequirementsEstimatesListParams = {
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Number of results to return per page.
+ */
+page_size?: number;
 };
