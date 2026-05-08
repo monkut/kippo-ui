@@ -5,12 +5,13 @@ import { buildGrid, formatMonth, type CellState, type GridRow } from "./utils";
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
   onAddClick?: () => void;
+  onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 const MAX_PERCENTAGE_PER_MONTH = 100;
 
-function AssignmentsTableImpl({ assignments, onAddClick, onCellClick }: AssignmentsTableProps) {
+function AssignmentsTableImpl({ assignments, onAddClick, onSuggestClick, onCellClick }: AssignmentsTableProps) {
   const { months, byUser, monthTotals, byCellId } = useMemo(() => {
     const grid = buildGrid(assignments);
     const cellLookup = new Map<string, ProjectMonthlyAssignment>();
@@ -21,22 +22,14 @@ function AssignmentsTableImpl({ assignments, onAddClick, onCellClick }: Assignme
   }, [assignments]);
 
   if (assignments.length === 0) {
-    return <EmptyState onAddClick={onAddClick} />;
+    return <EmptyState onAddClick={onAddClick} onSuggestClick={onSuggestClick} />;
   }
 
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
-        {onAddClick && (
-          <button
-            type="button"
-            onClick={onAddClick}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-          >
-            + 割当を追加
-          </button>
-        )}
+        <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
       </div>
       <table className="w-full text-sm">
         <TableHeader months={months} />
@@ -52,23 +45,40 @@ function AssignmentsTableImpl({ assignments, onAddClick, onCellClick }: Assignme
   );
 }
 
-function EmptyState({ onAddClick }: { onAddClick?: () => void }) {
+function EmptyState({ onAddClick, onSuggestClick }: { onAddClick?: () => void; onSuggestClick?: () => void }) {
   return (
     <section className="bg-white shadow rounded-lg p-6">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <h2 className="text-lg font-medium text-gray-900">月次割当</h2>
-        {onAddClick && (
-          <button
-            type="button"
-            onClick={onAddClick}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-          >
-            + 割当を追加
-          </button>
-        )}
+        <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
       </div>
       <p className="text-sm text-gray-500">割当はまだ登録されていません。</p>
     </section>
+  );
+}
+
+function Toolbar({ onAddClick, onSuggestClick }: { onAddClick?: () => void; onSuggestClick?: () => void }) {
+  return (
+    <div className="flex gap-2">
+      {onSuggestClick && (
+        <button
+          type="button"
+          onClick={onSuggestClick}
+          className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 rounded-md hover:bg-indigo-50"
+        >
+          候補パターンを生成
+        </button>
+      )}
+      {onAddClick && (
+        <button
+          type="button"
+          onClick={onAddClick}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+        >
+          + 割当を追加
+        </button>
+      )}
+    </div>
   );
 }
 

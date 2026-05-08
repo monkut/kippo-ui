@@ -5,6 +5,7 @@ import {
   AssignmentsTable,
   EditAssignmentModal,
   ForecastBar,
+  PatternPickerModal,
 } from "~/components/project-assignments";
 import { Layout } from "~/components/layout";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
@@ -41,14 +42,11 @@ export default function ProjectAssignments() {
   );
 }
 
-function Body({
-  projectId,
-  state,
-}: {
-  projectId: string | undefined;
-  state: ReturnType<typeof useProjectAssignments>;
-}) {
+type State = ReturnType<typeof useProjectAssignments>;
+
+function Body({ projectId, state }: { projectId: string | undefined; state: State }) {
   const [addOpen, setAddOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
 
   return (
@@ -62,19 +60,63 @@ function Body({
           <AssignmentsTable
             assignments={state.assignments}
             onAddClick={() => setAddOpen(true)}
+            onSuggestClick={() => setSuggestOpen(true)}
             onCellClick={setEditTarget}
           />
         </>
       )}
+      <Modals
+        projectId={projectId}
+        state={state}
+        addOpen={addOpen}
+        setAddOpen={setAddOpen}
+        suggestOpen={suggestOpen}
+        setSuggestOpen={setSuggestOpen}
+        editTarget={editTarget}
+        setEditTarget={setEditTarget}
+      />
+    </div>
+  );
+}
+
+function Modals({
+  projectId,
+  state,
+  addOpen,
+  setAddOpen,
+  suggestOpen,
+  setSuggestOpen,
+  editTarget,
+  setEditTarget,
+}: {
+  projectId: string | undefined;
+  state: State;
+  addOpen: boolean;
+  setAddOpen: (open: boolean) => void;
+  suggestOpen: boolean;
+  setSuggestOpen: (open: boolean) => void;
+  editTarget: ProjectMonthlyAssignment | null;
+  setEditTarget: (target: ProjectMonthlyAssignment | null) => void;
+}) {
+  return (
+    <>
       {projectId && (
-        <AddAssignmentModal
-          open={addOpen}
-          projectId={projectId}
-          existingAssignments={state.assignments}
-          isSaving={state.isSaving}
-          onClose={() => setAddOpen(false)}
-          onSubmit={state.createAssignment}
-        />
+        <>
+          <AddAssignmentModal
+            open={addOpen}
+            projectId={projectId}
+            existingAssignments={state.assignments}
+            isSaving={state.isSaving}
+            onClose={() => setAddOpen(false)}
+            onSubmit={state.createAssignment}
+          />
+          <PatternPickerModal
+            open={suggestOpen}
+            projectId={projectId}
+            onClose={() => setSuggestOpen(false)}
+            onAcceptPattern={state.bulkCreateAssignments}
+          />
+        </>
       )}
       <EditAssignmentModal
         open={editTarget !== null}
@@ -84,7 +126,7 @@ function Body({
         onSave={state.updateAssignment}
         onDelete={state.deleteAssignment}
       />
-    </div>
+    </>
   );
 }
 

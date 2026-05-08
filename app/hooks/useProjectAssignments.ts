@@ -26,6 +26,7 @@ export type UseProjectAssignmentsState = {
   createAssignment: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
+  bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
 };
 
 const FORECAST_400_MESSAGE = "プロジェクトの開始日が設定されていないため、完了予測を計算できません。";
@@ -111,5 +112,6 @@ export function useProjectAssignments(projectId: string | undefined): UseProject
     createAssignment: mutations.createAssignment,
     updateAssignment: mutations.updateAssignment,
     deleteAssignment: mutations.deleteAssignment,
+    bulkCreateAssignments: mutations.bulkCreateAssignments,
   };
 }
