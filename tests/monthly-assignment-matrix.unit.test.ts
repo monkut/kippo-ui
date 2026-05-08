@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   addMonths,
   buildMonthlyMatrix,
+  compareActiveKippoProjects,
   firstOfMonth,
 } from "~/components/project-assignments/utils";
 import type {
@@ -188,6 +189,73 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
       ],
     );
     expect(m.users[0].display_name).toBe("alice");
+  });
+});
+
+describe("compareActiveKippoProjects: phase + confidence", () => {
+  test("anon-project phase comes before everything else", () => {
+    const anon = makeProject("a", "Z-Anon", {
+      phase: "anon-project",
+      confidence: 0,
+      target_date: "2099-12-31",
+    } as Partial<KippoProject>);
+    const live = makeProject("b", "A-Live", {
+      phase: "project-development",
+      confidence: 100,
+      target_date: "2026-01-01",
+    } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(anon, live)).toBeLessThan(0);
+    expect(compareActiveKippoProjects(live, anon)).toBeGreaterThan(0);
+  });
+
+  test("higher confidence sorts first", () => {
+    const high = makeProject("a", "A", { confidence: 80 } as Partial<KippoProject>);
+    const low = makeProject("b", "B", { confidence: 20 } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(high, low)).toBeLessThan(0);
+  });
+
+  test("missing confidence sorts last", () => {
+    const known = makeProject("a", "A", { confidence: 0 } as Partial<KippoProject>);
+    const missing = makeProject("b", "B", { confidence: undefined } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(known, missing)).toBeLessThan(0);
+  });
+});
+
+describe("compareActiveKippoProjects: target_date + name tie-breaks", () => {
+  test("earlier target_date sorts first when confidence ties", () => {
+    const early = makeProject("a", "Z", {
+      confidence: 50,
+      target_date: "2026-01-01",
+    } as Partial<KippoProject>);
+    const late = makeProject("b", "A", {
+      confidence: 50,
+      target_date: "2026-12-31",
+    } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(early, late)).toBeLessThan(0);
+  });
+
+  test("missing target_date sorts last when confidence ties", () => {
+    const known = makeProject("a", "Z", {
+      confidence: 50,
+      target_date: "2026-12-31",
+    } as Partial<KippoProject>);
+    const missing = makeProject("b", "A", {
+      confidence: 50,
+      target_date: null,
+    } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(known, missing)).toBeLessThan(0);
+  });
+
+  test("falls back to name when confidence + target_date tie", () => {
+    const a = makeProject("1", "A", {
+      confidence: 50,
+      target_date: "2026-06-01",
+    } as Partial<KippoProject>);
+    const b = makeProject("2", "B", {
+      confidence: 50,
+      target_date: "2026-06-01",
+    } as Partial<KippoProject>);
+    expect(compareActiveKippoProjects(a, b)).toBeLessThan(0);
   });
 });
 
