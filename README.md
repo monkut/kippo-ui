@@ -24,6 +24,18 @@ pnpm install
 pnpm pre_install
 ```
 
+### Pre-commitフックのセットアップ
+
+`pnpm install` 実行時に `prepare` スクリプト経由で **husky** が自動的に Git の pre-commit フックを設定します。コミット前に `pnpm format:check` が走り、Biome のフォーマット違反があるとコミットを中断します。
+
+違反が検出された場合は次を実行してフォーマットを修正してください：
+
+```bash
+pnpm format
+```
+
+緊急時にフックをスキップする場合は `git commit --no-verify` を使用できます（非推奨）。
+
 ### 開発サーバーの起動
 
 ```bash
@@ -89,6 +101,7 @@ kippo-ui/
 - **Biome** - コードフォーマッター
 - **Oxlint** - 高速リンター
 - **pnpm** - パッケージマネージャー
+- **husky** - Git pre-commitフック管理
 
 ## 🔌 API Client Generation
 
