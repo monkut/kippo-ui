@@ -59,8 +59,9 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
       try {
         const projectData = await fetchAllProjects({ is_active: true });
         if (!alive) return;
-        setProjects(projectData);
-        const orgMembers = await fetchOrgMembersForProjects(projectData);
+        const visibleProjects = projectData.filter((p) => p.phase !== "anon-project");
+        setProjects(visibleProjects);
+        const orgMembers = await fetchOrgMembersForProjects(visibleProjects);
         if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
       } catch {
         if (alive) setError(FETCH_ERROR);

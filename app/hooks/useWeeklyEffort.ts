@@ -25,6 +25,7 @@ import {
   createEmptyEntry,
   formatDateStr,
   getCurrentMonthStart,
+  isProjectOpenForWeek,
   monthDateRange,
   twoWeekWindow,
 } from "~/components/weekly-effort/utils";
@@ -37,20 +38,24 @@ function buildTemplateEntries(
   sourceEntries: ProjectWeeklyEffort[],
   projectsList: KippoProject[],
   resetHours: boolean,
+  targetWeekStart: string,
 ): FormEntry[] {
   const projectsMap = new Map(projectsList.map((p) => [p.id, p]));
-  return sourceEntries.map((e, idx) => {
-    const project = projectsMap.get(e.project);
-    const filterType: "project" | "anon-project" =
-      project?.phase === "anon-project" ? "anon-project" : "project";
-    return {
-      id: Date.now() + idx,
-      projectId: e.project,
-      projectName: e.project_name,
-      hours: resetHours ? 0 : e.hours,
-      filterType,
-    };
-  });
+  const carried = sourceEntries
+    .filter((e) => isProjectOpenForWeek(projectsMap.get(e.project), targetWeekStart))
+    .map((e, idx) => {
+      const project = projectsMap.get(e.project);
+      const filterType: "project" | "anon-project" =
+        project?.phase === "anon-project" ? "anon-project" : "project";
+      return {
+        id: Date.now() + idx,
+        projectId: e.project,
+        projectName: e.project_name,
+        hours: resetHours ? 0 : e.hours,
+        filterType,
+      };
+    });
+  return carried.length > 0 ? carried : [createEmptyEntry()];
 }
 
 export type UseWeeklyEffortReturn = {
@@ -186,11 +191,11 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
             setTemplateEntries([]);
           } else {
             const previousWeekEntries = userEntries.filter((e) => e.week_start !== weekStart);
-            if (previousWeekEntries.length > 0) {
-              setTemplateEntries(buildTemplateEntries(previousWeekEntries, allProjects, false));
-            } else {
-              setTemplateEntries([createEmptyEntry()]);
-            }
+            setTemplateEntries(
+              previousWeekEntries.length > 0
+                ? buildTemplateEntries(previousWeekEntries, allProjects, false, weekStart)
+                : [createEmptyEntry()],
+            );
           }
         }
 
@@ -239,11 +244,11 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
           setTemplateEntries([]);
         } else {
           const previousWeekEntries = windowEntries.filter((e) => e.week_start !== weekStart);
-          if (previousWeekEntries.length > 0) {
-            setTemplateEntries(buildTemplateEntries(previousWeekEntries, projects, true));
-          } else {
-            setTemplateEntries([createEmptyEntry()]);
-          }
+          setTemplateEntries(
+            previousWeekEntries.length > 0
+              ? buildTemplateEntries(previousWeekEntries, projects, true, weekStart)
+              : [createEmptyEntry()],
+          );
         }
       } catch {
         // Failed to fetch week data - keep current entries

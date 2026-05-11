@@ -1,7 +1,7 @@
 import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
 import type { FormEntry } from "./types";
-import { normalizeDigits } from "./utils";
+import { isProjectOpenForWeek, normalizeDigits } from "./utils";
 
 type WeeklyEffortFormProps = {
   entries: FormEntry[];
@@ -30,20 +30,17 @@ function WeeklyEffortFormImpl({
   onOpenHolidayModal,
   variant,
 }: WeeklyEffortFormProps) {
-  const { projectProjects, nonProjectProjects } = useMemo(() => {
-    const isProjectOpenForWeek = (project: KippoProject): boolean => {
-      if (!project.closed_datetime) return true;
-      return weekStart <= project.closed_datetime.split("T")[0];
-    };
-    return {
+  const { projectProjects, nonProjectProjects } = useMemo(
+    () => ({
       projectProjects: projects
-        .filter((p) => p.phase !== "anon-project" && isProjectOpenForWeek(p))
+        .filter((p) => p.phase !== "anon-project" && isProjectOpenForWeek(p, weekStart))
         .sort((a, b) => a.name.localeCompare(b.name)),
       nonProjectProjects: projects
-        .filter((p) => p.phase === "anon-project" && isProjectOpenForWeek(p))
+        .filter((p) => p.phase === "anon-project" && isProjectOpenForWeek(p, weekStart))
         .sort((a, b) => a.name.localeCompare(b.name)),
-    };
-  }, [projects, weekStart]);
+    }),
+    [projects, weekStart],
+  );
 
   const formTotalHours = useMemo(() => entries.reduce((sum, e) => sum + e.hours, 0), [entries]);
 
