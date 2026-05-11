@@ -63,7 +63,7 @@ export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
     return (
       <div className="pt-4 border-t border-gray-200">
         <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
-          ⚠ インフラコスト: 通貨が混在しているため合計を表示できません (
+          ⚠ コスト: 通貨が混在しているため合計を表示できません (
           {Array.from(currencies).join(", ")})
         </div>
       </div>
@@ -91,7 +91,7 @@ export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
           <CostStat label="累計" value={formatValue(cumulative)} />
         </div>
       </div>
-      <div className="text-xs text-gray-400 mt-1">インフラコスト</div>
+      <div className="text-xs text-gray-400 mt-1">コスト</div>
     </div>
   );
 }
