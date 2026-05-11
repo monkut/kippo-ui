@@ -63,8 +63,7 @@ export function InfraCostDisplay({ costs }: InfraCostDisplayProps) {
     return (
       <div className="pt-4 border-t border-gray-200">
         <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
-          ⚠ コスト: 通貨が混在しているため合計を表示できません (
-          {Array.from(currencies).join(", ")})
+          ⚠ コスト: 通貨が混在しているため合計を表示できません ({Array.from(currencies).join(", ")})
         </div>
       </div>
     );
