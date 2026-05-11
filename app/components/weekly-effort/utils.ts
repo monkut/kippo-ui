@@ -1,3 +1,4 @@
+import type { KippoProject } from "~/lib/api/generated/models";
 import type { FormEntry } from "./types";
 
 /** Convert full-width digits (０-９) to half-width (0-9) and strip non-numeric characters */
@@ -49,6 +50,14 @@ export function twoWeekWindow(weekStart: string): { gte: string; lte: string } {
   const lte = new Date(d);
   lte.setDate(lte.getDate() + 6);
   return { gte: formatDateStr(gte), lte: formatDateStr(lte) };
+}
+
+export function isProjectOpenForWeek(
+  project: KippoProject | undefined,
+  weekStart: string,
+): boolean {
+  if (!project?.closed_datetime) return true;
+  return weekStart <= project.closed_datetime.split("T")[0];
 }
 
 export function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {

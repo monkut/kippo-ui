@@ -131,7 +131,7 @@ export default function WeeklyEffort() {
                 {!isLoadingMonthHolidays &&
                   (weekPublicHolidays.length > 0 || weekPersonalHolidays.length > 0) && (
                     <div className="mt-4 pt-3 border-t border-gray-100">
-                      <div className="text-xs font-medium text-gray-500 mb-2">今週の休日</div>
+                      <div className="text-xs font-medium text-gray-500 mb-2">週の休日</div>
                       <div className="flex flex-wrap gap-1.5">
                         {weekPublicHolidays.map((h) => (
                           <span
