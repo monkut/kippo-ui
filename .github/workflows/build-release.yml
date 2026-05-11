@@ -65,6 +65,17 @@ jobs:
           tar -czvf ../../kippo-ui-build-prod.tar.gz .
           cd ../..
 
+      - name: Build application (dev with /dev prefix)
+        run: |
+          rm -rf build
+          VITE_URL_PREFIX=/dev pnpm build
+
+      - name: Create release tarball (dev)
+        run: |
+          cd build/client
+          tar -czvf ../../kippo-ui-build-dev.tar.gz .
+          cd ../..
+
       - name: Generate version tag
         id: version
         run: echo "version=v$(date +'%Y%m%d_%H%M')" >> $GITHUB_OUTPUT
@@ -78,6 +89,7 @@ jobs:
           files: |
             kippo-ui-build.tar.gz
             kippo-ui-build-prod.tar.gz
+            kippo-ui-build-dev.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload build artifact
