@@ -14,6 +14,11 @@ import type { PhaseEnum } from './phaseEnum';
 export interface PatchedKippoProjectRequest {
   organization?: string;
   /**
+     * Customer this project is delivered for (optional)
+     * @nullable
+     */
+  customer?: string | null;
+  /**
      * Name of the project
      * @minLength 1
      * @maxLength 256
@@ -87,10 +92,7 @@ export interface PatchedKippoProjectRequest {
      * @maxLength 200
      */
   document_folder_url?: string;
-  /**
-     * DocBase tag used by the crawler to fetch matching posts
-     * @maxLength 64
-     */
+  /** @maxLength 255 */
   docbase_tag?: string;
   /** Define the problem that the project is set out to solve. */
   problem_definition?: string;
