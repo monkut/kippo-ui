@@ -286,6 +286,285 @@ paths:
                   is_staff:
                     type: boolean
           description: ''
+  /api/customers/:
+    get:
+      operationId: customers_list
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by display_as_active (true/false)
+      - in: query
+        name: organization
+        schema:
+          type: string
+        description: Filter by organization UUID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search on name, email
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoCustomerList'
+          description: ''
+    post:
+      operationId: customers_create
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoCustomer'
+          description: ''
+  /api/customers/{id}/:
+    get:
+      operationId: customers_retrieve
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this 顧客.
+        required: true
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoCustomer'
+          description: ''
+    put:
+      operationId: customers_update
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this 顧客.
+        required: true
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoCustomerRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoCustomer'
+          description: ''
+    patch:
+      operationId: customers_partial_update
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this 顧客.
+        required: true
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoCustomerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoCustomerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoCustomerRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoCustomer'
+          description: ''
+    delete:
+      operationId: customers_destroy
+      description: |-
+        ViewSet for KippoCustomer model.
+
+        **Organization Scoping:**
+        - Regular users see only customers from organizations they belong to.
+        - Superusers see all customers.
+
+        **Filtering:**
+        - is_active: Filter by display_as_active (true/false).
+        - organization: UUID filter (still intersected with user's memberships).
+        - search: SearchFilter on `name`, `email`.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Create (POST): Authenticated users (organization-membership enforced by serializer).
+        - Update (PUT/PATCH): Authenticated users (organization-scoped).
+        - Delete (DELETE): Superusers only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this 顧客.
+        required: true
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/feedback/feedback/:
     get:
       operationId: feedback_feedback_list
@@ -5859,6 +6138,108 @@ components:
         * `3` - 3
         * `4` - 4
         * `5` - 5
+    KippoCustomer:
+      type: object
+      description: Serializer for KippoCustomer model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          title: 組織
+        organization_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: 顧客名
+          maxLength: 256
+        email:
+          type: string
+          format: email
+          title: メールアドレス
+          maxLength: 254
+        phone:
+          type: string
+          title: 電話番号
+          maxLength: 50
+        website:
+          type: string
+          format: uri
+          title: ウェブサイト
+          maxLength: 200
+        document_url:
+          type: string
+          format: uri
+          title: ドキュメントURL
+          description: Link to customer-related documents (folder, drive, wiki, etc.)
+          maxLength: 200
+        notes:
+          type: string
+          title: メモ
+        display_as_active:
+          type: boolean
+          description: If False, hidden from default admin lists
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - name
+      - organization
+      - organization_name
+      - updated_datetime
+    KippoCustomerRequest:
+      type: object
+      description: Serializer for KippoCustomer model.
+      properties:
+        organization:
+          type: string
+          format: uuid
+          title: 組織
+        name:
+          type: string
+          minLength: 1
+          title: 顧客名
+          maxLength: 256
+        email:
+          type: string
+          format: email
+          title: メールアドレス
+          maxLength: 254
+        phone:
+          type: string
+          title: 電話番号
+          maxLength: 50
+        website:
+          type: string
+          format: uri
+          title: ウェブサイト
+          maxLength: 200
+        document_url:
+          type: string
+          format: uri
+          title: ドキュメントURL
+          description: Link to customer-related documents (folder, drive, wiki, etc.)
+          maxLength: 200
+        notes:
+          type: string
+          title: メモ
+        display_as_active:
+          type: boolean
+          description: If False, hidden from default admin lists
+      required:
+      - name
+      - organization
     KippoProject:
       type: object
       description: Serializer for KippoProject model.
@@ -5874,6 +6255,16 @@ components:
         organization_name:
           type: string
           readOnly: true
+        customer:
+          type: string
+          format: uuid
+          nullable: true
+          title: 顧客
+          description: Customer this project is delivered for (optional)
+        customer_name:
+          type: string
+          readOnly: true
+          nullable: true
         name:
           type: string
           title: プロジェクト名
@@ -6003,9 +6394,7 @@ components:
           maxLength: 200
         docbase_tag:
           type: string
-          title: DocBaseタグ
-          description: DocBase tag used by the crawler to fetch matching posts
-          maxLength: 64
+          maxLength: 255
         problem_definition:
           type: string
           title: プロジェクト課題定義
@@ -6056,6 +6445,7 @@ components:
       - closed_datetime
       - columnset
       - created_datetime
+      - customer_name
       - github_repositories
       - has_requirements
       - id
@@ -6101,6 +6491,12 @@ components:
           type: string
           format: uuid
           title: 組織
+        customer:
+          type: string
+          format: uuid
+          nullable: true
+          title: 顧客
+          description: Customer this project is delivered for (optional)
         name:
           type: string
           minLength: 1
@@ -6209,9 +6605,7 @@ components:
           maxLength: 200
         docbase_tag:
           type: string
-          title: DocBaseタグ
-          description: DocBase tag used by the crawler to fetch matching posts
-          maxLength: 64
+          maxLength: 255
         problem_definition:
           type: string
           title: プロジェクト課題定義
@@ -6429,6 +6823,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Feedback'
+    PaginatedKippoCustomerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoCustomer'
     PaginatedKippoProjectList:
       type: object
       required:
@@ -6906,6 +7323,45 @@ components:
           type: string
           format: uuid
           nullable: true
+    PatchedKippoCustomerRequest:
+      type: object
+      description: Serializer for KippoCustomer model.
+      properties:
+        organization:
+          type: string
+          format: uuid
+          title: 組織
+        name:
+          type: string
+          minLength: 1
+          title: 顧客名
+          maxLength: 256
+        email:
+          type: string
+          format: email
+          title: メールアドレス
+          maxLength: 254
+        phone:
+          type: string
+          title: 電話番号
+          maxLength: 50
+        website:
+          type: string
+          format: uri
+          title: ウェブサイト
+          maxLength: 200
+        document_url:
+          type: string
+          format: uri
+          title: ドキュメントURL
+          description: Link to customer-related documents (folder, drive, wiki, etc.)
+          maxLength: 200
+        notes:
+          type: string
+          title: メモ
+        display_as_active:
+          type: boolean
+          description: If False, hidden from default admin lists
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -6914,6 +7370,12 @@ components:
           type: string
           format: uuid
           title: 組織
+        customer:
+          type: string
+          format: uuid
+          nullable: true
+          title: 顧客
+          description: Customer this project is delivered for (optional)
         name:
           type: string
           minLength: 1
@@ -7022,9 +7484,7 @@ components:
           maxLength: 200
         docbase_tag:
           type: string
-          title: DocBaseタグ
-          description: DocBase tag used by the crawler to fetch matching posts
-          maxLength: 64
+          maxLength: 255
         problem_definition:
           type: string
           title: プロジェクト課題定義
