@@ -317,14 +317,19 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
         {/* Project Name */}
-        <h2 className="text-3xl font-bold">
-          <a
-            href={`${urlPrefix}/admin/projects/activekippoproject/${project.id}/change/`}
-            className="text-gray-900 hover:text-indigo-600 hover:underline transition-colors"
-          >
-            {project.name}
-          </a>
-        </h2>
+        <div>
+          <h2 className="text-3xl font-bold">
+            <a
+              href={`${urlPrefix}/admin/projects/activekippoproject/${project.id}/change/`}
+              className="text-gray-900 hover:text-indigo-600 hover:underline transition-colors"
+            >
+              {project.name}
+            </a>
+          </h2>
+          {project.customer_name && (
+            <p className="mt-1 text-sm italic text-gray-500">{project.customer_name}</p>
+          )}
+        </div>
 
         {/* Dates */}
         <div className="text-lg text-gray-600">
