@@ -146,15 +146,14 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
   const membersState = useMembersForMonth(projectsState.projects, month);
   const assignmentsState = useAssignmentsForMonth(month);
 
-  // anon-project ("Non-Project") rows are hidden by default but surface in the
-  // matrix when they have at least one assignment in the displayed month.
+  // Only show projects that have at least one assignment in the displayed month.
+  // (Subsumes the earlier anon-project-only carve-out — the rule now applies to
+  // all phases so the matrix doesn't list rows full of "—" cells.)
   const visibleProjects = useMemo(() => {
     const projectIdsWithMonthAssignments = new Set(
       assignmentsState.assignments.map((a) => a.project),
     );
-    return projectsState.projects.filter(
-      (p) => p.phase !== "anon-project" || projectIdsWithMonthAssignments.has(p.id),
-    );
+    return projectsState.projects.filter((p) => projectIdsWithMonthAssignments.has(p.id));
   }, [projectsState.projects, assignmentsState.assignments]);
 
   return {
