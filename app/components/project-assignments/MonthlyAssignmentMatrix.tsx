@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   buildCellTooltip,
@@ -8,6 +8,9 @@ import {
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
+  type SortConfig,
+  type SortKey,
+  sortMatrixRows,
 } from "./utils";
 
 const CONFIRMED_CELL = {
@@ -32,6 +35,21 @@ function MonthlyAssignmentMatrixImpl({
     [projects, assignments, members],
   );
 
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const sortedRows = useMemo(
+    () => sortMatrixRows(matrix.rows, sortConfig),
+    [matrix.rows, sortConfig],
+  );
+
+  // 3-state cycle on click: asc → desc → default (null). Clicking a new column starts at asc.
+  const handleSort = useCallback((key: SortKey) => {
+    setSortConfig((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  }, []);
+
   if (matrix.rows.length === 0) {
     return <EmptyState />;
   }
@@ -39,9 +57,9 @@ function MonthlyAssignmentMatrixImpl({
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <table className="w-full text-sm">
-        <Header users={matrix.users} />
+        <Header users={matrix.users} sortConfig={sortConfig} onSort={handleSort} />
         <tbody>
-          {matrix.rows.map((row) => (
+          {sortedRows.map((row) => (
             <ProjectRow key={row.project.id} row={row} users={matrix.users} />
           ))}
         </tbody>
@@ -64,20 +82,54 @@ function EmptyState() {
   );
 }
 
-function Header({ users }: { users: MonthlyMatrixUser[] }) {
+function Header({
+  users,
+  sortConfig,
+  onSort,
+}: {
+  users: MonthlyMatrixUser[];
+  sortConfig: SortConfig | null;
+  onSort: (key: SortKey) => void;
+}) {
   return (
     <thead>
       <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
-        <th className="py-2 pr-4 min-w-[7rem]">プロジェクトID</th>
-        <th className="py-2 pr-4 whitespace-nowrap">プロジェクト名</th>
-        <th className="py-2 px-3 min-w-[6rem]">開始日</th>
-        <th className="py-2 px-3 min-w-[6rem]">終了日</th>
-        <th
+        <SortableHeader
+          label="プロジェクトID"
+          sortKey="id"
+          sortConfig={sortConfig}
+          onSort={onSort}
+          className="py-2 pr-4 min-w-[7rem]"
+        />
+        <SortableHeader
+          label="プロジェクト名"
+          sortKey="name"
+          sortConfig={sortConfig}
+          onSort={onSort}
+          className="py-2 pr-4 whitespace-nowrap"
+        />
+        <SortableHeader
+          label="開始日"
+          sortKey="start_date"
+          sortConfig={sortConfig}
+          onSort={onSort}
+          className="py-2 px-3 min-w-[6rem]"
+        />
+        <SortableHeader
+          label="終了日"
+          sortKey="target_date"
+          sortConfig={sortConfig}
+          onSort={onSort}
+          className="py-2 px-3 min-w-[6rem]"
+        />
+        <SortableHeader
+          label="月合計 (人日)"
+          sortKey="rowEffortDays"
+          sortConfig={sortConfig}
+          onSort={onSort}
           className="py-2 px-3 min-w-[5rem] text-right whitespace-nowrap"
-          title="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
-        >
-          月合計 (人日)
-        </th>
+          titleHint="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
+        />
         {users.map((user) => (
           <th
             key={user.user_id}
@@ -97,6 +149,44 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
         ))}
       </tr>
     </thead>
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  sortConfig,
+  onSort,
+  className,
+  titleHint,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sortConfig: SortConfig | null;
+  onSort: (key: SortKey) => void;
+  className: string;
+  titleHint?: string;
+}) {
+  const isActive = sortConfig?.key === sortKey;
+  const arrow = isActive ? (sortConfig.dir === "asc" ? "▲" : "▼") : "";
+  const ariaSort = !isActive ? "none" : sortConfig.dir === "asc" ? "ascending" : "descending";
+  const buttonTitle = titleHint
+    ? `${titleHint}\n(クリックでソート: 昇順 → 降順 → 既定)`
+    : "クリックでソート: 昇順 → 降順 → 既定";
+  return (
+    <th className={className} aria-sort={ariaSort}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wider text-xs font-medium cursor-pointer hover:text-gray-900 ${
+          isActive ? "text-gray-900" : "text-gray-500"
+        }`}
+        title={buttonTitle}
+      >
+        <span>{label}</span>
+        <span className="text-[10px] w-3 inline-block text-center">{arrow}</span>
+      </button>
+    </th>
   );
 }
 

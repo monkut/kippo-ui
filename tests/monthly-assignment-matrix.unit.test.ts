@@ -6,7 +6,9 @@ import {
   compareActiveKippoProjects,
   firstOfMonth,
   formatPersonDays,
+  type MonthlyMatrixRow,
   percentageToPersonDays,
+  sortMatrixRows,
 } from "~/components/project-assignments/utils";
 import type {
   KippoProject,
@@ -331,6 +333,89 @@ describe("buildMonthlyMatrix: person-days totals (rowEffortDays + userEffortDays
       [makeMember({ user_id: "u-1", available_work_days: null })],
     );
     expect(m.userEffortDays.has("u-1")).toBe(false);
+  });
+});
+
+describe("sortMatrixRows", () => {
+  // Tiny row factory — only the fields sortMatrixRows reads.
+  function makeRow(
+    id: string,
+    name: string,
+    start: string | null,
+    target: string | null,
+    rowEffortDays: number | null,
+  ): MonthlyMatrixRow {
+    return {
+      project: {
+        id,
+        name,
+        start_date: start,
+        target_date: target,
+      } as unknown as MonthlyMatrixRow["project"],
+      cells: new Map(),
+      rowTotal: 0,
+      rowEffortDays,
+    };
+  }
+
+  const sample: MonthlyMatrixRow[] = [
+    makeRow("c", "Charlie", "2026-03-01", "2026-09-30", 10),
+    makeRow("a", "Alpha", "2026-01-01", "2026-12-31", 50),
+    makeRow("b", "Bravo", null, "2026-06-30", null),
+  ];
+
+  test("null config preserves input order", () => {
+    const out = sortMatrixRows(sample, null);
+    expect(out.map((r) => r.project.id)).toEqual(["c", "a", "b"]);
+  });
+
+  test("sort by name asc / desc", () => {
+    expect(sortMatrixRows(sample, { key: "name", dir: "asc" }).map((r) => r.project.name)).toEqual([
+      "Alpha",
+      "Bravo",
+      "Charlie",
+    ]);
+    expect(sortMatrixRows(sample, { key: "name", dir: "desc" }).map((r) => r.project.name)).toEqual(
+      ["Charlie", "Bravo", "Alpha"],
+    );
+  });
+
+  test("sort by id asc", () => {
+    expect(sortMatrixRows(sample, { key: "id", dir: "asc" }).map((r) => r.project.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
+  test("sort by start_date asc — null sorts LAST regardless of direction", () => {
+    expect(
+      sortMatrixRows(sample, { key: "start_date", dir: "asc" }).map((r) => r.project.id),
+    ).toEqual(["a", "c", "b"]);
+    expect(
+      sortMatrixRows(sample, { key: "start_date", dir: "desc" }).map((r) => r.project.id),
+    ).toEqual(["c", "a", "b"]);
+  });
+
+  test("sort by target_date asc", () => {
+    expect(
+      sortMatrixRows(sample, { key: "target_date", dir: "asc" }).map((r) => r.project.id),
+    ).toEqual(["b", "c", "a"]);
+  });
+
+  test("sort by rowEffortDays asc / desc — null sorts LAST regardless of direction", () => {
+    expect(
+      sortMatrixRows(sample, { key: "rowEffortDays", dir: "asc" }).map((r) => r.project.id),
+    ).toEqual(["c", "a", "b"]);
+    expect(
+      sortMatrixRows(sample, { key: "rowEffortDays", dir: "desc" }).map((r) => r.project.id),
+    ).toEqual(["a", "c", "b"]);
+  });
+
+  test("does not mutate the input array", () => {
+    const original = [...sample];
+    sortMatrixRows(sample, { key: "name", dir: "desc" });
+    expect(sample).toEqual(original);
   });
 });
 

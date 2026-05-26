@@ -215,6 +215,41 @@ export type MonthlyAssignmentMatrixProps = {
   members?: OrganizationMemberDetail[];
 };
 
+/** User-selectable sort keys for the monthly assignment matrix column headers. */
+export type SortKey = "id" | "name" | "start_date" | "target_date" | "rowEffortDays";
+
+export type SortConfig = { key: SortKey; dir: "asc" | "desc" };
+
+function sortValueFor(row: MonthlyMatrixRow, key: SortKey): string | number | null {
+  if (key === "rowEffortDays") return row.rowEffortDays;
+  return row.project[key] ?? null;
+}
+
+/** Apply a user-selected sort on top of whatever order `buildMonthlyMatrix` produced.
+ *
+ * Returns the input unchanged when `config` is null (default sort —
+ * `compareActiveKippoProjects` — already applied by `buildMonthlyMatrix`).
+ * Nulls always sort last, regardless of direction.
+ */
+export function sortMatrixRows(
+  rows: MonthlyMatrixRow[],
+  config: SortConfig | null,
+): MonthlyMatrixRow[] {
+  if (!config) return rows;
+  const sign = config.dir === "asc" ? 1 : -1;
+  const sorted = [...rows];
+  sorted.sort((a, b) => {
+    const av = sortValueFor(a, config.key);
+    const bv = sortValueFor(b, config.key);
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1; // null always last
+    if (bv === null) return -1;
+    const cmp = typeof av === "number" ? av - (bv as number) : String(av).localeCompare(String(bv));
+    return sign * cmp;
+  });
+  return sorted;
+}
+
 /** Sort comparator matching ActiveKippoProjectAdmin (kippo/projects/admin.py:1117):
  *
  * 1. anon-project phase first (admin shows non-project entries first)
