@@ -2,11 +2,11 @@ import { memo, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   buildMonthlyMatrix,
-  MAX_PERCENTAGE_PER_MONTH,
   type CellState,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
+  percentageToPersonDays,
 } from "./utils";
 
 const CONFIRMED_CELL = {
@@ -20,6 +20,12 @@ const UNCONFIRMED_CELL = {
 
 const FIXED_HEADER_COL_COUNT = 5;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
+
+/** Format a person-day count with at most one decimal place, trimming trailing ".0". */
+function formatPersonDays(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+}
 
 function MonthlyAssignmentMatrixImpl({
   projects,
@@ -44,7 +50,11 @@ function MonthlyAssignmentMatrixImpl({
             <ProjectRow key={row.project.id} row={row} users={matrix.users} />
           ))}
         </tbody>
-        <Footer users={matrix.users} userTotals={matrix.userTotals} />
+        <Footer
+          users={matrix.users}
+          userTotals={matrix.userTotals}
+          userEffortDays={matrix.userEffortDays}
+        />
       </table>
       <Legend />
     </section>
@@ -67,7 +77,12 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
         <th className="py-2 pr-4 whitespace-nowrap">プロジェクト名</th>
         <th className="py-2 px-3 min-w-[6rem]">開始日</th>
         <th className="py-2 px-3 min-w-[6rem]">終了日</th>
-        <th className="py-2 px-3 min-w-[5rem] text-right">月合計</th>
+        <th
+          className="py-2 px-3 min-w-[5rem] text-right whitespace-nowrap"
+          title="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
+        >
+          月合計 (人日)
+        </th>
         {users.map((user) => (
           <th
             key={user.user_id}
@@ -75,7 +90,11 @@ function Header({ users }: { users: MonthlyMatrixUser[] }) {
           >
             <span
               className="[writing-mode:sideways-lr] inline-block text-[11px] font-medium text-gray-700 whitespace-nowrap"
-              title={user.display_name}
+              title={
+                typeof user.available_work_days === "number"
+                  ? `${user.display_name} — 当月稼働可能 ${user.available_work_days}人日`
+                  : user.display_name
+              }
             >
               {user.display_name}
             </span>
@@ -110,10 +129,15 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
       </td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.start_date ?? "—"}</td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
-      <td className="py-2 px-3 text-right font-medium text-gray-700">{row.rowTotal}%</td>
+      <td
+        className="py-2 px-3 text-right font-medium text-gray-700 whitespace-nowrap"
+        title={`% 合計: ${row.rowTotal}%`}
+      >
+        {typeof row.rowEffortDays === "number" ? `${formatPersonDays(row.rowEffortDays)}人日` : "—"}
+      </td>
       {users.map((user) => (
         <td key={user.user_id} className="py-2 px-1 text-center">
-          <PercentageCell cell={row.cells.get(user.user_id)} />
+          <PercentageCell cell={row.cells.get(user.user_id)} user={user} />
         </td>
       ))}
     </tr>
@@ -146,13 +170,16 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
   );
 }
 
-function PercentageCell({ cell }: { cell: CellState | undefined }) {
+function PercentageCell({ cell, user }: { cell: CellState | undefined; user: MonthlyMatrixUser }) {
   if (!cell) return <span className="text-gray-300">—</span>;
   const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
+  const days = percentageToPersonDays(cell.percentage, user.available_work_days);
+  const tooltip =
+    typeof days === "number" ? `${style.title} ≈ ${formatPersonDays(days)}人日` : style.title;
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`}
-      title={style.title}
+      title={tooltip}
     >
       {cell.percentage}%
     </span>
@@ -162,26 +189,46 @@ function PercentageCell({ cell }: { cell: CellState | undefined }) {
 function Footer({
   users,
   userTotals,
+  userEffortDays,
 }: {
   users: MonthlyMatrixUser[];
   userTotals: Map<string, number>;
+  userEffortDays: Map<string, number>;
 }) {
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
         <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
-          ユーザー月合計
+          ユーザー月合計 (人日)
         </td>
         {users.map((user) => {
-          const total = userTotals.get(user.user_id) ?? 0;
-          const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
+          const allocatedDays = userEffortDays.get(user.user_id);
+          const totalPct = userTotals.get(user.user_id) ?? 0;
+          const available = user.available_work_days;
+          const haveDays = typeof allocatedDays === "number" && typeof available === "number";
+          const overAllocated = haveDays && (allocatedDays as number) > (available as number);
+          if (!haveDays) {
+            return (
+              <td
+                key={user.user_id}
+                className="py-2 px-1 text-center font-medium text-gray-400"
+                title={`% 合計: ${totalPct}%`}
+              >
+                —
+              </td>
+            );
+          }
           return (
             <td
               key={user.user_id}
               className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
-              title={overAllocated ? `${total}% — 100%を超えています` : undefined}
+              title={`${formatPersonDays(allocatedDays)} / ${available}人日 (${totalPct}%)${
+                overAllocated ? " — 稼働可能日数を超えています" : ""
+              }`}
             >
-              {total}%{overAllocated ? " ⚠" : ""}
+              {formatPersonDays(allocatedDays)}
+              <span className="text-[10px] text-gray-400">/{available}</span>
+              {overAllocated ? " ⚠" : ""}
             </td>
           );
         })}
@@ -202,8 +249,8 @@ function Legend() {
         未確定 (予測)
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="text-red-700 font-medium">⚠ 100%超</span>
-        ユーザーの月合計が100%を超えると警告表示
+        <span className="text-red-700 font-medium">⚠ 稼働超</span>
+        ユーザーへの割当が当月の稼働可能日数を超えると警告表示
       </span>
     </div>
   );

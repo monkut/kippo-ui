@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   KippoProject,
-  OrganizationMember,
+  OrganizationMemberDetail,
   ProjectMonthlyAssignment,
 } from "~/lib/api/generated/models";
-import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
+import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
 import { EXCLUDED_USERNAMES } from "~/components/project-assignments/utils";
 
@@ -13,23 +13,24 @@ export type UseMonthlyAssignmentsState = {
   error: string;
   projects: KippoProject[];
   assignments: ProjectMonthlyAssignment[];
-  members: OrganizationMember[];
+  members: OrganizationMemberDetail[];
 };
 
 const FETCH_ERROR = "データの取得に失敗しました";
 
-/** Fetch members for one project per unique organization, then dedupe by user_id. */
-async function fetchOrgMembersForProjects(projects: KippoProject[]): Promise<OrganizationMember[]> {
-  const projectByOrg = new Map<string, string>();
-  for (const project of projects) {
-    if (!projectByOrg.has(project.organization)) {
-      projectByOrg.set(project.organization, project.id);
-    }
-  }
+/** Fetch members across every organization spanning the given projects, with
+ * `available_work_days` populated for the displayed month so the matrix can
+ * compute per-project effort in person-days (not just summed percentages).
+ */
+async function fetchOrgMembersForProjects(
+  projects: KippoProject[],
+  month: string,
+): Promise<OrganizationMemberDetail[]> {
+  const orgIds = Array.from(new Set(projects.map((p) => p.organization)));
   const responses = await Promise.all(
-    Array.from(projectByOrg.values()).map((projectId) => projectsMembersRetrieve(projectId)),
+    orgIds.map((orgId) => organizationsMembersRetrieve(orgId, { month })),
   );
-  const byUserId = new Map<string, OrganizationMember>();
+  const byUserId = new Map<string, OrganizationMemberDetail>();
   for (const response of responses) {
     if (response.status !== 200) continue;
     for (const member of response.data.members ?? []) {
@@ -39,16 +40,8 @@ async function fetchOrgMembersForProjects(projects: KippoProject[]): Promise<Org
   return Array.from(byUserId.values());
 }
 
-type ProjectsAndMembersState = {
-  projects: KippoProject[];
-  members: OrganizationMember[];
-  isLoading: boolean;
-  error: string;
-};
-
-function useProjectsAndMembers(): ProjectsAndMembersState {
+function useProjects(): { projects: KippoProject[]; isLoading: boolean; error: string } {
   const [projects, setProjects] = useState<KippoProject[]>([]);
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -58,13 +51,7 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
     (async () => {
       try {
         const projectData = await fetchAllProjects({ is_active: true });
-        if (!alive) return;
-        // Keep anon-project rows in the raw list — useMonthlyAssignments below
-        // filters them per-month (showing only those with assignments in the
-        // selected month). Project-list fetch is monthless and one-shot.
-        setProjects(projectData);
-        const orgMembers = await fetchOrgMembersForProjects(projectData);
-        if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
+        if (alive) setProjects(projectData);
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {
@@ -76,7 +63,56 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
     };
   }, []);
 
-  return { projects, members, isLoading, error };
+  return { projects, isLoading, error };
+}
+
+/** Re-fetches members whenever `month` changes so `available_work_days` reflects
+ * the displayed month. Depends on `projects` only to discover which orgs to query. */
+function useMembersForMonth(
+  projects: KippoProject[],
+  month: string,
+): { members: OrganizationMemberDetail[]; isLoading: boolean; error: string } {
+  const [members, setMembers] = useState<OrganizationMemberDetail[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Stable key for the org set so we don't re-fetch when project metadata changes
+  // but the spanned orgs don't.
+  const orgKey = useMemo(
+    () =>
+      Array.from(new Set(projects.map((p) => p.organization)))
+        .sort()
+        .join(","),
+    [projects],
+  );
+
+  useEffect(() => {
+    if (!orgKey) {
+      setIsLoading(false);
+      return;
+    }
+    let alive = true;
+    setIsLoading(true);
+    (async () => {
+      try {
+        const orgMembers = await fetchOrgMembersForProjects(projects, month);
+        if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
+      } catch {
+        if (alive) setError(FETCH_ERROR);
+      } finally {
+        if (alive) setIsLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // `projects` deliberately excluded — `orgKey` captures the only relevant slice
+    // (the set of organizations), so we avoid re-fetching when project metadata
+    // changes without altering org membership.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  }, [orgKey, month]);
+
+  return { members, isLoading, error };
 }
 
 function useAssignmentsForMonth(month: string) {
@@ -106,7 +142,8 @@ function useAssignmentsForMonth(month: string) {
 }
 
 export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState {
-  const projectsState = useProjectsAndMembers();
+  const projectsState = useProjects();
+  const membersState = useMembersForMonth(projectsState.projects, month);
   const assignmentsState = useAssignmentsForMonth(month);
 
   // anon-project ("Non-Project") rows are hidden by default but surface in the
@@ -121,10 +158,10 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
   }, [projectsState.projects, assignmentsState.assignments]);
 
   return {
-    isLoading: projectsState.isLoading || assignmentsState.isLoading,
-    error: projectsState.error || assignmentsState.error,
+    isLoading: projectsState.isLoading || membersState.isLoading || assignmentsState.isLoading,
+    error: projectsState.error || membersState.error || assignmentsState.error,
     projects: visibleProjects,
     assignments: assignmentsState.assignments,
-    members: projectsState.members,
+    members: membersState.members,
   };
 }

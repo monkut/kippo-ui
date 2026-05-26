@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 
+export * from './_errorDetail';
 export * from './assignmentRatesListParams';
 export * from './assumptionEvaluation';
 export * from './authMeRetrieve200';
@@ -21,7 +22,9 @@ export * from './feedbackFeedbackListParams';
 export * from './feedbackRequest';
 export * from './feedbackReviewAction';
 export * from './fullfillmentScoreEnum';
+export * from './githubRepository';
 export * from './githubRepositoryInline';
+export * from './githubRepositoryRequest';
 export * from './growthScoreEnum';
 export * from './kippoCustomer';
 export * from './kippoCustomerRequest';
@@ -34,13 +37,21 @@ export * from './latestCommentInline';
 export * from './monthlyAssignmentsListParams';
 export * from './monthlyCostsListParams';
 export * from './nullEnum';
+export * from './octocatGithubRepositoriesListParams';
+export * from './organization';
+export * from './organizationListResponse';
 export * from './organizationMember';
+export * from './organizationMemberDetail';
+export * from './organizationMembersResponse';
+export * from './organizationsListParams';
+export * from './organizationsMembersRetrieveParams';
 export * from './paginatedAssumptionEvaluationList';
 export * from './paginatedBusinessRequirementEvaluationList';
 export * from './paginatedFeedbackList';
 export * from './paginatedKippoCustomerList';
 export * from './paginatedKippoProjectList';
 export * from './paginatedKippoProjectUserStatisfactionResultList';
+export * from './paginatedOrganizationListResponseList';
 export * from './paginatedPersonalHolidayList';
 export * from './paginatedProblemDefinitionEvaluationList';
 export * from './paginatedProjectAssignmentRateList';
@@ -113,6 +124,7 @@ export * from './projectMonthlyCostRequest';
 export * from './projectProblemDefinition';
 export * from './projectProblemDefinitionRequest';
 export * from './projectProgressStatusInline';
+export * from './projectsGithubRepositoriesListParams';
 export * from './projectsListParams';
 export * from './projectSurveysListParams';
 export * from './projectsWeeklyeffortListParams';
