@@ -1,12 +1,13 @@
 import { memo, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
+  buildCellTooltip,
   buildMonthlyMatrix,
   type CellState,
+  formatPersonDays,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
-  percentageToPersonDays,
 } from "./utils";
 
 const CONFIRMED_CELL = {
@@ -20,12 +21,6 @@ const UNCONFIRMED_CELL = {
 
 const FIXED_HEADER_COL_COUNT = 5;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
-
-/** Format a person-day count with at most one decimal place, trimming trailing ".0". */
-function formatPersonDays(value: number): string {
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
-}
 
 function MonthlyAssignmentMatrixImpl({
   projects,
@@ -173,9 +168,7 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
 function PercentageCell({ cell, user }: { cell: CellState | undefined; user: MonthlyMatrixUser }) {
   if (!cell) return <span className="text-gray-300">—</span>;
   const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
-  const days = percentageToPersonDays(cell.percentage, user.available_work_days);
-  const tooltip =
-    typeof days === "number" ? `${style.title} ≈ ${formatPersonDays(days)}人日` : style.title;
+  const tooltip = buildCellTooltip(style.title, cell.percentage, user.available_work_days);
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`}

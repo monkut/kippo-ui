@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
   addMonths,
+  buildCellTooltip,
   buildMonthlyMatrix,
   compareActiveKippoProjects,
   firstOfMonth,
+  formatPersonDays,
   percentageToPersonDays,
 } from "~/components/project-assignments/utils";
 import type {
@@ -196,6 +198,48 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
       ],
     );
     expect(m.users[0].display_name).toBe("alice");
+  });
+});
+
+describe("formatPersonDays", () => {
+  test("integers render without decimals", () => {
+    expect(formatPersonDays(22)).toBe("22");
+    expect(formatPersonDays(0)).toBe("0");
+  });
+
+  test("non-integers render to one decimal", () => {
+    expect(formatPersonDays(8.36)).toBe("8.4");
+    expect(formatPersonDays(11.04)).toBe("11");
+    expect(formatPersonDays(11.05)).toBe("11.1");
+  });
+});
+
+describe("buildCellTooltip", () => {
+  test("returns 4-line breakdown when available_work_days is known", () => {
+    const t = buildCellTooltip("確定済み", 100, 22);
+    expect(t.split("\n")).toEqual([
+      "確定済み",
+      "Monthly Total Staff Days: 22",
+      "Monthly Project Assignment %: 100%",
+      "Monthly Project Staff Days: (22 x 100%) 22",
+    ]);
+  });
+
+  test("includes formatted staff-day result for fractional outcomes", () => {
+    const t = buildCellTooltip("未確定 (予測)", 38, 22);
+    // 0.38 × 22 = 8.36 → "8.4"
+    expect(t).toContain("Monthly Project Staff Days: (22 x 38%) 8.4");
+  });
+
+  test("falls back to baseTitle alone when available_work_days is missing", () => {
+    expect(buildCellTooltip("確定済み", 50, null)).toBe("確定済み");
+    expect(buildCellTooltip("確定済み", 50, undefined)).toBe("確定済み");
+  });
+
+  test("0% still renders the breakdown (calc still meaningful)", () => {
+    const t = buildCellTooltip("未確定 (予測)", 0, 22);
+    expect(t).toContain("Monthly Project Assignment %: 0%");
+    expect(t).toContain("Monthly Project Staff Days: (22 x 0%) 0");
   });
 });
 

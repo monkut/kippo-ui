@@ -91,6 +91,38 @@ export function percentageToPersonDays(
   return (percentage / 100) * availableWorkDays;
 }
 
+/** Format a person-day count with at most one decimal place, trimming trailing ".0". */
+export function formatPersonDays(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+}
+
+/** Compose the multi-line tooltip shown on each project × member percentage cell.
+ *
+ * Falls back to just `baseTitle` when the member's monthly availability isn't known
+ * (e.g. backend is pre-deploy on the `?month=` field). Format is intentionally
+ * pure-ASCII to keep tooltip rendering predictable across browsers/locales:
+ *
+ *   <baseTitle>
+ *   Monthly Total Staff Days: <available>
+ *   Monthly Project Assignment %: <percentage>%
+ *   Monthly Project Staff Days: (<available> x <percentage>%) <staffDays>
+ */
+export function buildCellTooltip(
+  baseTitle: string,
+  percentage: number,
+  availableWorkDays: number | null | undefined,
+): string {
+  if (typeof availableWorkDays !== "number") return baseTitle;
+  const staffDays = (percentage / 100) * availableWorkDays;
+  return [
+    baseTitle,
+    `Monthly Total Staff Days: ${availableWorkDays}`,
+    `Monthly Project Assignment %: ${percentage}%`,
+    `Monthly Project Staff Days: (${availableWorkDays} x ${percentage}%) ${formatPersonDays(staffDays)}`,
+  ].join("\n");
+}
+
 /** Pivot a flat assignment list into a (user × month → percentage) grid. */
 export function buildGrid(assignments: ProjectMonthlyAssignment[]): Grid {
   const monthsSet = new Set<string>();
