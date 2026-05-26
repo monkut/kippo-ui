@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   KippoProject,
   OrganizationMember,
@@ -59,9 +59,11 @@ function useProjectsAndMembers(): ProjectsAndMembersState {
       try {
         const projectData = await fetchAllProjects({ is_active: true });
         if (!alive) return;
-        const visibleProjects = projectData.filter((p) => p.phase !== "anon-project");
-        setProjects(visibleProjects);
-        const orgMembers = await fetchOrgMembersForProjects(visibleProjects);
+        // Keep anon-project rows in the raw list — useMonthlyAssignments below
+        // filters them per-month (showing only those with assignments in the
+        // selected month). Project-list fetch is monthless and one-shot.
+        setProjects(projectData);
+        const orgMembers = await fetchOrgMembersForProjects(projectData);
         if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
@@ -107,10 +109,21 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
   const projectsState = useProjectsAndMembers();
   const assignmentsState = useAssignmentsForMonth(month);
 
+  // anon-project ("Non-Project") rows are hidden by default but surface in the
+  // matrix when they have at least one assignment in the displayed month.
+  const visibleProjects = useMemo(() => {
+    const projectIdsWithMonthAssignments = new Set(
+      assignmentsState.assignments.map((a) => a.project),
+    );
+    return projectsState.projects.filter(
+      (p) => p.phase !== "anon-project" || projectIdsWithMonthAssignments.has(p.id),
+    );
+  }, [projectsState.projects, assignmentsState.assignments]);
+
   return {
     isLoading: projectsState.isLoading || assignmentsState.isLoading,
     error: projectsState.error || assignmentsState.error,
-    projects: projectsState.projects,
+    projects: visibleProjects,
     assignments: assignmentsState.assignments,
     members: projectsState.members,
   };

@@ -19,6 +19,7 @@ const UNCONFIRMED_CELL = {
 } as const;
 
 const FIXED_HEADER_COL_COUNT = 5;
+const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 function MonthlyAssignmentMatrixImpl({
   projects,
@@ -99,6 +100,13 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
         >
           {row.project.name}
         </Link>
+        <a
+          href={`${urlPrefix}/admin/projects/activekippoproject/${row.project.id}/change/`}
+          title="管理画面で編集"
+          className="ml-2 text-xs text-gray-500 hover:text-indigo-600 hover:underline"
+        >
+          (details)
+        </a>
       </td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.start_date ?? "—"}</td>
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
