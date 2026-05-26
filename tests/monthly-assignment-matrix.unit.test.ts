@@ -4,10 +4,11 @@ import {
   buildMonthlyMatrix,
   compareActiveKippoProjects,
   firstOfMonth,
+  percentageToPersonDays,
 } from "~/components/project-assignments/utils";
 import type {
   KippoProject,
-  OrganizationMember,
+  OrganizationMemberDetail,
   ProjectMonthlyAssignment,
 } from "~/lib/api/generated/models";
 
@@ -26,14 +27,20 @@ function makeProject(
   } as unknown as KippoProject;
 }
 
-function makeMember(overrides: Partial<OrganizationMember> = {}): OrganizationMember {
+function makeMember(overrides: Partial<OrganizationMemberDetail> = {}): OrganizationMemberDetail {
   return {
     user_id: "u-1",
     username: "alice",
     display_name: "Alice",
+    first_name: "alice",
+    last_name: "doe",
+    email: "alice@example.com",
     github_login: "alice-gh",
     is_developer: true,
     is_project_manager: false,
+    slack_username: "",
+    slack_user_id: "",
+    slack_image_url: "",
     ...overrides,
   };
 }
@@ -189,6 +196,97 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
       ],
     );
     expect(m.users[0].display_name).toBe("alice");
+  });
+});
+
+describe("percentageToPersonDays", () => {
+  test("converts percent of available days", () => {
+    expect(percentageToPersonDays(50, 22)).toBe(11);
+    expect(percentageToPersonDays(100, 22)).toBe(22);
+    expect(percentageToPersonDays(25, 20)).toBe(5);
+  });
+
+  test("0% → 0 days", () => {
+    expect(percentageToPersonDays(0, 22)).toBe(0);
+  });
+
+  test("null/undefined available_work_days → null (caller passed no `?month=`)", () => {
+    expect(percentageToPersonDays(50, null)).toBeNull();
+    expect(percentageToPersonDays(50, undefined)).toBeNull();
+  });
+});
+
+describe("buildMonthlyMatrix: person-days totals (rowEffortDays + userEffortDays)", () => {
+  test("rowEffortDays sums (cell% / 100 × user.available_work_days) across cells", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [
+        makeAssignment({ project: "p-1", user: "u-1", percentage: 50 }),
+        makeAssignment({ project: "p-1", user: "u-2", percentage: 25 }),
+      ],
+      [
+        makeMember({ user_id: "u-1", display_name: "Alice", available_work_days: 22 }),
+        makeMember({ user_id: "u-2", display_name: "Bob", available_work_days: 20 }),
+      ],
+    );
+    // Alice: 50% × 22 = 11; Bob: 25% × 20 = 5; total = 16.
+    expect(m.rows[0].rowEffortDays).toBeCloseTo(16, 5);
+  });
+
+  test("userEffortDays sums (cell% / 100 × user.available_work_days) across projects", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1"), makeProject("p-2", "P2")],
+      [
+        makeAssignment({ project: "p-1", user: "u-1", percentage: 50 }),
+        makeAssignment({ project: "p-2", user: "u-1", percentage: 30 }),
+      ],
+      [makeMember({ user_id: "u-1", available_work_days: 22 })],
+    );
+    // 80% × 22 = 17.6
+    expect(m.userEffortDays.get("u-1")).toBeCloseTo(17.6, 5);
+  });
+
+  test("rowEffortDays is null when no contributing cell has known available_work_days", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [makeAssignment({ project: "p-1", user: "u-1", percentage: 50 })],
+      [makeMember({ user_id: "u-1", available_work_days: null })],
+    );
+    expect(m.rows[0].rowEffortDays).toBeNull();
+  });
+
+  test("partial null: only counts members whose available_work_days is known", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [
+        makeAssignment({ project: "p-1", user: "u-1", percentage: 50 }),
+        makeAssignment({ project: "p-1", user: "u-2", percentage: 25 }),
+      ],
+      [
+        makeMember({ user_id: "u-1", display_name: "Alice", available_work_days: 22 }),
+        makeMember({ user_id: "u-2", display_name: "Bob", available_work_days: null }),
+      ],
+    );
+    // Only Alice contributes: 50% × 22 = 11. Bob's missing data is silently dropped.
+    expect(m.rows[0].rowEffortDays).toBeCloseTo(11, 5);
+  });
+
+  test("project with no cells has rowEffortDays null (not 0)", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "Empty")],
+      [],
+      [makeMember({ user_id: "u-1", available_work_days: 22 })],
+    );
+    expect(m.rows[0].rowEffortDays).toBeNull();
+  });
+
+  test("userEffortDays omits users whose available_work_days is unknown", () => {
+    const m = buildMonthlyMatrix(
+      [makeProject("p-1", "P1")],
+      [makeAssignment({ project: "p-1", user: "u-1", percentage: 50 })],
+      [makeMember({ user_id: "u-1", available_work_days: null })],
+    );
+    expect(m.userEffortDays.has("u-1")).toBe(false);
   });
 });
 

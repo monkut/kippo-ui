@@ -6,6 +6,8 @@
  * OpenAPI spec version: 1.1.0
  */
 import type {
+  GithubRepository,
+  GithubRepositoryRequest,
   KippoProject,
   KippoProjectRequest,
   PaginatedKippoProjectList,
@@ -16,10 +18,12 @@ import type {
   ProjectMembersResponse,
   ProjectWeeklyEffort,
   ProjectWeeklyEffortRequest,
+  ProjectsGithubRepositoriesListParams,
   ProjectsListParams,
   ProjectsWeeklyeffortListParams,
   SuggestAssignmentsRequestRequest,
-  SuggestAssignmentsResponse
+  SuggestAssignmentsResponse,
+  _ErrorDetail
 } from '../models';
 
 import { customFetch } from '../../custom-fetch';
@@ -37,8 +41,8 @@ import { customFetch } from '../../custom-fetch';
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsListResponse200 = {
@@ -93,8 +97,8 @@ export const projectsList = async (params?: ProjectsListParams, options?: Reques
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsCreateResponse201 = {
@@ -143,8 +147,8 @@ export const projectsCreate = async (kippoProjectRequest: KippoProjectRequest, o
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsRetrieveResponse200 = {
@@ -192,8 +196,8 @@ export const projectsRetrieve = async (id: string, options?: RequestInit): Promi
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsUpdateResponse200 = {
@@ -243,8 +247,8 @@ export const projectsUpdate = async (id: string,
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsPartialUpdateResponse200 = {
@@ -294,8 +298,8 @@ export const projectsPartialUpdate = async (id: string,
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
-- Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-- Create (POST): Superusers only
+- Create (POST): Authenticated users for orgs they belong to; superusers any org
+- Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
 - Delete (DELETE): Superusers only
  */
 export type projectsDestroyResponse204 = {
@@ -447,6 +451,239 @@ export const projectsSuggestAssignmentsCreate = async (id: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       suggestAssignmentsRequestRequest,)
+  }
+);}
+
+
+/**
+ * Manage GithubRepository links for a single KippoProject.
+
+Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+- ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+  Returns 201 if the row was created, 200 if it already existed.
+- ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+ */
+export type projectsGithubRepositoriesListResponse401 = {
+  data: _ErrorDetail
+  status: 401
+}
+
+export type projectsGithubRepositoriesListResponse403 = {
+  data: _ErrorDetail
+  status: 403
+}
+
+export type projectsGithubRepositoriesListResponse404 = {
+  data: _ErrorDetail
+  status: 404
+}
+
+;
+export type projectsGithubRepositoriesListResponseError = (projectsGithubRepositoriesListResponse401 | projectsGithubRepositoriesListResponse403 | projectsGithubRepositoriesListResponse404) & {
+  headers: Headers;
+};
+
+export type projectsGithubRepositoriesListResponse = (projectsGithubRepositoriesListResponseError)
+
+export const getProjectsGithubRepositoriesListUrl = (projectId: string,
+    params?: ProjectsGithubRepositoriesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${projectId}/github-repositories/?${stringifiedParams}` : `/api/projects/${projectId}/github-repositories/`
+}
+
+export const projectsGithubRepositoriesList = async (projectId: string,
+    params?: ProjectsGithubRepositoriesListParams, options?: RequestInit): Promise<projectsGithubRepositoriesListResponse> => {
+
+  return customFetch<projectsGithubRepositoriesListResponse>(getProjectsGithubRepositoriesListUrl(projectId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Manage GithubRepository links for a single KippoProject.
+
+Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+- ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+  Returns 201 if the row was created, 200 if it already existed.
+- ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+ */
+export type projectsGithubRepositoriesCreateResponse200 = {
+  data: GithubRepository
+  status: 200
+}
+
+export type projectsGithubRepositoriesCreateResponse201 = {
+  data: GithubRepository
+  status: 201
+}
+
+export type projectsGithubRepositoriesCreateResponse403 = {
+  data: _ErrorDetail
+  status: 403
+}
+
+export type projectsGithubRepositoriesCreateResponse404 = {
+  data: _ErrorDetail
+  status: 404
+}
+
+export type projectsGithubRepositoriesCreateResponse409 = {
+  data: _ErrorDetail
+  status: 409
+}
+
+export type projectsGithubRepositoriesCreateResponseSuccess = (projectsGithubRepositoriesCreateResponse200 | projectsGithubRepositoriesCreateResponse201) & {
+  headers: Headers;
+};
+export type projectsGithubRepositoriesCreateResponseError = (projectsGithubRepositoriesCreateResponse403 | projectsGithubRepositoriesCreateResponse404 | projectsGithubRepositoriesCreateResponse409) & {
+  headers: Headers;
+};
+
+export type projectsGithubRepositoriesCreateResponse = (projectsGithubRepositoriesCreateResponseSuccess | projectsGithubRepositoriesCreateResponseError)
+
+export const getProjectsGithubRepositoriesCreateUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/github-repositories/`
+}
+
+export const projectsGithubRepositoriesCreate = async (projectId: string,
+    githubRepositoryRequest: GithubRepositoryRequest, options?: RequestInit): Promise<projectsGithubRepositoriesCreateResponse> => {
+
+  return customFetch<projectsGithubRepositoriesCreateResponse>(getProjectsGithubRepositoriesCreateUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      githubRepositoryRequest,)
+  }
+);}
+
+
+/**
+ * Manage GithubRepository links for a single KippoProject.
+
+Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+- ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+  Returns 201 if the row was created, 200 if it already existed.
+- ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+ */
+export type projectsGithubRepositoriesRetrieveResponse401 = {
+  data: _ErrorDetail
+  status: 401
+}
+
+export type projectsGithubRepositoriesRetrieveResponse403 = {
+  data: _ErrorDetail
+  status: 403
+}
+
+export type projectsGithubRepositoriesRetrieveResponse404 = {
+  data: _ErrorDetail
+  status: 404
+}
+
+;
+export type projectsGithubRepositoriesRetrieveResponseError = (projectsGithubRepositoriesRetrieveResponse401 | projectsGithubRepositoriesRetrieveResponse403 | projectsGithubRepositoriesRetrieveResponse404) & {
+  headers: Headers;
+};
+
+export type projectsGithubRepositoriesRetrieveResponse = (projectsGithubRepositoriesRetrieveResponseError)
+
+export const getProjectsGithubRepositoriesRetrieveUrl = (projectId: string,
+    id: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/github-repositories/${id}/`
+}
+
+export const projectsGithubRepositoriesRetrieve = async (projectId: string,
+    id: string, options?: RequestInit): Promise<projectsGithubRepositoriesRetrieveResponse> => {
+
+  return customFetch<projectsGithubRepositoriesRetrieveResponse>(getProjectsGithubRepositoriesRetrieveUrl(projectId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Manage GithubRepository links for a single KippoProject.
+
+Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+- ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+  Returns 201 if the row was created, 200 if it already existed.
+- ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+ */
+export type projectsGithubRepositoriesDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type projectsGithubRepositoriesDestroyResponse403 = {
+  data: _ErrorDetail
+  status: 403
+}
+
+export type projectsGithubRepositoriesDestroyResponse404 = {
+  data: _ErrorDetail
+  status: 404
+}
+
+export type projectsGithubRepositoriesDestroyResponseSuccess = (projectsGithubRepositoriesDestroyResponse204) & {
+  headers: Headers;
+};
+export type projectsGithubRepositoriesDestroyResponseError = (projectsGithubRepositoriesDestroyResponse403 | projectsGithubRepositoriesDestroyResponse404) & {
+  headers: Headers;
+};
+
+export type projectsGithubRepositoriesDestroyResponse = (projectsGithubRepositoriesDestroyResponseSuccess | projectsGithubRepositoriesDestroyResponseError)
+
+export const getProjectsGithubRepositoriesDestroyUrl = (projectId: string,
+    id: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/github-repositories/${id}/`
+}
+
+export const projectsGithubRepositoriesDestroy = async (projectId: string,
+    id: string, options?: RequestInit): Promise<projectsGithubRepositoriesDestroyResponse> => {
+
+  return customFetch<projectsGithubRepositoriesDestroyResponse>(getProjectsGithubRepositoriesDestroyUrl(projectId,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
   }
 );}
 

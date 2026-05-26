@@ -1353,6 +1353,200 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/octocat/github-repositories/:
+    get:
+      operationId: octocat_github_repositories_list
+      description: |-
+        Read-only org-scoped listing of GithubRepository.
+
+        Write operations live under the nested project route — see
+        :class:`ProjectGithubRepositoryViewSet`.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - octocat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Authentication required.
+  /api/octocat/github-repositories/{id}/:
+    get:
+      operationId: octocat_github_repositories_retrieve
+      description: |-
+        Read-only org-scoped listing of GithubRepository.
+
+        Write operations live under the nested project route — see
+        :class:`ProjectGithubRepositoryViewSet`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - octocat
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubRepository'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Repository not found (also returned when the repository is
+            in an org the requester does not belong to).
+  /api/organizations/:
+    get:
+      operationId: organizations_list
+      description: List the organizations the requesting user belongs to. Used by
+        kippo-ui to render an org-wide user picker for views that are not scoped to
+        a single project.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - organizations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrganizationListResponseList'
+          description: Organizations the requesting user belongs to. Empty list when
+            the user has no memberships.
+  /api/organizations/{id}/:
+    get:
+      operationId: organizations_retrieve
+      description: |-
+        Read-only ViewSet for KippoOrganization.
+
+        Exposes the organizations the requester is a member of (superusers see all),
+        plus a `members` action that lists active members of a single organization.
+        See kippo#14.
+
+        **Endpoints:**
+        - `GET /api/organizations/` — list orgs the user belongs to
+        - `GET /api/organizations/<id>/members/` — list members of one org
+
+        **Permissions:**
+        - Read only: Authenticated users
+        - Non-members of `<id>` receive 403 from the `members` action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this kippo organization.
+        required: true
+      tags:
+      - organizations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/organizations/{id}/members/:
+    get:
+      operationId: organizations_members_retrieve
+      description: Active members of the given organization. Excludes the unassigned
+        bot user and (by default) KippoUser.is_active=False users. Returns the richer
+        per-org shape (adds email and slack_* fields) that the per-project endpoint
+        omits. Pass `?month=YYYY-MM-DD` to include each member's `available_work_days`
+        for that calendar month — used by the assignments-matrix UI to express row
+        totals in person-days instead of percentages.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this kippo organization.
+        required: true
+      - in: query
+        name: include_inactive
+        schema:
+          type: boolean
+        description: Include KippoUser.is_active=False users. Default false.
+      - in: query
+        name: is_developer
+        schema:
+          type: boolean
+        description: Filter to developers only.
+      - in: query
+        name: is_project_manager
+        schema:
+          type: boolean
+        description: Filter to project managers only.
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: When set (YYYY-MM-DD; any day, snapped to month start), each
+          member's `available_work_days` field is populated with the count of available
+          workdays in that month (committed weekdays minus public/personal holidays).
+          Omitted or invalid → `available_work_days` is null.
+      tags:
+      - organizations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationMembersResponse'
+          description: Members of the organization, with per-org Slack and email fields.
+        '400':
+          description: '`month` query parameter is not in YYYY-MM-DD format.'
+        '403':
+          description: Requester is not a member of the organization.
+        '404':
+          description: Organization does not exist.
   /api/personal-holidays/:
     get:
       operationId: personal_holidays_list
@@ -1885,8 +2079,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
       - in: query
@@ -1933,8 +2127,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       tags:
       - projects
@@ -1976,8 +2170,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -2014,8 +2208,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -2064,8 +2258,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -2113,8 +2307,8 @@ paths:
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
-        - Update (PUT/PATCH): Authenticated users (organization-scoped for regular users)
-        - Create (POST): Superusers only
+        - Create (POST): Authenticated users for orgs they belong to; superusers any org
+        - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
       - in: path
@@ -2223,6 +2417,219 @@ paths:
             (feasible patterns first). Greenfield projects skip the P1-max-reuse pattern.
         '400':
           description: project.start_date is required to compute suggestions.
+  /api/projects/{project_id}/github-repositories/:
+    get:
+      operationId: projects_github_repositories_list
+      description: |-
+        Manage GithubRepository links for a single KippoProject.
+
+        Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+        - ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+          Returns 201 if the row was created, 200 if it already existed.
+        - ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Authentication required.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Project is not in any of the requester's organizations.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: No KippoProject with the given project_id.
+    post:
+      operationId: projects_github_repositories_create
+      description: |-
+        Manage GithubRepository links for a single KippoProject.
+
+        Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+        - ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+          Returns 201 if the row was created, 200 if it already existed.
+        - ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GithubRepositoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GithubRepositoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GithubRepositoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubRepository'
+          description: Repository already existed and was linked (idempotent).
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubRepository'
+          description: New repository row created and linked.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Project is not in any of the requester's organizations.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: No KippoProject with the given project_id.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: A GithubRepository with the given (name, html_url, api_url)
+            already exists in a different organization and cannot be reparented via
+            the API. No mutation performed.
+  /api/projects/{project_id}/github-repositories/{id}/:
+    get:
+      operationId: projects_github_repositories_retrieve
+      description: |-
+        Manage GithubRepository links for a single KippoProject.
+
+        Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+        - ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+          Returns 201 if the row was created, 200 if it already existed.
+        - ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Authentication required.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Project is not in any of the requester's organizations.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: No KippoProject with the given project_id.
+    delete:
+      operationId: projects_github_repositories_destroy
+      description: |-
+        Manage GithubRepository links for a single KippoProject.
+
+        Mounted under ``/api/projects/{project_id}/github-repositories/``.
+
+        - ``POST`` upserts by ``(name, html_url, api_url)`` and sets ``project_id``.
+          Returns 201 if the row was created, 200 if it already existed.
+        - ``DELETE`` unlinks (``project = NULL``) but keeps the row.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Repository unlinked from project; row retained.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: Project is not in any of the requester's organizations.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_ErrorDetail'
+          description: No such repository under this project (also when the repository
+            exists but is linked to a different project).
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -6115,6 +6522,64 @@ components:
         * `3` - 3
         * `4` - 4
         * `5` - 5
+    GithubRepository:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+        organization_name:
+          type: string
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+          nullable: true
+          description: KippoProject this repository belongs to (optional)
+        project_name:
+          type: string
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          title: Github Repository Name
+          maxLength: 100
+        html_url:
+          type: string
+          format: uri
+          description: Github Repository HTML URL
+          maxLength: 200
+        api_url:
+          type: string
+          format: uri
+          description: Github Repository API URL
+          maxLength: 200
+        label_set:
+          type: string
+          format: uuid
+          nullable: true
+          description: Github Repository LabelSet
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - api_url
+      - created_datetime
+      - html_url
+      - id
+      - name
+      - organization_name
+      - project_name
+      - updated_datetime
     GithubRepositoryInline:
       type: object
       description: Inline serializer for GithubRepository links in OpenAPI schema.
@@ -6124,6 +6589,43 @@ components:
           format: uri
       required:
       - repository_url
+    GithubRepositoryRequest:
+      type: object
+      properties:
+        organization:
+          type: string
+          format: uuid
+        project:
+          type: string
+          format: uuid
+          nullable: true
+          description: KippoProject this repository belongs to (optional)
+        name:
+          type: string
+          minLength: 1
+          title: Github Repository Name
+          maxLength: 100
+        html_url:
+          type: string
+          format: uri
+          minLength: 1
+          description: Github Repository HTML URL
+          maxLength: 200
+        api_url:
+          type: string
+          format: uri
+          minLength: 1
+          description: Github Repository API URL
+          maxLength: 200
+        label_set:
+          type: string
+          format: uuid
+          nullable: true
+          description: Github Repository LabelSet
+      required:
+      - api_url
+      - html_url
+      - name
     GrowthScoreEnum:
       enum:
       - 1
@@ -6726,6 +7228,35 @@ components:
     NullEnum:
       enum:
       - null
+    Organization:
+      type: object
+      description: |-
+        Minimal projection of a `KippoOrganization` for the org-listing endpoint.
+
+        Used by `GET /api/organizations/` so kippo-ui can render an org picker
+        without needing to embed the full admin model. Per kippo#14.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: KippoOrganization primary key.
+        name:
+          type: string
+        github_organization_name:
+          type: string
+      required:
+      - github_organization_name
+      - id
+      - name
+    OrganizationListResponse:
+      type: object
+      properties:
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+      required:
+      - organizations
     OrganizationMember:
       type: object
       description: |-
@@ -6754,6 +7285,72 @@ components:
       - is_project_manager
       - user_id
       - username
+    OrganizationMemberDetail:
+      type: object
+      description: |-
+        Org-scoped projection of `KippoUser` joined with their `OrganizationMembership`.
+
+        Returned by `GET /api/organizations/<id>/members/`. Adds the per-org PII
+        (`email`, `slack_*`) that `projects.serializers.OrganizationMemberSerializer`
+        intentionally omits — keep these two serializers separate so the per-project
+        contract consumed by kippo-ui#57 is not coupled to this richer shape. Per kippo#14.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: KippoUser primary key.
+        username:
+          type: string
+        display_name:
+          type: string
+          description: Composed first + last + (github_login).
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          description: Per-org email from OrganizationMembership, not KippoUser.
+        github_login:
+          type: string
+        is_developer:
+          type: boolean
+        is_project_manager:
+          type: boolean
+        slack_username:
+          type: string
+        slack_user_id:
+          type: string
+        slack_image_url:
+          type: string
+        available_work_days:
+          type: integer
+          nullable: true
+          description: Workdays this member is available in the calendar month requested
+            via the `month` query parameter (committed weekdays minus public/personal
+            holidays). Null/absent when `month` is not provided.
+      required:
+      - display_name
+      - email
+      - first_name
+      - github_login
+      - is_developer
+      - is_project_manager
+      - last_name
+      - slack_image_url
+      - slack_user_id
+      - slack_username
+      - user_id
+      - username
+    OrganizationMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationMemberDetail'
+      required:
+      - members
     PaginatedAssumptionEvaluationList:
       type: object
       required:
@@ -6892,6 +7489,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KippoProjectUserStatisfactionResult'
+    PaginatedOrganizationListResponseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationListResponse'
     PaginatedPersonalHolidayList:
       type: object
       required:
@@ -9453,6 +10073,14 @@ components:
       - percentage
       - user_id
       - username
+    _ErrorDetail:
+      type: object
+      description: 'Standard DRF-style error envelope: ``{"detail": "<message>"}``.'
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
   securitySchemes:
     cookieAuth:
       type: apiKey

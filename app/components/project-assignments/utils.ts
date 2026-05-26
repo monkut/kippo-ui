@@ -1,6 +1,7 @@
 import type {
   KippoProject,
   OrganizationMember,
+  OrganizationMemberDetail,
   ProjectAssignmentPattern,
   ProjectMonthlyAssignment,
   ProjectMonthlyAssignmentRequest,
@@ -73,8 +74,21 @@ export function assignmentDisplayName(assignment: ProjectMonthlyAssignment): str
   return assignment.user_display_name?.trim() || assignment.user_username;
 }
 
-export function memberDisplayName(member: OrganizationMember): string {
+export function memberDisplayName(member: OrganizationMember | OrganizationMemberDetail): string {
   return member.display_name?.trim() || member.username;
+}
+
+/** Convert a workload percentage into the equivalent person-days for the given month.
+ *
+ * Returns null when the member's `available_work_days` is missing — happens when the
+ * caller didn't pass `?month=` to the members endpoint (or backend is pre-deploy).
+ */
+export function percentageToPersonDays(
+  percentage: number,
+  availableWorkDays: number | null | undefined,
+): number | null {
+  if (typeof availableWorkDays !== "number") return null;
+  return (percentage / 100) * availableWorkDays;
 }
 
 /** Pivot a flat assignment list into a (user × month → percentage) grid. */
@@ -140,24 +154,33 @@ export function firstOfNextMonth(reference: Date): string {
 export type MonthlyMatrixUser = {
   user_id: string;
   display_name: string;
+  /** Workdays this user is available in the displayed month — drives person-day totals.
+   * Null when the members endpoint was called without `?month=`. */
+  available_work_days?: number | null;
 };
 
 export type MonthlyMatrixRow = {
   project: KippoProject;
   cells: Map<string, CellState>; // user_id → cell
-  rowTotal: number;
+  rowTotal: number; // Σ percentages across users (legacy; kept for callers that still need it)
+  /** Σ (cell.percentage / 100 × user.available_work_days) — month-scaled effort in person-days.
+   * Null when no contributing cell has a known available_work_days. */
+  rowEffortDays: number | null;
 };
 
 export type MonthlyMatrix = {
   users: MonthlyMatrixUser[]; // columns, sorted by display_name
   rows: MonthlyMatrixRow[]; // one row per project, sorted by project.name
-  userTotals: Map<string, number>; // user_id → sum across projects (footer)
+  userTotals: Map<string, number>; // user_id → Σ percentages across projects (footer)
+  userEffortDays: Map<string, number>; // user_id → Σ person-days across projects (footer)
 };
 
 export type MonthlyAssignmentMatrixProps = {
   projects: KippoProject[];
   assignments: ProjectMonthlyAssignment[];
-  members?: OrganizationMember[];
+  /** Org-scoped members carrying `available_work_days` for the displayed month
+   * (populated by passing `?month=` when fetching from the organizations endpoint). */
+  members?: OrganizationMemberDetail[];
 };
 
 /** Sort comparator matching ActiveKippoProjectAdmin (kippo/projects/admin.py:1117):
@@ -207,11 +230,16 @@ function applyAssignmentToProject(
  *
  * Columns come from `members` when provided (every org member shown, sorted by display_name).
  * Without members, columns fall back to the union of users found in `assignments`.
+ *
+ * When members carry `available_work_days` (populated by passing `?month=` to the
+ * org members endpoint), per-row and per-user totals are also computed in person-days —
+ * a unit-correct alternative to summing raw percentages across users with different
+ * monthly capacities. Rows/columns without `available_work_days` get null totals.
  */
 export function buildMonthlyMatrix(
   projects: KippoProject[],
   assignments: ProjectMonthlyAssignment[],
-  members?: OrganizationMember[],
+  members?: OrganizationMemberDetail[],
 ): MonthlyMatrix {
   const projectsById = new Map(projects.map((p) => [p.id, p]));
   const cellsByProject = new Map<string, Map<string, CellState>>();
@@ -219,7 +247,11 @@ export function buildMonthlyMatrix(
   const userById = new Map<string, MonthlyMatrixUser>(
     (members ?? []).map((m) => [
       m.user_id,
-      { user_id: m.user_id, display_name: memberDisplayName(m) },
+      {
+        user_id: m.user_id,
+        display_name: memberDisplayName(m),
+        available_work_days: m.available_work_days,
+      },
     ]),
   );
   const userTotals = new Map<string, number>();
@@ -244,13 +276,50 @@ export function buildMonthlyMatrix(
   const users = Array.from(userById.values()).sort((a, b) =>
     a.display_name.localeCompare(b.display_name),
   );
-  const rows: MonthlyMatrixRow[] = projects
-    .map((project) => ({
-      project,
-      cells: cellsByProject.get(project.id) ?? new Map<string, CellState>(),
-      rowTotal: rowTotalsByProject.get(project.id) ?? 0,
-    }))
-    .sort((a, b) => compareActiveKippoProjects(a.project, b.project));
 
-  return { users, rows, userTotals };
+  const userEffortDays = computeUserEffortDays(users, userTotals);
+  const rows = buildMatrixRows(projects, cellsByProject, rowTotalsByProject, userById);
+  return { users, rows, userTotals, userEffortDays };
+}
+
+/** Σ_projects (cell.percentage / 100 × user.available_work_days) — keyed by user_id. */
+function computeUserEffortDays(
+  users: MonthlyMatrixUser[],
+  userTotals: Map<string, number>,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const user of users) {
+    if (typeof user.available_work_days !== "number") continue;
+    const totalPct = userTotals.get(user.user_id) ?? 0;
+    out.set(user.user_id, (totalPct / 100) * user.available_work_days);
+  }
+  return out;
+}
+
+function buildMatrixRows(
+  projects: KippoProject[],
+  cellsByProject: Map<string, Map<string, CellState>>,
+  rowTotalsByProject: Map<string, number>,
+  userById: Map<string, MonthlyMatrixUser>,
+): MonthlyMatrixRow[] {
+  return projects
+    .map((project) => {
+      const cells = cellsByProject.get(project.id) ?? new Map<string, CellState>();
+      let rowEffortDays: number | null = null;
+      for (const [userId, cell] of cells) {
+        const days = percentageToPersonDays(
+          cell.percentage,
+          userById.get(userId)?.available_work_days,
+        );
+        if (typeof days !== "number") continue;
+        rowEffortDays = (rowEffortDays ?? 0) + days;
+      }
+      return {
+        project,
+        cells,
+        rowTotal: rowTotalsByProject.get(project.id) ?? 0,
+        rowEffortDays,
+      };
+    })
+    .sort((a, b) => compareActiveKippoProjects(a.project, b.project));
 }
