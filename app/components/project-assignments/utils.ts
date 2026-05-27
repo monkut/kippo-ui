@@ -97,11 +97,29 @@ export function formatPersonDays(value: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
+/** Convert `projectstatus_display.current_effort_hours` to person-days, using the
+ * project's own `allocated_effort_hours / allocated_staff_days` ratio as the
+ * day_workhours conversion. Returns null when any of the three inputs is missing
+ * or zero (caller falls back to the "no spent data" cell format).
+ */
+export function getProjectEffortSpentDays(project: KippoProject): number | null {
+  const stats = project.projectstatus_display;
+  const allocatedDays = project.allocated_staff_days;
+  const allocatedHours = project.allocated_effort_hours;
+  if (!stats || typeof stats.current_effort_hours !== "number") return null;
+  if (typeof allocatedHours !== "number" || allocatedHours <= 0) return null;
+  if (typeof allocatedDays !== "number" || allocatedDays <= 0) return null;
+  return (stats.current_effort_hours * allocatedDays) / allocatedHours;
+}
+
 /** Render the 月合計 (人日) cell text for one project row.
  *
- * - When the project has `allocated_staff_days > 0`:
- *     "<monthly>/<allocated> <pct>%"   (e.g. "64.3/100 64%")
- * - Otherwise: "<monthly>人日"          (e.g. "64.3人日")
+ * - When `allocated_staff_days > 0` and `effortSpentDays > 0` and there are
+ *   remaining days: "<monthly>/(<allocated> - <spent>) <pct>%"
+ *     e.g. "1.1/(14 - 10) 28%"      ← pct is over REMAINING budget
+ * - When `allocated_staff_days > 0` (no spent data or 0 spent, or no remaining):
+ *     "<monthly>/<allocated> <pct>%" (e.g. "64.3/100 64%")
+ * - Otherwise: "<monthly>人日"        (e.g. "64.3人日")
  *
  * Callers should render "—" themselves when `rowEffortDays` is null (no
  * contributing cells with known availability) — this helper assumes a number.
@@ -109,8 +127,16 @@ export function formatPersonDays(value: number): string {
 export function formatRowMonthlyTotal(
   rowEffortDays: number,
   allocatedStaffDays: number | null | undefined,
+  effortSpentDays?: number | null,
 ): string {
   if (typeof allocatedStaffDays === "number" && allocatedStaffDays > 0) {
+    if (typeof effortSpentDays === "number" && effortSpentDays > 0) {
+      const remaining = allocatedStaffDays - effortSpentDays;
+      if (remaining > 0) {
+        const pct = Math.round((rowEffortDays / remaining) * 100);
+        return `${formatPersonDays(rowEffortDays)}/(${allocatedStaffDays} - ${formatPersonDays(effortSpentDays)}) ${pct}%`;
+      }
+    }
     const pct = Math.round((rowEffortDays / allocatedStaffDays) * 100);
     return `${formatPersonDays(rowEffortDays)}/${allocatedStaffDays} ${pct}%`;
   }
