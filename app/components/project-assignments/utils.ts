@@ -59,6 +59,26 @@ export const EXCLUDED_USERNAMES: ReadonlySet<string> = new Set([
   "luca.pacioli",
 ]);
 
+/** Count assignments split by `is_confirmed` for the page-level confirm/unconfirm
+ * action (kippo#23). Callers pre-filter `assignments` to the displayed month —
+ * `useMonthlyAssignments` already returns only rows for the current month, and
+ * excluded usernames are stripped at the same layer. */
+export function countAssignmentsByConfirmation(assignments: ProjectMonthlyAssignment[]): {
+  confirmed: number;
+  unconfirmed: number;
+} {
+  let confirmed = 0;
+  let unconfirmed = 0;
+  for (const assignment of assignments) {
+    if (assignment.is_confirmed) {
+      confirmed += 1;
+    } else {
+      unconfirmed += 1;
+    }
+  }
+  return { confirmed, unconfirmed };
+}
+
 export type CellState = {
   percentage: number;
   isConfirmed: boolean;

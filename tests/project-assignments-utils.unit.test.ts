@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   buildGrid,
+  countAssignmentsByConfirmation,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
@@ -241,5 +242,36 @@ describe("flattenPatternToAssignmentRequests: confirmation + edge cases", () => 
       members: [{ user_id: "user-1", is_past_member: true, monthly_percentages: {} }],
     });
     expect(flattenPatternToAssignmentRequests(pattern, "proj-1")).toEqual([]);
+  });
+});
+
+describe("countAssignmentsByConfirmation (kippo#23)", () => {
+  test("empty input returns zero counts", () => {
+    expect(countAssignmentsByConfirmation([])).toEqual({ confirmed: 0, unconfirmed: 0 });
+  });
+
+  test("counts confirmed and unconfirmed rows separately", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: true }),
+      makeAssignment({ id: 2, is_confirmed: true }),
+      makeAssignment({ id: 3, is_confirmed: false }),
+    ];
+    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 1 });
+  });
+
+  test("treats missing/falsy is_confirmed as unconfirmed", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: false }),
+      makeAssignment({ id: 2, is_confirmed: false }),
+    ];
+    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 0, unconfirmed: 2 });
+  });
+
+  test("all-confirmed input has unconfirmed=0 (disables 確定 button)", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: true }),
+      makeAssignment({ id: 2, is_confirmed: true }),
+    ];
+    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 0 });
   });
 });

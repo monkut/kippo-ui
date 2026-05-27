@@ -5,6 +5,7 @@ import {
   AddAssignmentModal,
   EditAssignmentModal,
   type MatrixCellClickArgs,
+  MonthConfirmActions,
   MonthPicker,
   MonthlyAssignmentMatrix,
   firstOfMonth,
@@ -87,7 +88,14 @@ export default function ProjectAssignmentsMonthly() {
           のアクティブプロジェクトを表示します。
         </div>
         <MonthPicker month={month} onChange={setMonth} />
-        <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
+          <MonthConfirmActions
+            assignments={assignments}
+            isSaving={mutations.isSaving}
+            onBulkSetConfirmed={mutations.bulkSetConfirmed}
+          />
+        </div>
         {combinedError && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{combinedError}</div>
         )}
