@@ -34,6 +34,23 @@ export function flattenPatternToAssignmentRequests(
 
 export const MAX_PERCENTAGE_PER_MONTH = 100;
 
+/** Shared styling for project × member percentage cells across the assignments
+ * UIs. The dashed border on `UNCONFIRMED_CELL` is kept on purpose — color is
+ * not the only signal (accessibility / non-color-vision-dependent encoding).
+ *
+ * Per-file hover behavior (e.g. `hover:bg-gray-100` on the clickable variant
+ * in `AssignmentsTable`) is layered on at the call site — only the base
+ * appearance lives here. */
+export const CONFIRMED_CELL = {
+  className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
+  title: "確定済み",
+} as const;
+
+export const UNCONFIRMED_CELL = {
+  className: "bg-gray-50 text-gray-600 border border-dashed border-gray-300",
+  title: "未確定 (予測)",
+} as const;
+
 /** Usernames of system / placeholder accounts hidden from project-assignment UIs. */
 export const EXCLUDED_USERNAMES: ReadonlySet<string> = new Set([
   "(unassigned)",
@@ -258,6 +275,38 @@ export function firstOfNextMonth(reference: Date): string {
   return addMonths(firstOfMonth(reference), 1);
 }
 
+/** Last calendar day of the month containing `monthStart` ("YYYY-MM-01"), as
+ * an ISO date string "YYYY-MM-DD". `new Date(year, month+1, 0)` gives the
+ * last day of `month` (0-th day of the next month). */
+export function lastOfMonth(monthStart: string): string {
+  const [yearStr, monthStr] = monthStart.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr); // 1-indexed
+  const last = new Date(year, month, 0);
+  const dayStr = last.getDate().toString().padStart(2, "0");
+  return `${year}-${monthStr}-${dayStr}`;
+}
+
+/** True when a project's [start_date, target_date] window overlaps the month
+ * containing `monthStart` (ISO date "YYYY-MM-01"):
+ *
+ *   start_date <= last_day_of(month) AND (target_date is null OR target_date >= first_day_of(month))
+ *
+ * Projects with null `target_date` are open-ended and always pass the upper
+ * bound. Projects with null `start_date` are treated as not-yet-started and
+ * excluded. ISO YYYY-MM-DD strings sort lexically, so no Date math needed.
+ */
+export function isProjectInMonthWindow(
+  project: Pick<KippoProject, "start_date" | "target_date">,
+  monthStart: string,
+): boolean {
+  if (!project.start_date) return false;
+  const monthEnd = lastOfMonth(monthStart);
+  if (project.start_date > monthEnd) return false;
+  if (project.target_date && project.target_date < monthStart) return false;
+  return true;
+}
+
 export type MonthlyMatrixUser = {
   user_id: string;
   display_name: string;
@@ -288,6 +337,10 @@ export type MonthlyAssignmentMatrixProps = {
   /** Org-scoped members carrying `available_work_days` for the displayed month
    * (populated by passing `?month=` when fetching from the organizations endpoint). */
   members?: OrganizationMemberDetail[];
+  /** When true, hides member columns whose summed userTotal across the displayed
+   * month is 0 — useful for orgs where most members are unassigned in any given
+   * month and the column rail eats screen space (#21 F5). Default: false. */
+  hideUnassigned?: boolean;
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */

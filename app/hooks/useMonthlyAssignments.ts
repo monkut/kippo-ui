@@ -6,7 +6,7 @@ import type {
 } from "~/lib/api/generated/models";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
-import { EXCLUDED_USERNAMES } from "~/components/project-assignments/utils";
+import { EXCLUDED_USERNAMES, isProjectInMonthWindow } from "~/components/project-assignments/utils";
 
 export type UseMonthlyAssignmentsState = {
   isLoading: boolean;
@@ -146,15 +146,14 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
   const membersState = useMembersForMonth(projectsState.projects, month);
   const assignmentsState = useAssignmentsForMonth(month);
 
-  // Only show projects that have at least one assignment in the displayed month.
-  // (Subsumes the earlier anon-project-only carve-out — the rule now applies to
-  // all phases so the matrix doesn't list rows full of "—" cells.)
-  const visibleProjects = useMemo(() => {
-    const projectIdsWithMonthAssignments = new Set(
-      assignmentsState.assignments.map((a) => a.project),
-    );
-    return projectsState.projects.filter((p) => projectIdsWithMonthAssignments.has(p.id));
-  }, [projectsState.projects, assignmentsState.assignments]);
+  // Show every active project whose date window overlaps the displayed month —
+  // start_date <= last_day_of(month) AND (target_date == null OR target_date >= first_day_of(month)).
+  // Projects with null target_date are open-ended and show indefinitely (#21 F3).
+  // The outer `fetchAllProjects({ is_active: true })` still guards the candidate set.
+  const visibleProjects = useMemo(
+    () => projectsState.projects.filter((p) => isProjectInMonthWindow(p, month)),
+    [projectsState.projects, month],
+  );
 
   return {
     isLoading: projectsState.isLoading || membersState.isLoading || assignmentsState.isLoading,

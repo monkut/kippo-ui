@@ -9,6 +9,8 @@ import {
   formatRowMonthlyTotal,
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
+  isProjectInMonthWindow,
+  lastOfMonth,
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,
@@ -709,5 +711,75 @@ describe("firstOfMonth", () => {
 
   test("handles December correctly", () => {
     expect(firstOfMonth(new Date(2026, 11, 31))).toBe("2026-12-01");
+  });
+});
+
+describe("lastOfMonth", () => {
+  test("31-day month", () => {
+    expect(lastOfMonth("2026-05-01")).toBe("2026-05-31");
+    expect(lastOfMonth("2026-01-01")).toBe("2026-01-31");
+    expect(lastOfMonth("2026-12-01")).toBe("2026-12-31");
+  });
+
+  test("30-day month", () => {
+    expect(lastOfMonth("2026-04-01")).toBe("2026-04-30");
+    expect(lastOfMonth("2026-06-01")).toBe("2026-06-30");
+  });
+
+  test("February non-leap", () => {
+    expect(lastOfMonth("2026-02-01")).toBe("2026-02-28");
+  });
+
+  test("February leap year", () => {
+    expect(lastOfMonth("2024-02-01")).toBe("2024-02-29");
+  });
+});
+
+describe("isProjectInMonthWindow (#21 F3)", () => {
+  const month = "2026-05-01";
+
+  test("project ending before the month is excluded", () => {
+    expect(
+      isProjectInMonthWindow({ start_date: "2025-01-01", target_date: "2026-04-30" }, month),
+    ).toBe(false);
+  });
+
+  test("project starting after the month is excluded", () => {
+    expect(
+      isProjectInMonthWindow({ start_date: "2026-06-01", target_date: "2026-12-31" }, month),
+    ).toBe(false);
+  });
+
+  test("project spanning the month (with no assignments needed) is included", () => {
+    expect(
+      isProjectInMonthWindow({ start_date: "2026-01-01", target_date: "2026-12-31" }, month),
+    ).toBe(true);
+  });
+
+  test("null target_date project is always included for any month >= start", () => {
+    expect(isProjectInMonthWindow({ start_date: "2025-01-01", target_date: null }, month)).toBe(
+      true,
+    );
+    expect(isProjectInMonthWindow({ start_date: "2030-01-01", target_date: null }, month)).toBe(
+      false,
+    );
+  });
+
+  test("project starting on the last day of the month is included", () => {
+    expect(isProjectInMonthWindow({ start_date: "2026-05-31", target_date: null }, month)).toBe(
+      true,
+    );
+  });
+
+  test("project ending on the first day of the month is included", () => {
+    expect(
+      isProjectInMonthWindow({ start_date: "2025-01-01", target_date: "2026-05-01" }, month),
+    ).toBe(true);
+  });
+
+  test("null start_date project is excluded (not-yet-started)", () => {
+    expect(isProjectInMonthWindow({ start_date: null, target_date: "2026-12-31" }, month)).toBe(
+      false,
+    );
   });
 });
