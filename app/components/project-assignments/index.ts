@@ -4,6 +4,7 @@ export { EditAssignmentModal } from "./EditAssignmentModal";
 export { ForecastBar } from "./ForecastBar";
 export { MonthPicker } from "./MonthPicker";
 export { MonthlyAssignmentMatrix } from "./MonthlyAssignmentMatrix";
+export type { MatrixCellClickArgs } from "./MonthlyAssignmentMatrix";
 export { PatternCard } from "./PatternCard";
 export { PatternPickerModal } from "./PatternPickerModal";
 export {
