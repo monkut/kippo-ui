@@ -97,6 +97,26 @@ export function formatPersonDays(value: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
+/** Render the 月合計 (人日) cell text for one project row.
+ *
+ * - When the project has `allocated_staff_days > 0`:
+ *     "<monthly>/<allocated> <pct>%"   (e.g. "64.3/100 64%")
+ * - Otherwise: "<monthly>人日"          (e.g. "64.3人日")
+ *
+ * Callers should render "—" themselves when `rowEffortDays` is null (no
+ * contributing cells with known availability) — this helper assumes a number.
+ */
+export function formatRowMonthlyTotal(
+  rowEffortDays: number,
+  allocatedStaffDays: number | null | undefined,
+): string {
+  if (typeof allocatedStaffDays === "number" && allocatedStaffDays > 0) {
+    const pct = Math.round((rowEffortDays / allocatedStaffDays) * 100);
+    return `${formatPersonDays(rowEffortDays)}/${allocatedStaffDays} ${pct}%`;
+  }
+  return `${formatPersonDays(rowEffortDays)}人日`;
+}
+
 /** Compose the multi-line tooltip shown on each project × member percentage cell.
  *
  * Falls back to just `baseTitle` when the member's monthly availability isn't known

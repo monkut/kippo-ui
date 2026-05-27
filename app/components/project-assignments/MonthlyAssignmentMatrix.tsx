@@ -5,6 +5,7 @@ import {
   buildMonthlyMatrix,
   type CellState,
   formatPersonDays,
+  formatRowMonthlyTotal,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
@@ -218,7 +219,17 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
         className="py-2 px-3 text-right font-medium text-gray-700 whitespace-nowrap"
         title={`% 合計: ${row.rowTotal}%`}
       >
-        {typeof row.rowEffortDays === "number" ? `${formatPersonDays(row.rowEffortDays)}人日` : "—"}
+        {typeof row.rowEffortDays === "number" ? (
+          <a
+            href={`${urlPrefix}/projects/project/${row.project.id}/status/`}
+            title="プロジェクトステータスを開く"
+            className="text-indigo-600 hover:text-indigo-500 hover:underline"
+          >
+            {formatRowMonthlyTotal(row.rowEffortDays, row.project.allocated_staff_days)}
+          </a>
+        ) : (
+          "—"
+        )}
       </td>
       {users.map((user) => (
         <td key={user.user_id} className="py-2 px-1 text-center">

@@ -6,6 +6,7 @@ import {
   compareActiveKippoProjects,
   firstOfMonth,
   formatPersonDays,
+  formatRowMonthlyTotal,
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,
@@ -242,6 +243,34 @@ describe("buildCellTooltip", () => {
     const t = buildCellTooltip("未確定 (予測)", 0, 22);
     expect(t).toContain("Monthly Project Assignment %: 0%");
     expect(t).toContain("Monthly Project Staff Days: (22 x 0%) 0");
+  });
+});
+
+describe("formatRowMonthlyTotal", () => {
+  test("with allocated_staff_days renders `monthly/allocated pct%`", () => {
+    expect(formatRowMonthlyTotal(64.3, 100)).toBe("64.3/100 64%");
+    expect(formatRowMonthlyTotal(50, 100)).toBe("50/100 50%");
+    expect(formatRowMonthlyTotal(22, 22)).toBe("22/22 100%");
+  });
+
+  test("rounds the percentage to the nearest integer", () => {
+    expect(formatRowMonthlyTotal(64.7, 100)).toBe("64.7/100 65%");
+    expect(formatRowMonthlyTotal(64.3, 100)).toBe("64.3/100 64%");
+  });
+
+  test("over-allocation renders > 100%", () => {
+    expect(formatRowMonthlyTotal(120, 100)).toBe("120/100 120%");
+  });
+
+  test("falls back to `N人日` when allocated_staff_days is null/undefined/0", () => {
+    expect(formatRowMonthlyTotal(64.3, null)).toBe("64.3人日");
+    expect(formatRowMonthlyTotal(64.3, undefined)).toBe("64.3人日");
+    expect(formatRowMonthlyTotal(64.3, 0)).toBe("64.3人日");
+  });
+
+  test("integer monthly + integer allocated render without decimals on the monthly side", () => {
+    expect(formatRowMonthlyTotal(13.2, 50)).toBe("13.2/50 26%");
+    expect(formatRowMonthlyTotal(15, 50)).toBe("15/50 30%");
   });
 });
 
