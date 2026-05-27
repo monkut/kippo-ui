@@ -4,6 +4,7 @@ import {
   buildCellTooltip,
   buildMonthlyMatrix,
   type CellState,
+  CONFIRMED_CELL,
   formatRowMonthlyTotal,
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
@@ -14,16 +15,8 @@ import {
   type SortConfig,
   type SortKey,
   sortMatrixRows,
+  UNCONFIRMED_CELL,
 } from "./utils";
-
-const CONFIRMED_CELL = {
-  className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
-  title: "確定済み",
-} as const;
-const UNCONFIRMED_CELL = {
-  className: "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200",
-  title: "未確定 (予測)",
-} as const;
 
 const FIXED_HEADER_COL_COUNT = 6;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
@@ -344,7 +337,7 @@ function Legend() {
         確定済み
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-indigo-50 border border-dashed border-indigo-200" />
+        <span className="inline-block w-3 h-3 rounded bg-gray-50 border border-dashed border-gray-300" />
         未確定 (予測)
       </span>
       <span className="inline-flex items-center gap-1.5">

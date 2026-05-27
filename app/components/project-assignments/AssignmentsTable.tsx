@@ -1,6 +1,12 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { assignmentDisplayName, formatMonth, MAX_PERCENTAGE_PER_MONTH } from "./utils";
+import {
+  assignmentDisplayName,
+  CONFIRMED_CELL,
+  formatMonth,
+  MAX_PERCENTAGE_PER_MONTH,
+  UNCONFIRMED_CELL,
+} from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
@@ -223,9 +229,11 @@ function PercentageCell({
   onClick?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
   const isConfirmed = assignment.is_confirmed ?? false;
+  // Hover classes layered on per-variant — base appearance lives in utils.ts
+  // (shared with MonthlyAssignmentMatrix) but only this clickable variant has hover.
   const styles = isConfirmed
-    ? "bg-indigo-100 text-indigo-800 border border-indigo-200 hover:bg-indigo-200"
-    : "bg-indigo-50 text-indigo-600 border border-dashed border-indigo-200 hover:bg-indigo-100";
+    ? `${CONFIRMED_CELL.className} hover:bg-indigo-200`
+    : `${UNCONFIRMED_CELL.className} hover:bg-gray-100`;
   const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`;
   const tooltip = isConfirmed ? "確定済み (クリックで編集)" : "未確定 / 予測 (クリックで編集)";
 
@@ -242,7 +250,10 @@ function PercentageCell({
     );
   }
   return (
-    <span className={sharedClass} title={isConfirmed ? "確定済み" : "未確定 (予測)"}>
+    <span
+      className={sharedClass}
+      title={isConfirmed ? CONFIRMED_CELL.title : UNCONFIRMED_CELL.title}
+    >
       {assignment.percentage}%
     </span>
   );
@@ -279,7 +290,7 @@ function Legend() {
         確定済み
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-indigo-50 border border-dashed border-indigo-200" />
+        <span className="inline-block w-3 h-3 rounded bg-gray-50 border border-dashed border-gray-300" />
         未確定 (予測)
       </span>
       <span className="inline-flex items-center gap-1.5">
