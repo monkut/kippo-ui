@@ -97,6 +97,31 @@ export function formatPersonDays(value: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
+/** Compose the multi-line tooltip shown on the 月合計 (人日) row cell when the
+ * project has effort spent data — gives the reader the three numbers behind
+ * the headline display in one place:
+ *
+ *   Monthly Staff Days: 1.1
+ *   Total Project Staff Days: 14
+ *   Spent Project Staff Days: 10
+ *
+ * Returns null when no effort spent data is available (caller falls back to
+ * the legacy `% 合計: NN%` tooltip).
+ */
+export function formatRowMonthlyTotalTooltip(
+  rowEffortDays: number,
+  allocatedStaffDays: number | null | undefined,
+  effortSpentDays: number | null | undefined,
+): string | null {
+  if (typeof allocatedStaffDays !== "number" || allocatedStaffDays <= 0) return null;
+  if (typeof effortSpentDays !== "number") return null;
+  return [
+    `Monthly Staff Days: ${formatPersonDays(rowEffortDays)}`,
+    `Total Project Staff Days: ${allocatedStaffDays}`,
+    `Spent Project Staff Days: ${formatPersonDays(effortSpentDays)}`,
+  ].join("\n");
+}
+
 /** Convert `projectstatus_display.current_effort_hours` to person-days, using the
  * project's own `allocated_effort_hours / allocated_staff_days` ratio as the
  * day_workhours conversion. Returns null when any of the three inputs is missing
@@ -266,7 +291,13 @@ export type MonthlyAssignmentMatrixProps = {
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */
-export type SortKey = "id" | "name" | "start_date" | "target_date" | "rowEffortDays";
+export type SortKey =
+  | "id"
+  | "customer_name"
+  | "name"
+  | "start_date"
+  | "target_date"
+  | "rowEffortDays";
 
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" };
 

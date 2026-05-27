@@ -7,6 +7,7 @@ import {
   firstOfMonth,
   formatPersonDays,
   formatRowMonthlyTotal,
+  formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
   type MonthlyMatrixRow,
   percentageToPersonDays,
@@ -256,6 +257,40 @@ describe("buildCellTooltip", () => {
   });
 });
 
+describe("formatRowMonthlyTotalTooltip", () => {
+  test("returns 3-line breakdown when allocated + spent are both known", () => {
+    const t = formatRowMonthlyTotalTooltip(1.1, 14, 10);
+    expect(t).not.toBeNull();
+    expect((t as string).split("\n")).toEqual([
+      "Monthly Staff Days: 1.1",
+      "Total Project Staff Days: 14",
+      "Spent Project Staff Days: 10",
+    ]);
+  });
+
+  test("formats fractional values via formatPersonDays", () => {
+    const t = formatRowMonthlyTotalTooltip(8.36, 100, 30.5);
+    expect(t).toContain("Monthly Staff Days: 8.4");
+    expect(t).toContain("Spent Project Staff Days: 30.5");
+  });
+
+  test("returns null when allocated_staff_days is null/undefined/0", () => {
+    expect(formatRowMonthlyTotalTooltip(8, null, 10)).toBeNull();
+    expect(formatRowMonthlyTotalTooltip(8, undefined, 10)).toBeNull();
+    expect(formatRowMonthlyTotalTooltip(8, 0, 10)).toBeNull();
+  });
+
+  test("returns null when effortSpentDays is missing", () => {
+    expect(formatRowMonthlyTotalTooltip(8, 100, null)).toBeNull();
+    expect(formatRowMonthlyTotalTooltip(8, 100, undefined)).toBeNull();
+  });
+
+  test("0 spent is a legitimate value (project just started) — still returns the breakdown", () => {
+    const t = formatRowMonthlyTotalTooltip(8, 100, 0);
+    expect(t).toContain("Spent Project Staff Days: 0");
+  });
+});
+
 describe("getProjectEffortSpentDays", () => {
   function makeProj(over: Partial<KippoProject>): KippoProject {
     return {
@@ -497,6 +532,47 @@ describe("sortMatrixRows", () => {
       "b",
       "c",
     ]);
+  });
+
+  test("sort by customer_name asc — null customer sorts last", () => {
+    const withCustomer: MonthlyMatrixRow[] = [
+      {
+        project: {
+          id: "x",
+          name: "x",
+          customer_name: "Zeta Corp",
+        } as unknown as MonthlyMatrixRow["project"],
+        cells: new Map(),
+        rowTotal: 0,
+        rowEffortDays: null,
+      },
+      {
+        project: {
+          id: "y",
+          name: "y",
+          customer_name: "Alpha Inc",
+        } as unknown as MonthlyMatrixRow["project"],
+        cells: new Map(),
+        rowTotal: 0,
+        rowEffortDays: null,
+      },
+      {
+        project: {
+          id: "z",
+          name: "z",
+          customer_name: null,
+        } as unknown as MonthlyMatrixRow["project"],
+        cells: new Map(),
+        rowTotal: 0,
+        rowEffortDays: null,
+      },
+    ];
+    expect(
+      sortMatrixRows(withCustomer, { key: "customer_name", dir: "asc" }).map((r) => r.project.id),
+    ).toEqual(["y", "x", "z"]);
+    expect(
+      sortMatrixRows(withCustomer, { key: "customer_name", dir: "desc" }).map((r) => r.project.id),
+    ).toEqual(["x", "y", "z"]);
   });
 
   test("sort by start_date asc — null sorts LAST regardless of direction", () => {
