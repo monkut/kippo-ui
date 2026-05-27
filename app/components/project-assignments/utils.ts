@@ -275,6 +275,38 @@ export function firstOfNextMonth(reference: Date): string {
   return addMonths(firstOfMonth(reference), 1);
 }
 
+/** Last calendar day of the month containing `monthStart` ("YYYY-MM-01"), as
+ * an ISO date string "YYYY-MM-DD". `new Date(year, month+1, 0)` gives the
+ * last day of `month` (0-th day of the next month). */
+export function lastOfMonth(monthStart: string): string {
+  const [yearStr, monthStr] = monthStart.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr); // 1-indexed
+  const last = new Date(year, month, 0);
+  const dayStr = last.getDate().toString().padStart(2, "0");
+  return `${year}-${monthStr}-${dayStr}`;
+}
+
+/** True when a project's [start_date, target_date] window overlaps the month
+ * containing `monthStart` (ISO date "YYYY-MM-01"):
+ *
+ *   start_date <= last_day_of(month) AND (target_date is null OR target_date >= first_day_of(month))
+ *
+ * Projects with null `target_date` are open-ended and always pass the upper
+ * bound. Projects with null `start_date` are treated as not-yet-started and
+ * excluded. ISO YYYY-MM-DD strings sort lexically, so no Date math needed.
+ */
+export function isProjectInMonthWindow(
+  project: Pick<KippoProject, "start_date" | "target_date">,
+  monthStart: string,
+): boolean {
+  if (!project.start_date) return false;
+  const monthEnd = lastOfMonth(monthStart);
+  if (project.start_date > monthEnd) return false;
+  if (project.target_date && project.target_date < monthStart) return false;
+  return true;
+}
+
 export type MonthlyMatrixUser = {
   user_id: string;
   display_name: string;

@@ -36,7 +36,8 @@ export default function ProjectAssignmentsMonthly() {
     <Layout title="月別プロジェクト割当">
       <div className="space-y-6 w-full max-w-[90vw] mx-auto">
         <div className="rounded-md bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">
-          注意: 当月に割当があるプロジェクトのみ表示されます。
+          注意: 当月の期間内 (start_date ≤ 月末 かつ target_date が空または ≥ 月初)
+          のアクティブプロジェクトを表示します。
         </div>
         <MonthPicker month={month} onChange={setMonth} />
         {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
