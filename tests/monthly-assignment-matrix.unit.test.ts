@@ -7,6 +7,7 @@ import {
   firstOfMonth,
   formatPersonDays,
   formatRowMonthlyTotal,
+  getProjectEffortSpentDays,
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,
@@ -255,6 +256,56 @@ describe("buildCellTooltip", () => {
   });
 });
 
+describe("getProjectEffortSpentDays", () => {
+  function makeProj(over: Partial<KippoProject>): KippoProject {
+    return {
+      allocated_staff_days: 14,
+      allocated_effort_hours: 98, // 14 × 7 day_workhours
+      projectstatus_display: {
+        current_effort_hours: 70,
+        expected_effort_hours: null,
+        allocated_effort_hours: 98,
+        difference_percentage: null,
+      },
+      ...over,
+    } as unknown as KippoProject;
+  }
+
+  test("converts current_effort_hours to days via allocated ratio", () => {
+    // 70 / 7 = 10 person-days
+    expect(getProjectEffortSpentDays(makeProj({}))).toBe(10);
+  });
+
+  test("returns null when projectstatus_display is missing", () => {
+    expect(getProjectEffortSpentDays(makeProj({ projectstatus_display: null }))).toBeNull();
+  });
+
+  test("returns null when allocated_staff_days is null or zero", () => {
+    expect(getProjectEffortSpentDays(makeProj({ allocated_staff_days: null }))).toBeNull();
+    expect(getProjectEffortSpentDays(makeProj({ allocated_staff_days: 0 }))).toBeNull();
+  });
+
+  test("returns null when allocated_effort_hours is null or zero", () => {
+    expect(getProjectEffortSpentDays(makeProj({ allocated_effort_hours: null }))).toBeNull();
+    expect(getProjectEffortSpentDays(makeProj({ allocated_effort_hours: 0 }))).toBeNull();
+  });
+
+  test("supports a different day_workhours ratio (8h/day)", () => {
+    // 40h spent at 8h/day → 5 person-days
+    const p = makeProj({
+      allocated_staff_days: 10,
+      allocated_effort_hours: 80,
+      projectstatus_display: {
+        current_effort_hours: 40,
+        expected_effort_hours: null,
+        allocated_effort_hours: 80,
+        difference_percentage: null,
+      },
+    });
+    expect(getProjectEffortSpentDays(p)).toBe(5);
+  });
+});
+
 describe("formatRowMonthlyTotal", () => {
   test("with allocated_staff_days renders `monthly/allocated pct%`", () => {
     expect(formatRowMonthlyTotal(64.3, 100)).toBe("64.3/100 64%");
@@ -280,6 +331,28 @@ describe("formatRowMonthlyTotal", () => {
   test("integer monthly + integer allocated render without decimals on the monthly side", () => {
     expect(formatRowMonthlyTotal(13.2, 50)).toBe("13.2/50 26%");
     expect(formatRowMonthlyTotal(15, 50)).toBe("15/50 30%");
+  });
+
+  test("with effortSpentDays > 0 shows the subtraction form and pct over REMAINING", () => {
+    // TStech: monthly 1.1, allocated 14, spent 10 → remaining 4 → 1.1/4 ≈ 28%
+    expect(formatRowMonthlyTotal(1.1, 14, 10)).toBe("1.1/(14 - 10) 28%");
+    expect(formatRowMonthlyTotal(8, 100, 30)).toBe("8/(100 - 30) 11%");
+  });
+
+  test("effortSpentDays null/undefined/0 keeps the legacy `monthly/allocated` form", () => {
+    expect(formatRowMonthlyTotal(8, 100, null)).toBe("8/100 8%");
+    expect(formatRowMonthlyTotal(8, 100, undefined)).toBe("8/100 8%");
+    expect(formatRowMonthlyTotal(8, 100, 0)).toBe("8/100 8%");
+  });
+
+  test("when spent has consumed everything (remaining <= 0) falls back to legacy form", () => {
+    expect(formatRowMonthlyTotal(8, 100, 100)).toBe("8/100 8%");
+    expect(formatRowMonthlyTotal(8, 100, 120)).toBe("8/100 8%");
+  });
+
+  test("fractional spent is formatted (no trailing zeros)", () => {
+    // monthly 5, allocated 14, spent 10.5 → remaining 3.5 → 5/3.5 = ~143%
+    expect(formatRowMonthlyTotal(5, 14, 10.5)).toBe("5/(14 - 10.5) 143%");
   });
 });
 

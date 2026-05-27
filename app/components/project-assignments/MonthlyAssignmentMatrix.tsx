@@ -5,6 +5,7 @@ import {
   buildMonthlyMatrix,
   type CellState,
   formatRowMonthlyTotal,
+  getProjectEffortSpentDays,
   MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
@@ -58,13 +59,15 @@ function MonthlyAssignmentMatrixImpl({
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <table className="w-full text-sm">
-        <Header users={matrix.users} sortConfig={sortConfig} onSort={handleSort} />
+        <thead>
+          <HeaderRow users={matrix.users} sortConfig={sortConfig} onSort={handleSort} />
+          <UserTotalsRow users={matrix.users} userTotals={matrix.userTotals} />
+        </thead>
         <tbody>
           {sortedRows.map((row) => (
             <ProjectRow key={row.project.id} row={row} users={matrix.users} />
           ))}
         </tbody>
-        <Footer users={matrix.users} userTotals={matrix.userTotals} />
       </table>
       <Legend />
     </section>
@@ -79,7 +82,7 @@ function EmptyState() {
   );
 }
 
-function Header({
+function HeaderRow({
   users,
   sortConfig,
   onSort,
@@ -89,63 +92,61 @@ function Header({
   onSort: (key: SortKey) => void;
 }) {
   return (
-    <thead>
-      <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
-        <SortableHeader
-          label="プロジェクトID"
-          sortKey="id"
-          sortConfig={sortConfig}
-          onSort={onSort}
-          className="py-2 pr-4 min-w-[7rem]"
-        />
-        <SortableHeader
-          label="プロジェクト名"
-          sortKey="name"
-          sortConfig={sortConfig}
-          onSort={onSort}
-          className="py-2 pr-4 whitespace-nowrap"
-        />
-        <SortableHeader
-          label="開始日"
-          sortKey="start_date"
-          sortConfig={sortConfig}
-          onSort={onSort}
-          className="py-2 px-3 min-w-[6rem]"
-        />
-        <SortableHeader
-          label="終了日"
-          sortKey="target_date"
-          sortConfig={sortConfig}
-          onSort={onSort}
-          className="py-2 px-3 min-w-[6rem]"
-        />
-        <SortableHeader
-          label="月合計 (人日)"
-          sortKey="rowEffortDays"
-          sortConfig={sortConfig}
-          onSort={onSort}
-          className="py-2 px-3 min-w-[5rem] text-right whitespace-nowrap"
-          titleHint="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
-        />
-        {users.map((user) => (
-          <th
-            key={user.user_id}
-            className="py-2 px-1 text-left align-bottom h-32 min-w-[1.75rem] normal-case tracking-normal"
+    <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
+      <SortableHeader
+        label="プロジェクトID"
+        sortKey="id"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 pr-4 min-w-[7rem]"
+      />
+      <SortableHeader
+        label="プロジェクト名"
+        sortKey="name"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 pr-4 whitespace-nowrap"
+      />
+      <SortableHeader
+        label="開始日"
+        sortKey="start_date"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 px-3 min-w-[6rem]"
+      />
+      <SortableHeader
+        label="終了日"
+        sortKey="target_date"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 px-3 min-w-[6rem]"
+      />
+      <SortableHeader
+        label="月合計 (人日)"
+        sortKey="rowEffortDays"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 px-3 min-w-[5rem] text-right whitespace-nowrap"
+        titleHint="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
+      />
+      {users.map((user) => (
+        <th
+          key={user.user_id}
+          className="py-2 px-1 text-left align-bottom h-32 min-w-[1.75rem] normal-case tracking-normal"
+        >
+          <span
+            className="[writing-mode:sideways-lr] inline-block text-[11px] font-medium text-gray-700 whitespace-nowrap"
+            title={
+              typeof user.available_work_days === "number"
+                ? `${user.display_name} — 当月稼働可能 ${user.available_work_days}人日`
+                : user.display_name
+            }
           >
-            <span
-              className="[writing-mode:sideways-lr] inline-block text-[11px] font-medium text-gray-700 whitespace-nowrap"
-              title={
-                typeof user.available_work_days === "number"
-                  ? `${user.display_name} — 当月稼働可能 ${user.available_work_days}人日`
-                  : user.display_name
-              }
-            >
-              {user.display_name}
-            </span>
-          </th>
-        ))}
-      </tr>
-    </thead>
+            {user.display_name}
+          </span>
+        </th>
+      ))}
+    </tr>
   );
 }
 
@@ -221,7 +222,11 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
             title="プロジェクトステータスを開く"
             className="text-indigo-600 hover:text-indigo-500 hover:underline"
           >
-            {formatRowMonthlyTotal(row.rowEffortDays, row.project.allocated_staff_days)}
+            {formatRowMonthlyTotal(
+              row.rowEffortDays,
+              row.project.allocated_staff_days,
+              getProjectEffortSpentDays(row.project),
+            )}
           </a>
         ) : (
           "—"
@@ -281,7 +286,7 @@ function PercentageCell({ cell, user }: { cell: CellState | undefined; user: Mon
   );
 }
 
-function Footer({
+function UserTotalsRow({
   users,
   userTotals,
 }: {
@@ -289,26 +294,24 @@ function Footer({
   userTotals: Map<string, number>;
 }) {
   return (
-    <tfoot>
-      <tr className="border-t-2 border-gray-300 text-xs">
-        <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
-          ユーザー月合計
-        </td>
-        {users.map((user) => {
-          const total = userTotals.get(user.user_id) ?? 0;
-          const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
-          return (
-            <td
-              key={user.user_id}
-              className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
-              title={overAllocated ? `${total}% — 100%を超えています` : undefined}
-            >
-              {total}%{overAllocated ? " ⚠" : ""}
-            </td>
-          );
-        })}
-      </tr>
-    </tfoot>
+    <tr className="border-b-2 border-gray-300 bg-gray-50 text-xs">
+      <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
+        ユーザー月合計
+      </td>
+      {users.map((user) => {
+        const total = userTotals.get(user.user_id) ?? 0;
+        const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
+        return (
+          <td
+            key={user.user_id}
+            className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
+            title={overAllocated ? `${total}% — 100%を超えています` : undefined}
+          >
+            {total}%{overAllocated ? " ⚠" : ""}
+          </td>
+        );
+      })}
+    </tr>
   );
 }
 
