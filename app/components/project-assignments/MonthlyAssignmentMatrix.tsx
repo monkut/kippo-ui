@@ -269,7 +269,12 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
 function PercentageCell({ cell, user }: { cell: CellState | undefined; user: MonthlyMatrixUser }) {
   if (!cell) return <span className="text-gray-300">—</span>;
   const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
-  const tooltip = buildCellTooltip(style.title, cell.percentage, user.available_work_days);
+  const tooltip = buildCellTooltip(
+    user.display_name,
+    style.title,
+    cell.percentage,
+    user.available_work_days,
+  );
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`}

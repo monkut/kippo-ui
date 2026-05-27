@@ -218,9 +218,10 @@ describe("formatPersonDays", () => {
 });
 
 describe("buildCellTooltip", () => {
-  test("returns 4-line breakdown when available_work_days is known", () => {
-    const t = buildCellTooltip("確定済み", 100, 22);
+  test("returns 5-line breakdown (member name first) when available_work_days is known", () => {
+    const t = buildCellTooltip("kazuyoshi tanaka (kaztan)", "確定済み", 100, 22);
     expect(t.split("\n")).toEqual([
+      "kazuyoshi tanaka (kaztan)",
       "確定済み",
       "Monthly Total Staff Days: 22",
       "Monthly Project Assignment %: 100%",
@@ -229,20 +230,28 @@ describe("buildCellTooltip", () => {
   });
 
   test("includes formatted staff-day result for fractional outcomes", () => {
-    const t = buildCellTooltip("未確定 (予測)", 38, 22);
+    const t = buildCellTooltip("Alice", "未確定 (予測)", 38, 22);
     // 0.38 × 22 = 8.36 → "8.4"
     expect(t).toContain("Monthly Project Staff Days: (22 x 38%) 8.4");
   });
 
-  test("falls back to baseTitle alone when available_work_days is missing", () => {
-    expect(buildCellTooltip("確定済み", 50, null)).toBe("確定済み");
-    expect(buildCellTooltip("確定済み", 50, undefined)).toBe("確定済み");
+  test("falls back to '<memberName>\\n<baseTitle>' when available_work_days is missing", () => {
+    expect(buildCellTooltip("Alice", "確定済み", 50, null)).toBe("Alice\n確定済み");
+    expect(buildCellTooltip("Alice", "確定済み", 50, undefined)).toBe("Alice\n確定済み");
   });
 
   test("0% still renders the breakdown (calc still meaningful)", () => {
-    const t = buildCellTooltip("未確定 (予測)", 0, 22);
+    const t = buildCellTooltip("Alice", "未確定 (予測)", 0, 22);
+    expect(t.startsWith("Alice\n")).toBe(true);
     expect(t).toContain("Monthly Project Assignment %: 0%");
     expect(t).toContain("Monthly Project Staff Days: (22 x 0%) 0");
+  });
+
+  test("member name always comes first regardless of availability", () => {
+    const withAvail = buildCellTooltip("陽菜 玉森 (harutama0801-pixel)", "確定済み", 50, 8);
+    expect(withAvail.split("\n")[0]).toBe("陽菜 玉森 (harutama0801-pixel)");
+    const withoutAvail = buildCellTooltip("陽菜 玉森 (harutama0801-pixel)", "確定済み", 50, null);
+    expect(withoutAvail.split("\n")[0]).toBe("陽菜 玉森 (harutama0801-pixel)");
   });
 });
 

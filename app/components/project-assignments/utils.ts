@@ -119,24 +119,28 @@ export function formatRowMonthlyTotal(
 
 /** Compose the multi-line tooltip shown on each project × member percentage cell.
  *
- * Falls back to just `baseTitle` when the member's monthly availability isn't known
- * (e.g. backend is pre-deploy on the `?month=` field). Format is intentionally
- * pure-ASCII to keep tooltip rendering predictable across browsers/locales:
+ * Falls back to "<memberName>\n<baseTitle>" when the member's monthly availability
+ * isn't known (e.g. backend is pre-deploy on the `?month=` field). Format is
+ * intentionally pure-ASCII for the staff-days lines to keep tooltip rendering
+ * predictable across browsers/locales:
  *
+ *   <memberName>
  *   <baseTitle>
  *   Monthly Total Staff Days: <available>
  *   Monthly Project Assignment %: <percentage>%
  *   Monthly Project Staff Days: (<available> x <percentage>%) <staffDays>
  */
 export function buildCellTooltip(
+  memberName: string,
   baseTitle: string,
   percentage: number,
   availableWorkDays: number | null | undefined,
 ): string {
-  if (typeof availableWorkDays !== "number") return baseTitle;
+  const head = [memberName, baseTitle];
+  if (typeof availableWorkDays !== "number") return head.join("\n");
   const staffDays = (percentage / 100) * availableWorkDays;
   return [
-    baseTitle,
+    ...head,
     `Monthly Total Staff Days: ${availableWorkDays}`,
     `Monthly Project Assignment %: ${percentage}%`,
     `Monthly Project Staff Days: (${availableWorkDays} x ${percentage}%) ${formatPersonDays(staffDays)}`,
