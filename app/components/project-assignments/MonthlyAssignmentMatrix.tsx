@@ -4,8 +4,8 @@ import {
   buildCellTooltip,
   buildMonthlyMatrix,
   type CellState,
-  formatPersonDays,
   formatRowMonthlyTotal,
+  MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
@@ -64,11 +64,7 @@ function MonthlyAssignmentMatrixImpl({
             <ProjectRow key={row.project.id} row={row} users={matrix.users} />
           ))}
         </tbody>
-        <Footer
-          users={matrix.users}
-          userTotals={matrix.userTotals}
-          userEffortDays={matrix.userEffortDays}
-        />
+        <Footer users={matrix.users} userTotals={matrix.userTotals} />
       </table>
       <Legend />
     </section>
@@ -288,46 +284,26 @@ function PercentageCell({ cell, user }: { cell: CellState | undefined; user: Mon
 function Footer({
   users,
   userTotals,
-  userEffortDays,
 }: {
   users: MonthlyMatrixUser[];
   userTotals: Map<string, number>;
-  userEffortDays: Map<string, number>;
 }) {
   return (
     <tfoot>
       <tr className="border-t-2 border-gray-300 text-xs">
         <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
-          ユーザー月合計 (人日)
+          ユーザー月合計
         </td>
         {users.map((user) => {
-          const allocatedDays = userEffortDays.get(user.user_id);
-          const totalPct = userTotals.get(user.user_id) ?? 0;
-          const available = user.available_work_days;
-          const haveDays = typeof allocatedDays === "number" && typeof available === "number";
-          const overAllocated = haveDays && (allocatedDays as number) > (available as number);
-          if (!haveDays) {
-            return (
-              <td
-                key={user.user_id}
-                className="py-2 px-1 text-center font-medium text-gray-400"
-                title={`% 合計: ${totalPct}%`}
-              >
-                —
-              </td>
-            );
-          }
+          const total = userTotals.get(user.user_id) ?? 0;
+          const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
           return (
             <td
               key={user.user_id}
               className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
-              title={`${formatPersonDays(allocatedDays)} / ${available}人日 (${totalPct}%)${
-                overAllocated ? " — 稼働可能日数を超えています" : ""
-              }`}
+              title={overAllocated ? `${total}% — 100%を超えています` : undefined}
             >
-              {formatPersonDays(allocatedDays)}
-              <span className="text-[10px] text-gray-400">/{available}</span>
-              {overAllocated ? " ⚠" : ""}
+              {total}%{overAllocated ? " ⚠" : ""}
             </td>
           );
         })}
@@ -348,8 +324,8 @@ function Legend() {
         未確定 (予測)
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="text-red-700 font-medium">⚠ 稼働超</span>
-        ユーザーへの割当が当月の稼働可能日数を超えると警告表示
+        <span className="text-red-700 font-medium">⚠ 100%超</span>
+        ユーザーの月合計が100%を超えると警告表示
       </span>
     </div>
   );
