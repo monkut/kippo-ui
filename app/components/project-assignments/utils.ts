@@ -97,26 +97,50 @@ export function formatPersonDays(value: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
+/** Render the 月合計 (人日) cell text for one project row.
+ *
+ * - When the project has `allocated_staff_days > 0`:
+ *     "<monthly>/<allocated> <pct>%"   (e.g. "64.3/100 64%")
+ * - Otherwise: "<monthly>人日"          (e.g. "64.3人日")
+ *
+ * Callers should render "—" themselves when `rowEffortDays` is null (no
+ * contributing cells with known availability) — this helper assumes a number.
+ */
+export function formatRowMonthlyTotal(
+  rowEffortDays: number,
+  allocatedStaffDays: number | null | undefined,
+): string {
+  if (typeof allocatedStaffDays === "number" && allocatedStaffDays > 0) {
+    const pct = Math.round((rowEffortDays / allocatedStaffDays) * 100);
+    return `${formatPersonDays(rowEffortDays)}/${allocatedStaffDays} ${pct}%`;
+  }
+  return `${formatPersonDays(rowEffortDays)}人日`;
+}
+
 /** Compose the multi-line tooltip shown on each project × member percentage cell.
  *
- * Falls back to just `baseTitle` when the member's monthly availability isn't known
- * (e.g. backend is pre-deploy on the `?month=` field). Format is intentionally
- * pure-ASCII to keep tooltip rendering predictable across browsers/locales:
+ * Falls back to "<memberName>\n<baseTitle>" when the member's monthly availability
+ * isn't known (e.g. backend is pre-deploy on the `?month=` field). Format is
+ * intentionally pure-ASCII for the staff-days lines to keep tooltip rendering
+ * predictable across browsers/locales:
  *
+ *   <memberName>
  *   <baseTitle>
  *   Monthly Total Staff Days: <available>
  *   Monthly Project Assignment %: <percentage>%
  *   Monthly Project Staff Days: (<available> x <percentage>%) <staffDays>
  */
 export function buildCellTooltip(
+  memberName: string,
   baseTitle: string,
   percentage: number,
   availableWorkDays: number | null | undefined,
 ): string {
-  if (typeof availableWorkDays !== "number") return baseTitle;
+  const head = [memberName, baseTitle];
+  if (typeof availableWorkDays !== "number") return head.join("\n");
   const staffDays = (percentage / 100) * availableWorkDays;
   return [
-    baseTitle,
+    ...head,
     `Monthly Total Staff Days: ${availableWorkDays}`,
     `Monthly Project Assignment %: ${percentage}%`,
     `Monthly Project Staff Days: (${availableWorkDays} x ${percentage}%) ${formatPersonDays(staffDays)}`,

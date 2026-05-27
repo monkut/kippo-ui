@@ -6,6 +6,7 @@ import {
   compareActiveKippoProjects,
   firstOfMonth,
   formatPersonDays,
+  formatRowMonthlyTotal,
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,
@@ -217,9 +218,10 @@ describe("formatPersonDays", () => {
 });
 
 describe("buildCellTooltip", () => {
-  test("returns 4-line breakdown when available_work_days is known", () => {
-    const t = buildCellTooltip("確定済み", 100, 22);
+  test("returns 5-line breakdown (member name first) when available_work_days is known", () => {
+    const t = buildCellTooltip("kazuyoshi tanaka (kaztan)", "確定済み", 100, 22);
     expect(t.split("\n")).toEqual([
+      "kazuyoshi tanaka (kaztan)",
       "確定済み",
       "Monthly Total Staff Days: 22",
       "Monthly Project Assignment %: 100%",
@@ -228,20 +230,56 @@ describe("buildCellTooltip", () => {
   });
 
   test("includes formatted staff-day result for fractional outcomes", () => {
-    const t = buildCellTooltip("未確定 (予測)", 38, 22);
+    const t = buildCellTooltip("Alice", "未確定 (予測)", 38, 22);
     // 0.38 × 22 = 8.36 → "8.4"
     expect(t).toContain("Monthly Project Staff Days: (22 x 38%) 8.4");
   });
 
-  test("falls back to baseTitle alone when available_work_days is missing", () => {
-    expect(buildCellTooltip("確定済み", 50, null)).toBe("確定済み");
-    expect(buildCellTooltip("確定済み", 50, undefined)).toBe("確定済み");
+  test("falls back to '<memberName>\\n<baseTitle>' when available_work_days is missing", () => {
+    expect(buildCellTooltip("Alice", "確定済み", 50, null)).toBe("Alice\n確定済み");
+    expect(buildCellTooltip("Alice", "確定済み", 50, undefined)).toBe("Alice\n確定済み");
   });
 
   test("0% still renders the breakdown (calc still meaningful)", () => {
-    const t = buildCellTooltip("未確定 (予測)", 0, 22);
+    const t = buildCellTooltip("Alice", "未確定 (予測)", 0, 22);
+    expect(t.startsWith("Alice\n")).toBe(true);
     expect(t).toContain("Monthly Project Assignment %: 0%");
     expect(t).toContain("Monthly Project Staff Days: (22 x 0%) 0");
+  });
+
+  test("member name always comes first regardless of availability", () => {
+    const withAvail = buildCellTooltip("陽菜 玉森 (harutama0801-pixel)", "確定済み", 50, 8);
+    expect(withAvail.split("\n")[0]).toBe("陽菜 玉森 (harutama0801-pixel)");
+    const withoutAvail = buildCellTooltip("陽菜 玉森 (harutama0801-pixel)", "確定済み", 50, null);
+    expect(withoutAvail.split("\n")[0]).toBe("陽菜 玉森 (harutama0801-pixel)");
+  });
+});
+
+describe("formatRowMonthlyTotal", () => {
+  test("with allocated_staff_days renders `monthly/allocated pct%`", () => {
+    expect(formatRowMonthlyTotal(64.3, 100)).toBe("64.3/100 64%");
+    expect(formatRowMonthlyTotal(50, 100)).toBe("50/100 50%");
+    expect(formatRowMonthlyTotal(22, 22)).toBe("22/22 100%");
+  });
+
+  test("rounds the percentage to the nearest integer", () => {
+    expect(formatRowMonthlyTotal(64.7, 100)).toBe("64.7/100 65%");
+    expect(formatRowMonthlyTotal(64.3, 100)).toBe("64.3/100 64%");
+  });
+
+  test("over-allocation renders > 100%", () => {
+    expect(formatRowMonthlyTotal(120, 100)).toBe("120/100 120%");
+  });
+
+  test("falls back to `N人日` when allocated_staff_days is null/undefined/0", () => {
+    expect(formatRowMonthlyTotal(64.3, null)).toBe("64.3人日");
+    expect(formatRowMonthlyTotal(64.3, undefined)).toBe("64.3人日");
+    expect(formatRowMonthlyTotal(64.3, 0)).toBe("64.3人日");
+  });
+
+  test("integer monthly + integer allocated render without decimals on the monthly side", () => {
+    expect(formatRowMonthlyTotal(13.2, 50)).toBe("13.2/50 26%");
+    expect(formatRowMonthlyTotal(15, 50)).toBe("15/50 30%");
   });
 });
 
