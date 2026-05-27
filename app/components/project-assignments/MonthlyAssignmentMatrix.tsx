@@ -25,10 +25,22 @@ function MonthlyAssignmentMatrixImpl({
   projects,
   assignments,
   members,
+  hideUnassigned = false,
 }: MonthlyAssignmentMatrixProps) {
   const matrix = useMemo(
     () => buildMonthlyMatrix(projects, assignments, members),
     [projects, assignments, members],
+  );
+
+  // #21 F5: when `hideUnassigned` is on, drop member columns whose monthly
+  // userTotal is 0. Filtering only the rendered list keeps `matrix.userTotals`
+  // intact so the totals row aligns with whichever columns remain.
+  const visibleUsers = useMemo(
+    () =>
+      hideUnassigned
+        ? matrix.users.filter((u) => (matrix.userTotals.get(u.user_id) ?? 0) > 0)
+        : matrix.users,
+    [matrix.users, matrix.userTotals, hideUnassigned],
   );
 
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
@@ -54,12 +66,12 @@ function MonthlyAssignmentMatrixImpl({
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <HeaderRow users={matrix.users} sortConfig={sortConfig} onSort={handleSort} />
-          <UserTotalsRow users={matrix.users} userTotals={matrix.userTotals} />
+          <HeaderRow users={visibleUsers} sortConfig={sortConfig} onSort={handleSort} />
+          <UserTotalsRow users={visibleUsers} userTotals={matrix.userTotals} />
         </thead>
         <tbody>
           {sortedRows.map((row) => (
-            <ProjectRow key={row.project.id} row={row} users={matrix.users} />
+            <ProjectRow key={row.project.id} row={row} users={visibleUsers} />
           ))}
         </tbody>
       </table>

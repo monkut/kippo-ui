@@ -6,6 +6,7 @@ import {
   MonthlyAssignmentMatrix,
   firstOfMonth,
 } from "~/components/project-assignments";
+import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
 import { useAuth } from "~/lib/auth-context";
 
@@ -17,6 +18,7 @@ export default function ProjectAssignmentsMonthly() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
+  const [hideUnassigned, setHideUnassigned] = useHideUnassignedToggle();
   const { isLoading, error, projects, assignments, members } = useMonthlyAssignments(month);
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function ProjectAssignmentsMonthly() {
           のアクティブプロジェクトを表示します。
         </div>
         <MonthPicker month={month} onChange={setMonth} />
+        <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
         {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
         {isLoading ? (
           <LoadingPanel />
@@ -48,10 +51,34 @@ export default function ProjectAssignmentsMonthly() {
             projects={projects}
             assignments={assignments}
             members={members}
+            hideUnassigned={hideUnassigned}
           />
         )}
       </div>
     </Layout>
+  );
+}
+
+function HideUnassignedToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-gray-700">
+      <input
+        id="hide-unassigned-members"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+      />
+      <label htmlFor="hide-unassigned-members" className="cursor-pointer select-none">
+        未割当メンバーを非表示
+      </label>
+    </div>
   );
 }
 

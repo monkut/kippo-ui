@@ -337,6 +337,10 @@ export type MonthlyAssignmentMatrixProps = {
   /** Org-scoped members carrying `available_work_days` for the displayed month
    * (populated by passing `?month=` when fetching from the organizations endpoint). */
   members?: OrganizationMemberDetail[];
+  /** When true, hides member columns whose summed userTotal across the displayed
+   * month is 0 — useful for orgs where most members are unassigned in any given
+   * month and the column rail eats screen space (#21 F5). Default: false. */
+  hideUnassigned?: boolean;
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */
