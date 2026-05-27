@@ -5,6 +5,7 @@ import {
   buildMonthlyMatrix,
   type CellState,
   formatRowMonthlyTotal,
+  formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
   MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
@@ -24,7 +25,7 @@ const UNCONFIRMED_CELL = {
   title: "未確定 (予測)",
 } as const;
 
-const FIXED_HEADER_COL_COUNT = 5;
+const FIXED_HEADER_COL_COUNT = 6;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 function MonthlyAssignmentMatrixImpl({
@@ -99,6 +100,13 @@ function HeaderRow({
         sortConfig={sortConfig}
         onSort={onSort}
         className="py-2 pr-4 min-w-[7rem]"
+      />
+      <SortableHeader
+        label="顧客"
+        sortKey="customer_name"
+        sortConfig={sortConfig}
+        onSort={onSort}
+        className="py-2 pr-4 whitespace-nowrap min-w-[6rem]"
       />
       <SortableHeader
         label="プロジェクト名"
@@ -189,10 +197,23 @@ function SortableHeader({
 }
 
 function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatrixUser[] }) {
+  const effortSpentDays = getProjectEffortSpentDays(row.project);
+  const breakdownTooltip =
+    typeof row.rowEffortDays === "number"
+      ? formatRowMonthlyTotalTooltip(
+          row.rowEffortDays,
+          row.project.allocated_staff_days,
+          effortSpentDays,
+        )
+      : null;
+  const cellTitle = breakdownTooltip ?? `% 合計: ${row.rowTotal}%`;
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
       <td className="py-2 pr-4">
         <CopyableProjectId projectId={row.project.id} />
+      </td>
+      <td className="py-2 pr-4 whitespace-nowrap text-xs text-gray-700">
+        {row.project.customer_name ?? "—"}
       </td>
       <td className="py-2 pr-4 whitespace-nowrap">
         <Link
@@ -214,7 +235,7 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
       <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
       <td
         className="py-2 px-3 text-right font-medium text-gray-700 whitespace-nowrap"
-        title={`% 合計: ${row.rowTotal}%`}
+        title={cellTitle}
       >
         {typeof row.rowEffortDays === "number" ? (
           <a
@@ -225,7 +246,7 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
             {formatRowMonthlyTotal(
               row.rowEffortDays,
               row.project.allocated_staff_days,
-              getProjectEffortSpentDays(row.project),
+              effortSpentDays,
             )}
           </a>
         ) : (
