@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   KippoProject,
   OrganizationMemberDetail,
@@ -14,6 +14,10 @@ export type UseMonthlyAssignmentsState = {
   projects: KippoProject[];
   assignments: ProjectMonthlyAssignment[];
   members: OrganizationMemberDetail[];
+  /** Re-fetch assignments for the displayed month. Projects + members are
+   * unchanged by assignment mutations, so this only hits the assignments
+   * endpoint (per #22 wiring notes). */
+  refresh: () => Promise<void>;
 };
 
 const FETCH_ERROR = "データの取得に失敗しました";
@@ -120,6 +124,23 @@ function useAssignmentsForMonth(month: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // `refresh` is stable across renders for the same month so callers can pass it
+  // straight into `useProjectAssignmentMutations` without re-wrapping each cycle.
+  // It always reflects the current `month`, never a stale closure (mutations are
+  // initiated after the month has settled).
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchAllMonthlyAssignments({ month });
+      setAssignments(data.filter((a) => !EXCLUDED_USERNAMES.has(a.user_username)));
+      setError("");
+    } catch {
+      setError(FETCH_ERROR);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [month]);
+
   useEffect(() => {
     let alive = true;
     setIsLoading(true);
@@ -138,7 +159,7 @@ function useAssignmentsForMonth(month: string) {
     };
   }, [month]);
 
-  return { assignments, isLoading, error };
+  return { assignments, isLoading, error, refresh };
 }
 
 export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState {
@@ -161,5 +182,6 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
     projects: visibleProjects,
     assignments: assignmentsState.assignments,
     members: membersState.members,
+    refresh: assignmentsState.refresh,
   };
 }

@@ -341,6 +341,19 @@ export type MonthlyAssignmentMatrixProps = {
    * month is 0 — useful for orgs where most members are unassigned in any given
    * month and the column rail eats screen space (#21 F5). Default: false. */
   hideUnassigned?: boolean;
+  /** Whether the displayed month is editable (current month or later). When
+   * false, cells render as read-only `<span>`s with a `過去月のためロック` tooltip,
+   * matching the pre-#22 behavior. Default: false (read-only). */
+  editableMonth?: boolean;
+  /** Click handler installed on each cell when `editableMonth` is true.
+   * Receives the (project, user, assignment | null) tuple needed to open
+   * either `EditAssignmentModal` (assignment != null) or `AddAssignmentModal`
+   * (assignment === null) at the matching (project, user, month) slot. */
+  onCellClick?: (args: {
+    project: KippoProject;
+    user: MonthlyMatrixUser;
+    assignment: ProjectMonthlyAssignment | null;
+  }) => void;
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */

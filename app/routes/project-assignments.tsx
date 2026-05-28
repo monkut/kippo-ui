@@ -1,17 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Layout } from "~/components/layout";
 import {
+  AddAssignmentModal,
+  EditAssignmentModal,
+  type MatrixCellClickArgs,
   MonthPicker,
   MonthlyAssignmentMatrix,
   firstOfMonth,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
+import { useProjectAssignmentMutations } from "~/hooks/useProjectAssignmentMutations";
+import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { useAuth } from "~/lib/auth-context";
 
 export function meta() {
   return [{ title: "月別プロジェクト割当 - Kippo" }];
+}
+
+type AddTarget = { projectId: string; userId: string; month: string };
+
+/** True when the displayed month is the current month or later — gates the
+ * matrix's click-to-edit / click-to-add interactions (#22). Past months stay
+ * read-only with a `過去月のためロック` tooltip. */
+export function isEditableMonth(displayedMonth: string, today: Date): boolean {
+  return displayedMonth >= firstOfMonth(today);
 }
 
 export default function ProjectAssignmentsMonthly() {
@@ -19,7 +33,36 @@ export default function ProjectAssignmentsMonthly() {
   const navigate = useNavigate();
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
   const [hideUnassigned, setHideUnassigned] = useHideUnassignedToggle();
-  const { isLoading, error, projects, assignments, members } = useMonthlyAssignments(month);
+  const { isLoading, error, projects, assignments, members, refresh } =
+    useMonthlyAssignments(month);
+  const [mutationError, setMutationError] = useState("");
+  const mutations = useProjectAssignmentMutations(refresh, setMutationError);
+  const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
+  const [addTarget, setAddTarget] = useState<AddTarget | null>(null);
+
+  // `editableMonth` recomputes on every month change — and on first render — so
+  // a stale "today" can't leak through if the user leaves the tab open across
+  // midnight. The dependency on `month` makes that intent explicit.
+  const editableMonth = useMemo(() => isEditableMonth(month, new Date()), [month]);
+
+  // Look up the project by id when the AddAssignmentModal is open so the
+  // user-picker can prioritize this project's weekly-effort members.
+  const addProject = useMemo(
+    () => (addTarget ? (projects.find((p) => p.id === addTarget.projectId) ?? null) : null),
+    [addTarget, projects],
+  );
+  const addEffortUsernames = useMemo(
+    () => new Set(addProject?.weekly_effort_users.map((u) => u.username) ?? []),
+    [addProject],
+  );
+
+  const handleCellClick = (args: MatrixCellClickArgs) => {
+    if (args.assignment) {
+      setEditTarget(args.assignment);
+    } else {
+      setAddTarget({ projectId: args.project.id, userId: args.user.user_id, month });
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -34,6 +77,8 @@ export default function ProjectAssignmentsMonthly() {
   }
   if (!user) return null;
 
+  const combinedError = error || mutationError;
+
   return (
     <Layout title="月別プロジェクト割当">
       <div className="space-y-6 w-full max-w-[90vw] mx-auto">
@@ -43,7 +88,9 @@ export default function ProjectAssignmentsMonthly() {
         </div>
         <MonthPicker month={month} onChange={setMonth} />
         <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
-        {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+        {combinedError && (
+          <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{combinedError}</div>
+        )}
         {isLoading ? (
           <LoadingPanel />
         ) : (
@@ -52,10 +99,75 @@ export default function ProjectAssignmentsMonthly() {
             assignments={assignments}
             members={members}
             hideUnassigned={hideUnassigned}
+            editableMonth={editableMonth}
+            onCellClick={handleCellClick}
           />
         )}
       </div>
+      <Modals
+        addTarget={addTarget}
+        addEffortUsernames={addEffortUsernames}
+        editTarget={editTarget}
+        isSaving={mutations.isSaving}
+        onCloseAdd={() => setAddTarget(null)}
+        onCloseEdit={() => setEditTarget(null)}
+        onCreate={mutations.createAssignment}
+        onUpdate={mutations.updateAssignment}
+        onDelete={mutations.deleteAssignment}
+      />
     </Layout>
+  );
+}
+
+type ModalsProps = {
+  addTarget: AddTarget | null;
+  addEffortUsernames: ReadonlySet<string>;
+  editTarget: ProjectMonthlyAssignment | null;
+  isSaving: boolean;
+  onCloseAdd: () => void;
+  onCloseEdit: () => void;
+  onCreate: React.ComponentProps<typeof AddAssignmentModal>["onSubmit"];
+  onUpdate: React.ComponentProps<typeof EditAssignmentModal>["onSave"];
+  onDelete: React.ComponentProps<typeof EditAssignmentModal>["onDelete"];
+};
+
+function Modals({
+  addTarget,
+  addEffortUsernames,
+  editTarget,
+  isSaving,
+  onCloseAdd,
+  onCloseEdit,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: ModalsProps) {
+  // Render AddAssignmentModal only when addTarget is set — its `useOrgMembers`
+  // hook fires on `open=true`, and we don't want to issue an HTTP request with
+  // a placeholder projectId just to satisfy the prop shape.
+  return (
+    <>
+      {addTarget && (
+        <AddAssignmentModal
+          open={true}
+          projectId={addTarget.projectId}
+          month={addTarget.month}
+          effortUsernames={addEffortUsernames}
+          isSaving={isSaving}
+          prefilledUserId={addTarget.userId}
+          onClose={onCloseAdd}
+          onSubmit={onCreate}
+        />
+      )}
+      <EditAssignmentModal
+        open={editTarget !== null}
+        assignment={editTarget}
+        isSaving={isSaving}
+        onClose={onCloseEdit}
+        onSave={onUpdate}
+        onDelete={onDelete}
+      />
+    </>
   );
 }
 

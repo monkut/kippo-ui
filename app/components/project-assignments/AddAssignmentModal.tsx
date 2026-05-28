@@ -15,19 +15,25 @@ type AddAssignmentModalProps = {
   isSaving: boolean;
   onClose: () => void;
   onSubmit: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
+  /** Optional: pre-select a user in the picker. Used by the matrix-cell add
+   * path (#22) to skip the user-selection step when the caller already knows
+   * which (project, user, month) slot was clicked. The user picker remains
+   * editable so the operator can re-target without canceling. */
+  prefilledUserId?: string;
 };
 
 const DEFAULT_PERCENTAGE = 50;
 
 export function AddAssignmentModal(props: AddAssignmentModalProps) {
-  const { open, projectId, month, effortUsernames, isSaving, onClose, onSubmit } = props;
+  const { open, projectId, month, effortUsernames, isSaving, onClose, onSubmit, prefilledUserId } =
+    props;
   const { members, isLoadingMembers, fetchError } = useOrgMembers(open, projectId);
   const totals = useMonthlyTotalsByUser(open, month);
   const orderedMembers = useMemo(
     () => orderMembersForPicker(members, effortUsernames),
     [members, effortUsernames],
   );
-  const form = useAddAssignmentForm(open);
+  const form = useAddAssignmentForm(open, prefilledUserId);
   useDefaultUserSelection(open, orderedMembers, form.userId, form.setUserId);
 
   if (!open) return null;
@@ -191,15 +197,15 @@ function useMonthlyTotalsByUser(open: boolean, month: string): Map<string, numbe
   return totals;
 }
 
-function useAddAssignmentForm(open: boolean) {
+function useAddAssignmentForm(open: boolean, prefilledUserId?: string) {
   const [userId, setUserId] = useState("");
   const [percentage, setPercentage] = useState(DEFAULT_PERCENTAGE);
 
   useEffect(() => {
     if (!open) return;
-    setUserId("");
+    setUserId(prefilledUserId ?? "");
     setPercentage(DEFAULT_PERCENTAGE);
-  }, [open]);
+  }, [open, prefilledUserId]);
 
   return { userId, setUserId, percentage, setPercentage };
 }

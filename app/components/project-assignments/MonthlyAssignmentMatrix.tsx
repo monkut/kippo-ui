@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
+import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import {
   buildCellTooltip,
   buildMonthlyMatrix,
@@ -18,6 +19,16 @@ import {
   UNCONFIRMED_CELL,
 } from "./utils";
 
+/** Click target produced by a matrix cell — covers both edit (assignment != null)
+ * and add (assignment === null) paths so callers can route to the right modal.
+ * `assignment` is looked up by (project, user) from the month's raw list, NOT
+ * from the merged CellState — modals need the original record's id. */
+export type MatrixCellClickArgs = {
+  project: KippoProject;
+  user: MonthlyMatrixUser;
+  assignment: ProjectMonthlyAssignment | null;
+};
+
 const FIXED_HEADER_COL_COUNT = 6;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
@@ -26,11 +37,28 @@ function MonthlyAssignmentMatrixImpl({
   assignments,
   members,
   hideUnassigned = false,
+  editableMonth = false,
+  onCellClick,
 }: MonthlyAssignmentMatrixProps) {
   const matrix = useMemo(
     () => buildMonthlyMatrix(projects, assignments, members),
     [projects, assignments, members],
   );
+
+  // (project_id, user_id) → original ProjectMonthlyAssignment, used to resolve
+  // the underlying record when a cell is clicked. The matrix builder merges
+  // duplicate (project, user) rows into one CellState (no id), so for the
+  // edit-cell path we need the source record — `EditAssignmentModal` patches
+  // by id. When duplicates exist for a (project, user) slot, we deterministically
+  // pick the first one; in practice the backend doesn't emit duplicates.
+  const assignmentByCell = useMemo(() => {
+    const map = new Map<string, ProjectMonthlyAssignment>();
+    for (const a of assignments) {
+      const key = `${a.project}::${a.user}`;
+      if (!map.has(key)) map.set(key, a);
+    }
+    return map;
+  }, [assignments]);
 
   // #21 F5: when `hideUnassigned` is on, drop member columns whose monthly
   // userTotal is 0. Filtering only the rendered list keeps `matrix.userTotals`
@@ -71,7 +99,14 @@ function MonthlyAssignmentMatrixImpl({
         </thead>
         <tbody>
           {sortedRows.map((row) => (
-            <ProjectRow key={row.project.id} row={row} users={visibleUsers} />
+            <ProjectRow
+              key={row.project.id}
+              row={row}
+              users={visibleUsers}
+              editableMonth={editableMonth}
+              onCellClick={onCellClick}
+              assignmentByCell={assignmentByCell}
+            />
           ))}
         </tbody>
       </table>
@@ -201,7 +236,19 @@ function SortableHeader({
   );
 }
 
-function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatrixUser[] }) {
+function ProjectRow({
+  row,
+  users,
+  editableMonth,
+  onCellClick,
+  assignmentByCell,
+}: {
+  row: MonthlyMatrixRow;
+  users: MonthlyMatrixUser[];
+  editableMonth: boolean;
+  onCellClick?: (args: MatrixCellClickArgs) => void;
+  assignmentByCell: Map<string, ProjectMonthlyAssignment>;
+}) {
   const effortSpentDays = getProjectEffortSpentDays(row.project);
   const breakdownTooltip =
     typeof row.rowEffortDays === "number"
@@ -260,7 +307,14 @@ function ProjectRow({ row, users }: { row: MonthlyMatrixRow; users: MonthlyMatri
       </td>
       {users.map((user) => (
         <td key={user.user_id} className="py-2 px-1 text-center">
-          <PercentageCell cell={row.cells.get(user.user_id)} user={user} />
+          <PercentageCell
+            cell={row.cells.get(user.user_id)}
+            user={user}
+            project={row.project}
+            editableMonth={editableMonth}
+            onCellClick={onCellClick}
+            assignmentByCell={assignmentByCell}
+          />
         </td>
       ))}
     </tr>
@@ -293,22 +347,73 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
   );
 }
 
-function PercentageCell({ cell, user }: { cell: CellState | undefined; user: MonthlyMatrixUser }) {
-  if (!cell) return <span className="text-gray-300">—</span>;
+const PAST_MONTH_LOCKED_TITLE = "過去月のためロック";
+
+function PercentageCell({
+  cell,
+  user,
+  project,
+  editableMonth,
+  onCellClick,
+  assignmentByCell,
+}: {
+  cell: CellState | undefined;
+  user: MonthlyMatrixUser;
+  project: KippoProject;
+  editableMonth: boolean;
+  onCellClick?: (args: MatrixCellClickArgs) => void;
+  assignmentByCell: Map<string, ProjectMonthlyAssignment>;
+}) {
+  const isClickable = editableMonth && !!onCellClick;
+
+  if (!cell) {
+    // Empty slot: when the month is editable + a handler is wired, render a
+    // faint placeholder button so users can ADD a new assignment via the same
+    // single-click path. Otherwise (past months, or no handler) stay as the
+    // static `—` to match pre-#22 read-only behavior.
+    if (!isClickable) return <span className="text-gray-300">—</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => onCellClick?.({ project, user, assignment: null })}
+        title={`${user.display_name} に割当を追加`}
+        className="text-gray-300 hover:text-indigo-600 cursor-pointer"
+      >
+        —
+      </button>
+    );
+  }
+
   const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
-  const tooltip = buildCellTooltip(
+  const baseTooltip = buildCellTooltip(
     user.display_name,
     style.title,
     cell.percentage,
     user.available_work_days,
   );
+  const tooltip = isClickable ? baseTooltip : `${baseTooltip}\n${PAST_MONTH_LOCKED_TITLE}`;
+  const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`;
+
+  if (!isClickable) {
+    return (
+      <span className={sharedClass} title={tooltip}>
+        {cell.percentage}%
+      </span>
+    );
+  }
+
+  // Hover layered on per-variant — matches AssignmentsTable's clickable cell.
+  const hoverClass = cell.isConfirmed ? "hover:bg-indigo-200" : "hover:bg-gray-100";
+  const assignment = assignmentByCell.get(`${project.id}::${user.user_id}`) ?? null;
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`}
+    <button
+      type="button"
+      onClick={() => onCellClick?.({ project, user, assignment })}
+      className={`${sharedClass} ${hoverClass} cursor-pointer`}
       title={tooltip}
     >
       {cell.percentage}%
-    </span>
+    </button>
   );
 }
 
