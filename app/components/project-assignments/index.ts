@@ -2,6 +2,7 @@ export { AddAssignmentModal } from "./AddAssignmentModal";
 export { AssignmentsTable } from "./AssignmentsTable";
 export { EditAssignmentModal } from "./EditAssignmentModal";
 export { ForecastBar } from "./ForecastBar";
+export { MonthConfirmActions } from "./MonthConfirmActions";
 export { MonthPicker } from "./MonthPicker";
 export { MonthlyAssignmentMatrix } from "./MonthlyAssignmentMatrix";
 export type { MatrixCellClickArgs } from "./MonthlyAssignmentMatrix";
@@ -11,6 +12,8 @@ export {
   addMonths,
   buildGrid,
   buildMonthlyMatrix,
+  countAssignmentsByConfirmation,
+  filterAssignmentsToVisibleProjects,
   firstOfMonth,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,

@@ -16,6 +16,7 @@ export type ProjectAssignmentMutations = {
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
+  bulkSetConfirmed: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
 };
 
 function useWrap(refresh: () => Promise<void>, setHookError: (err: string) => void) {
@@ -71,6 +72,21 @@ export function useProjectAssignmentMutations(
       }, "パターンの登録に失敗しました"),
     [wrap],
   );
+  // Month-level confirm / unconfirm (kippo#23): sequential PATCHes, same
+  // constraint as bulkCreateAssignments — no bulk endpoint. Backend post_save
+  // (kippo#17, merged via monkut/kippo#288) drives auto-extension on each row.
+  const bulkSetConfirmed = useCallback(
+    (ids: number[], isConfirmed: boolean) =>
+      wrap(
+        async () => {
+          for (const id of ids) {
+            await monthlyAssignmentsPartialUpdate(id, { is_confirmed: isConfirmed });
+          }
+        },
+        isConfirmed ? "月の確定に失敗しました" : "月の確定解除に失敗しました",
+      ),
+    [wrap],
+  );
 
   return {
     isSaving,
@@ -79,5 +95,6 @@ export function useProjectAssignmentMutations(
     updateAssignment,
     deleteAssignment,
     bulkCreateAssignments,
+    bulkSetConfirmed,
   };
 }
