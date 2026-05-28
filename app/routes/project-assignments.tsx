@@ -66,6 +66,13 @@ export default function ProjectAssignmentsMonthly() {
     [addProject],
   );
 
+  // Customer name for the EditAssignmentModal — assignment.project_name is
+  // already on the row, but customer_name has to come from the projects list.
+  const editProject = useMemo(
+    () => (editTarget ? (projects.find((p) => p.id === editTarget.project) ?? null) : null),
+    [editTarget, projects],
+  );
+
   const handleCellClick = (args: MatrixCellClickArgs) => {
     if (args.assignment) {
       setEditTarget(args.assignment);
@@ -124,7 +131,10 @@ export default function ProjectAssignmentsMonthly() {
       <Modals
         addTarget={addTarget}
         addEffortUsernames={addEffortUsernames}
+        addProjectName={addProject?.name ?? null}
+        addCustomerName={addProject?.customer_name ?? null}
         editTarget={editTarget}
+        editCustomerName={editProject?.customer_name ?? null}
         isSaving={mutations.isSaving}
         onCloseAdd={() => setAddTarget(null)}
         onCloseEdit={() => setEditTarget(null)}
@@ -139,7 +149,10 @@ export default function ProjectAssignmentsMonthly() {
 type ModalsProps = {
   addTarget: AddTarget | null;
   addEffortUsernames: ReadonlySet<string>;
+  addProjectName: string | null;
+  addCustomerName: string | null;
   editTarget: ProjectMonthlyAssignment | null;
+  editCustomerName: string | null;
   isSaving: boolean;
   onCloseAdd: () => void;
   onCloseEdit: () => void;
@@ -151,7 +164,10 @@ type ModalsProps = {
 function Modals({
   addTarget,
   addEffortUsernames,
+  addProjectName,
+  addCustomerName,
   editTarget,
+  editCustomerName,
   isSaving,
   onCloseAdd,
   onCloseEdit,
@@ -172,6 +188,8 @@ function Modals({
           effortUsernames={addEffortUsernames}
           isSaving={isSaving}
           prefilledUserId={addTarget.userId}
+          projectName={addProjectName}
+          customerName={addCustomerName}
           onClose={onCloseAdd}
           onSubmit={onCreate}
         />
@@ -179,6 +197,7 @@ function Modals({
       <EditAssignmentModal
         open={editTarget !== null}
         assignment={editTarget}
+        customerName={editCustomerName}
         isSaving={isSaving}
         onClose={onCloseEdit}
         onSave={onUpdate}

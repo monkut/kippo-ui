@@ -11,10 +11,13 @@ type EditAssignmentModalProps = {
   onClose: () => void;
   onSave: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   onDelete: (id: number) => Promise<boolean>;
+  /** Customer name for the assignment's project. When null/undefined the
+   * customer row is omitted (callers without project context can pass null). */
+  customerName?: string | null;
 };
 
 export function EditAssignmentModal(props: EditAssignmentModalProps) {
-  const { open, assignment, isSaving, onClose, onSave, onDelete } = props;
+  const { open, assignment, isSaving, onClose, onSave, onDelete, customerName } = props;
   const form = useEditForm(open, assignment);
 
   if (!open || !assignment) return null;
@@ -36,7 +39,7 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
 
   return (
     <ModalShell title="割当を編集" onClose={onClose}>
-      <ReadOnlyHeader assignment={assignment} />
+      <ReadOnlyHeader assignment={assignment} customerName={customerName} />
       <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
       <ModalActions
         onDelete={handleDelete}
@@ -58,9 +61,23 @@ function useEditForm(open: boolean, assignment: ProjectMonthlyAssignment | null)
   return { percentage, setPercentage };
 }
 
-function ReadOnlyHeader({ assignment }: { assignment: ProjectMonthlyAssignment }) {
+function ReadOnlyHeader({
+  assignment,
+  customerName,
+}: {
+  assignment: ProjectMonthlyAssignment;
+  customerName?: string | null;
+}) {
   return (
     <div className="mb-4 space-y-1 text-sm text-gray-600">
+      {customerName && (
+        <div>
+          <span className="font-medium">顧客:</span> {customerName}
+        </div>
+      )}
+      <div>
+        <span className="font-medium">プロジェクト:</span> {assignment.project_name}
+      </div>
       <div>
         <span className="font-medium">ユーザー:</span> {assignment.user_display_name}
       </div>

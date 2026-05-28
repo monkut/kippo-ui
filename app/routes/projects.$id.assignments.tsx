@@ -134,6 +134,8 @@ function Modals({
           month={month}
           effortUsernames={effortUsernames}
           isSaving={state.isSaving}
+          projectName={state.project?.name ?? null}
+          customerName={state.project?.customer_name ?? null}
           onClose={() => setAddOpen(false)}
           onSubmit={state.createAssignment}
         />
@@ -150,6 +152,7 @@ function Modals({
       <EditAssignmentModal
         open={editTarget !== null}
         assignment={editTarget}
+        customerName={state.project?.customer_name ?? null}
         isSaving={state.isSaving}
         onClose={() => setEditTarget(null)}
         onSave={state.updateAssignment}
