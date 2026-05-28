@@ -10,7 +10,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pin to ubuntu-22.04 instead of ubuntu-latest. The 24.04 runner image
+    # (currently `ubuntu-latest`) lost its pre-cached Playwright browser
+    # binary at some point on 2026-05-28 and `pnpm exec playwright install`
+    # hung 30+ min downloading from Playwright's CDN on multiple consecutive
+    # runs (26557349952, 26559612601). 22.04 reproduces the prior fast
+    # behavior; revisit once 24.04 settles.
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -36,13 +42,23 @@ jobs:
       - name: Run type check
         run: pnpm typecheck
 
+      # Cache the Playwright browser binary so we don't depend on whether
+      # the runner image happens to ship one. Key on pnpm-lock.yaml so a
+      # Playwright bump invalidates the cache automatically.
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install Playwright browsers
-        # Drop --with-deps: GH-hosted ubuntu-latest already ships with the
-        # Chromium system libraries. Keeping --with-deps triggered an apt-get
-        # install that hung indefinitely on 2026-05-28 (run 26557349952) after
-        # prior runs that took ~20s — most likely a runner-image dpkg lock
-        # change. If a future runner image strips the deps, Playwright fails
-        # loudly instead of hanging silently.
+        # Drop --with-deps: the runner already ships Chromium's system libs.
+        # timeout-minutes is the hard guard against the 30+ min hangs we hit
+        # on 2026-05-28 (runs 26557349952, 26559612601) before this PR; a
+        # legitimate install should finish in well under a minute.
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
         run: pnpm exec playwright install chromium
 
       - name: Run tests
