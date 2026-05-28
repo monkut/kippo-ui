@@ -20,13 +20,29 @@ type AddAssignmentModalProps = {
    * which (project, user, month) slot was clicked. The user picker remains
    * editable so the operator can re-target without canceling. */
   prefilledUserId?: string;
+  /** Display-only project + customer context. The new row's `project` FK is
+   * always `projectId`; these are read-only labels so the operator can confirm
+   * which project they're adding the assignment to (matters most on the
+   * cross-project matrix where the cell click is the only project signal). */
+  projectName?: string | null;
+  customerName?: string | null;
 };
 
 const DEFAULT_PERCENTAGE = 50;
 
 export function AddAssignmentModal(props: AddAssignmentModalProps) {
-  const { open, projectId, month, effortUsernames, isSaving, onClose, onSubmit, prefilledUserId } =
-    props;
+  const {
+    open,
+    projectId,
+    month,
+    effortUsernames,
+    isSaving,
+    onClose,
+    onSubmit,
+    prefilledUserId,
+    projectName,
+    customerName,
+  } = props;
   const { members, isLoadingMembers, fetchError } = useOrgMembers(open, projectId);
   const totals = useMonthlyTotalsByUser(open, month);
   const orderedMembers = useMemo(
@@ -53,6 +69,7 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
   return (
     <ModalShell title={`割当を追加 — ${formatMonth(month)}`} onClose={onClose}>
       {fetchError && <ErrorBanner message={fetchError} />}
+      <ReadOnlyContext projectName={projectName} customerName={customerName} />
       <Fields
         form={form}
         members={orderedMembers}
@@ -69,6 +86,30 @@ export function AddAssignmentModal(props: AddAssignmentModalProps) {
         submitLabel="追加"
       />
     </ModalShell>
+  );
+}
+
+function ReadOnlyContext({
+  projectName,
+  customerName,
+}: {
+  projectName?: string | null;
+  customerName?: string | null;
+}) {
+  if (!projectName && !customerName) return null;
+  return (
+    <div className="mb-4 space-y-1 text-sm text-gray-600">
+      {customerName && (
+        <div>
+          <span className="font-medium">顧客:</span> {customerName}
+        </div>
+      )}
+      {projectName && (
+        <div>
+          <span className="font-medium">プロジェクト:</span> {projectName}
+        </div>
+      )}
+    </div>
   );
 }
 
