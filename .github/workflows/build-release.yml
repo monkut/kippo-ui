@@ -37,7 +37,13 @@ jobs:
         run: pnpm typecheck
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        # Drop --with-deps: GH-hosted ubuntu-latest already ships with the
+        # Chromium system libraries. Keeping --with-deps triggered an apt-get
+        # install that hung indefinitely on 2026-05-28 (run 26557349952) after
+        # prior runs that took ~20s — most likely a runner-image dpkg lock
+        # change. If a future runner image strips the deps, Playwright fails
+        # loudly instead of hanging silently.
+        run: pnpm exec playwright install chromium
 
       - name: Run tests
         run: pnpm test
