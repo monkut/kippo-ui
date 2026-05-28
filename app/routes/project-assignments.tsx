@@ -8,6 +8,7 @@ import {
   MonthConfirmActions,
   MonthPicker,
   MonthlyAssignmentMatrix,
+  filterAssignmentsToVisibleProjects,
   firstOfMonth,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
@@ -45,6 +46,14 @@ export default function ProjectAssignmentsMonthly() {
   // a stale "today" can't leak through if the user leaves the tab open across
   // midnight. The dependency on `month` makes that intent explicit.
   const editableMonth = useMemo(() => isEditableMonth(month, new Date()), [month]);
+
+  // Scope MonthConfirmActions to projects the matrix actually renders. The
+  // matrix drops assignments for projects outside its window — without this
+  // filter, the button counts and bulk-flip set would include hidden rows.
+  const visibleAssignments = useMemo(
+    () => filterAssignmentsToVisibleProjects(assignments, projects),
+    [assignments, projects],
+  );
 
   // Look up the project by id when the AddAssignmentModal is open so the
   // user-picker can prioritize this project's weekly-effort members.
@@ -91,7 +100,7 @@ export default function ProjectAssignmentsMonthly() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
           <MonthConfirmActions
-            assignments={assignments}
+            assignments={visibleAssignments}
             isSaving={mutations.isSaving}
             onBulkSetConfirmed={mutations.bulkSetConfirmed}
           />

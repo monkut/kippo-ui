@@ -13,6 +13,7 @@ export {
   buildGrid,
   buildMonthlyMatrix,
   countAssignmentsByConfirmation,
+  filterAssignmentsToVisibleProjects,
   firstOfMonth,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildGrid,
   countAssignmentsByConfirmation,
+  filterAssignmentsToVisibleProjects,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
@@ -273,5 +274,39 @@ describe("countAssignmentsByConfirmation (kippo#23)", () => {
       makeAssignment({ id: 2, is_confirmed: true }),
     ];
     expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 0 });
+  });
+});
+
+describe("filterAssignmentsToVisibleProjects (kippo#23)", () => {
+  test("drops assignments whose project isn't in the visible set", () => {
+    const rows = [
+      makeAssignment({ id: 1, project: "proj-a" }),
+      makeAssignment({ id: 2, project: "proj-b" }),
+      makeAssignment({ id: 3, project: "proj-c" }),
+    ];
+    const visible = [{ id: "proj-a" }, { id: "proj-c" }];
+    const result = filterAssignmentsToVisibleProjects(rows, visible);
+    expect(result.map((a) => a.id)).toEqual([1, 3]);
+  });
+
+  test("empty visibleProjects drops everything (matches matrix's silent-skip)", () => {
+    const rows = [
+      makeAssignment({ id: 1, project: "proj-a" }),
+      makeAssignment({ id: 2, project: "proj-b" }),
+    ];
+    expect(filterAssignmentsToVisibleProjects(rows, [])).toEqual([]);
+  });
+
+  test("empty assignments returns empty", () => {
+    expect(filterAssignmentsToVisibleProjects([], [{ id: "proj-a" }])).toEqual([]);
+  });
+
+  test("keeps every row when all projects are visible", () => {
+    const rows = [
+      makeAssignment({ id: 1, project: "proj-a" }),
+      makeAssignment({ id: 2, project: "proj-b" }),
+    ];
+    const visible = [{ id: "proj-a" }, { id: "proj-b" }];
+    expect(filterAssignmentsToVisibleProjects(rows, visible)).toEqual(rows);
   });
 });
