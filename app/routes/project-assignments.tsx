@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Layout } from "~/components/layout";
 import {
   AddAssignmentModal,
+  CreateProjectModal,
   EditAssignmentModal,
   type MatrixCellClickArgs,
   MonthConfirmActions,
@@ -10,11 +11,12 @@ import {
   MonthlyAssignmentMatrix,
   filterAssignmentsToVisibleProjects,
   firstOfMonth,
+  isMonthConfirmed,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
 import { useProjectAssignmentMutations } from "~/hooks/useProjectAssignmentMutations";
-import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import type { KippoProjectRequest, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { useAuth } from "~/lib/auth-context";
 
 export function meta() {
@@ -41,6 +43,8 @@ export default function ProjectAssignmentsMonthly() {
   const mutations = useProjectAssignmentMutations(refresh, setMutationError);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
   const [addTarget, setAddTarget] = useState<AddTarget | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createdProjectName, setCreatedProjectName] = useState<string | null>(null);
 
   // `editableMonth` recomputes on every month change — and on first render — so
   // a stale "today" can't leak through if the user leaves the tab open across
@@ -54,6 +58,11 @@ export default function ProjectAssignmentsMonthly() {
     () => filterAssignmentsToVisibleProjects(assignments, projects),
     [assignments, projects],
   );
+
+  // The displayed month is "confirmed" once every visible assignment is confirmed
+  // (the この月を確定 state). While it's NOT confirmed the planner can still register
+  // a new project for the month (kippo#…). Empty months count as not-confirmed.
+  const monthConfirmed = useMemo(() => isMonthConfirmed(visibleAssignments), [visibleAssignments]);
 
   // Look up the project by id when the AddAssignmentModal is open so the
   // user-picker can prioritize this project's weekly-effort members.
@@ -81,9 +90,20 @@ export default function ProjectAssignmentsMonthly() {
     }
   };
 
+  const handleCreateProject = async (payload: KippoProjectRequest) => {
+    const ok = await mutations.createProject(payload);
+    if (ok) setCreatedProjectName(payload.name);
+    return ok;
+  };
+
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
   }, [user, authLoading, navigate]);
+
+  // Drop a stale "created" confirmation when the displayed month changes.
+  useEffect(() => {
+    setCreatedProjectName(null);
+  }, [month]);
 
   if (authLoading) {
     return (
@@ -106,12 +126,31 @@ export default function ProjectAssignmentsMonthly() {
         <MonthPicker month={month} onChange={setMonth} />
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
-          <MonthConfirmActions
-            assignments={visibleAssignments}
-            isSaving={mutations.isSaving}
-            onBulkSetConfirmed={mutations.bulkSetConfirmed}
-          />
+          <div className="flex items-center gap-2">
+            {!monthConfirmed && (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                disabled={mutations.isSaving}
+                className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 rounded-md hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="必須項目のみで新しいプロジェクトを作成"
+              >
+                ＋ 新規プロジェクト作成
+              </button>
+            )}
+            <MonthConfirmActions
+              assignments={visibleAssignments}
+              isSaving={mutations.isSaving}
+              onBulkSetConfirmed={mutations.bulkSetConfirmed}
+            />
+          </div>
         </div>
+        {createdProjectName && (
+          <div className="rounded-md bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
+            プロジェクト「{createdProjectName}
+            」を作成しました。開始日や割当を設定すると当月のマトリクスに表示されます。
+          </div>
+        )}
         {combinedError && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{combinedError}</div>
         )}
@@ -128,6 +167,12 @@ export default function ProjectAssignmentsMonthly() {
           />
         )}
       </div>
+      <CreateProjectModal
+        open={createOpen}
+        isSaving={mutations.isSaving}
+        onClose={() => setCreateOpen(false)}
+        onSubmit={handleCreateProject}
+      />
       <Modals
         addTarget={addTarget}
         addEffortUsernames={addEffortUsernames}

@@ -24,7 +24,7 @@ export interface PatchedKippoProjectRequest {
      * @maxLength 256
      */
   name?: string;
-  /** ProjectColumnSet to use if/when a related Github project is created through Kippo */
+  /** ProjectColumnSet for this project. Defaults to the organization's default columnset when omitted. */
   columnset?: string;
   /** State or phase of the project
 

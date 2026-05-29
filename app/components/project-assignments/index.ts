@@ -1,5 +1,6 @@
 export { AddAssignmentModal } from "./AddAssignmentModal";
 export { AssignmentsTable } from "./AssignmentsTable";
+export { CreateProjectModal } from "./CreateProjectModal";
 export { EditAssignmentModal } from "./EditAssignmentModal";
 export { ForecastBar } from "./ForecastBar";
 export { MonthConfirmActions } from "./MonthConfirmActions";
@@ -18,6 +19,7 @@ export {
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
+  isMonthConfirmed,
 } from "./utils";
 export type {
   CellState,

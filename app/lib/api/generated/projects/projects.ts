@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 import type {
+  AutoExtendResponse,
   GithubRepository,
   GithubRepositoryRequest,
   KippoProject,
@@ -682,6 +683,46 @@ export const projectsGithubRepositoriesDestroy = async (projectId: string,
   {
     ...options,
     method: 'DELETE'
+
+
+  }
+);}
+
+
+/**
+ * Manually trigger auto-create of future-month assignments for `project_id` (kippo#19).
+
+Body: empty.
+Response 200: ``{"created": [...rows...], "skip_reason": null | "<enum>"}``.
+
+Permission: organization-scoped — non-members get 403 (matches list/retrieve scoping).
+ */
+export type projectsMonthlyAssignmentsAutoExtendCreateResponse200 = {
+  data: AutoExtendResponse
+  status: 200
+}
+
+export type projectsMonthlyAssignmentsAutoExtendCreateResponseSuccess = (projectsMonthlyAssignmentsAutoExtendCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsMonthlyAssignmentsAutoExtendCreateResponse = (projectsMonthlyAssignmentsAutoExtendCreateResponseSuccess)
+
+export const getProjectsMonthlyAssignmentsAutoExtendCreateUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/monthly-assignments/auto-extend/`
+}
+
+export const projectsMonthlyAssignmentsAutoExtendCreate = async (projectId: string, options?: RequestInit): Promise<projectsMonthlyAssignmentsAutoExtendCreateResponse> => {
+
+  return customFetch<projectsMonthlyAssignmentsAutoExtendCreateResponse>(getProjectsMonthlyAssignmentsAutoExtendCreateUrl(projectId),
+  {
+    ...options,
+    method: 'POST'
 
 
   }
