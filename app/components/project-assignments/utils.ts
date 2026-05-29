@@ -94,6 +94,16 @@ export function countAssignmentsByConfirmation(assignments: ProjectMonthlyAssign
   return { confirmed, unconfirmed };
 }
 
+/** A month is "confirmed" (locked) once it has at least one assignment and every
+ * one of them is confirmed — the state produced by the page's この月を確定 action.
+ * Derived from per-row `is_confirmed`; there is no separate month-confirmation
+ * record. An empty month (no assignments yet) is treated as not-confirmed so the
+ * planner can still create projects for it. */
+export function isMonthConfirmed(assignments: ProjectMonthlyAssignment[]): boolean {
+  const { confirmed, unconfirmed } = countAssignmentsByConfirmation(assignments);
+  return confirmed > 0 && unconfirmed === 0;
+}
+
 export type CellState = {
   percentage: number;
   isConfirmed: boolean;

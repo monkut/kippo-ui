@@ -2630,6 +2630,35 @@ paths:
                 $ref: '#/components/schemas/_ErrorDetail'
           description: No such repository under this project (also when the repository
             exists but is linked to a different project).
+  /api/projects/{project_id}/monthly-assignments/auto-extend/:
+    post:
+      operationId: projects_monthly_assignments_auto_extend_create
+      description: |-
+        Manually trigger auto-create of future-month assignments for `project_id` (kippo#19).
+
+        Body: empty.
+        Response 200: ``{"created": [...rows...], "skip_reason": null | "<enum>"}``.
+
+        Permission: organization-scoped — non-members get 403 (matches list/retrieve scoping).
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoExtendResponse'
+          description: ''
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -6335,6 +6364,19 @@ components:
       - feedback
       - id
       - requirement
+    AutoExtendResponse:
+      type: object
+      properties:
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectMonthlyAssignment'
+        skip_reason:
+          type: string
+          nullable: true
+      required:
+      - created
+      - skip_reason
     BusinessRequirementEvaluation:
       type: object
       properties:
@@ -6778,9 +6820,8 @@ components:
         columnset:
           type: string
           format: uuid
-          title: カラムセット
-          description: ProjectColumnSet to use if/when a related Github project is
-            created through Kippo
+          description: ProjectColumnSet for this project. Defaults to the organization's
+            default columnset when omitted.
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'
@@ -6945,7 +6986,6 @@ components:
       - allocated_effort_hours
       - assignment_rates
       - closed_datetime
-      - columnset
       - created_datetime
       - customer_name
       - github_repositories
@@ -7008,9 +7048,8 @@ components:
         columnset:
           type: string
           format: uuid
-          title: カラムセット
-          description: ProjectColumnSet to use if/when a related Github project is
-            created through Kippo
+          description: ProjectColumnSet for this project. Defaults to the organization's
+            default columnset when omitted.
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'
@@ -7117,7 +7156,6 @@ components:
           title: アンケート発行済み
           description: Update when survey is issued!
       required:
-      - columnset
       - name
       - organization
     KippoProjectUserStatisfactionResult:
@@ -8005,9 +8043,8 @@ components:
         columnset:
           type: string
           format: uuid
-          title: カラムセット
-          description: ProjectColumnSet to use if/when a related Github project is
-            created through Kippo
+          description: ProjectColumnSet for this project. Defaults to the organization's
+            default columnset when omitted.
         phase:
           allOf:
           - $ref: '#/components/schemas/PhaseEnum'

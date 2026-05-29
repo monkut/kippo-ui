@@ -10,6 +10,7 @@ export * from './_errorDetail';
 export * from './assignmentRatesListParams';
 export * from './assumptionEvaluation';
 export * from './authMeRetrieve200';
+export * from './autoExtendResponse';
 export * from './businessRequirementEvaluation';
 export * from './currencyEnum';
 export * from './customersListParams';

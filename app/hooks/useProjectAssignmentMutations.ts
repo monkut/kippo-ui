@@ -5,9 +5,11 @@ import {
   monthlyAssignmentsPartialUpdate,
 } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import type {
+  KippoProjectRequest,
   PatchedProjectMonthlyAssignmentRequest,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
+import { projectsCreate } from "~/lib/api/generated/projects/projects";
 
 export type ProjectAssignmentMutations = {
   isSaving: boolean;
@@ -17,6 +19,9 @@ export type ProjectAssignmentMutations = {
   deleteAssignment: (id: number) => Promise<boolean>;
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
   bulkSetConfirmed: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
+  /** Create a KippoProject from its required fields (organization + name).
+   * `columnset` is resolved from the org's default columnset on the backend. */
+  createProject: (payload: KippoProjectRequest) => Promise<boolean>;
 };
 
 function useWrap(refresh: () => Promise<void>, setHookError: (err: string) => void) {
@@ -88,6 +93,12 @@ export function useProjectAssignmentMutations(
     [wrap],
   );
 
+  const createProject = useCallback(
+    (payload: KippoProjectRequest) =>
+      wrap(() => projectsCreate(payload), "プロジェクトの作成に失敗しました"),
+    [wrap],
+  );
+
   return {
     isSaving,
     setError: setHookError,
@@ -96,5 +107,6 @@ export function useProjectAssignmentMutations(
     deleteAssignment,
     bulkCreateAssignments,
     bulkSetConfirmed,
+    createProject,
   };
 }

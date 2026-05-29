@@ -6,6 +6,7 @@ import {
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
+  isMonthConfirmed,
 } from "~/components/project-assignments/utils";
 import type {
   ProjectAssignmentPattern,
@@ -274,6 +275,36 @@ describe("countAssignmentsByConfirmation (kippo#23)", () => {
       makeAssignment({ id: 2, is_confirmed: true }),
     ];
     expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 0 });
+  });
+});
+
+describe("isMonthConfirmed (gates 新規プロジェクト作成)", () => {
+  test("empty month is NOT confirmed", () => {
+    expect(isMonthConfirmed([])).toBe(false);
+  });
+
+  test("all assignments confirmed → confirmed", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: true }),
+      makeAssignment({ id: 2, is_confirmed: true }),
+    ];
+    expect(isMonthConfirmed(rows)).toBe(true);
+  });
+
+  test("any unconfirmed assignment → NOT confirmed", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: true }),
+      makeAssignment({ id: 2, is_confirmed: false }),
+    ];
+    expect(isMonthConfirmed(rows)).toBe(false);
+  });
+
+  test("all unconfirmed → NOT confirmed", () => {
+    const rows = [
+      makeAssignment({ id: 1, is_confirmed: false }),
+      makeAssignment({ id: 2, is_confirmed: false }),
+    ];
+    expect(isMonthConfirmed(rows)).toBe(false);
   });
 });
 
