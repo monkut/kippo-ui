@@ -292,7 +292,7 @@ function ProjectRow({
         {typeof row.rowEffortDays === "number" ? (
           <a
             href={`${urlPrefix}/projects/project/${row.project.id}/status/`}
-            title="プロジェクトステータスを開く"
+            title={`${cellTitle}\nクリックでプロジェクトステータスを開く`}
             className="text-indigo-600 hover:text-indigo-500 hover:underline"
           >
             {formatRowMonthlyTotal(
