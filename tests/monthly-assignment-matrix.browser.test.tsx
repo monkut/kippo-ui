@@ -184,3 +184,49 @@ describe("MonthlyAssignmentMatrix — #21 F5: hideUnassigned filter", () => {
     expect(memberHeaderNames()).toEqual(["Alice", "Bob", "Carol"]);
   });
 });
+
+describe("MonthlyAssignmentMatrix — 月合計 (人日) breakdown tooltip on the value", () => {
+  let container: HTMLDivElement;
+  let root: ReturnType<typeof createRoot>;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    root.unmount();
+    container.remove();
+  });
+
+  // Regression: the staff-days breakdown must live on the hovered value (the
+  // status-view link), not only on the <td>. Otherwise the link's own title
+  // shadows it and the breakdown never surfaces on mouse-over.
+  test("the 月合計 link's title carries the staff-days breakdown + the click hint", async () => {
+    const project = makeProject({
+      allocated_staff_days: 14,
+      // current_effort_hours(80) * allocated_staff_days(14) / allocated_effort_hours(112) = 10 spent
+      allocated_effort_hours: 112,
+      projectstatus_display: { current_effort_hours: 80 },
+    } as unknown as Partial<KippoProject>);
+
+    renderMatrix(root, {
+      projects: [project],
+      // 50% of a 20-day month = 10 person-days → "Monthly Staff Days: 10"
+      assignments: [makeAssignment({ user: "u-1", percentage: 50, is_confirmed: true })],
+      members: [makeMember({ user_id: "u-1", display_name: "Alice", available_work_days: 20 })],
+    });
+
+    const link = await waitFor(() =>
+      container.querySelector<HTMLAnchorElement>('a[href*="/status/"]'),
+    );
+    expect(link).not.toBeNull();
+    const title = link?.getAttribute("title") ?? "";
+    expect(title).toContain("Monthly Staff Days: 10");
+    expect(title).toContain("Total Project Staff Days: 14");
+    expect(title).toContain("Spent Project Staff Days: 10");
+    // still tells the user the value is clickable
+    expect(title).toContain("プロジェクトステータス");
+  });
+});
