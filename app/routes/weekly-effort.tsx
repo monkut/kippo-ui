@@ -33,6 +33,7 @@ export default function WeeklyEffort() {
     monthlyAssignments,
     targetMonth,
     monthHoursByProject,
+    monthEffortProjects,
     expectedHours,
     missingWeeks,
     weekPersonalHolidays,
@@ -98,6 +99,14 @@ export default function WeeklyEffort() {
     () => selectedWeekEntries.map((e) => e.project),
     [selectedWeekEntries],
   );
+
+  // Projects the user has effort on elsewhere in the target month but not in the
+  // displayed week — surfaced in 登録済みの入力 with a "-" effort so the list reflects
+  // the full monthly cumulative set of projects.
+  const monthOnlyProjects = useMemo(() => {
+    const weekProjectIds = new Set(selectedWeekEntries.map((e) => e.project));
+    return monthEffortProjects.filter((p) => !weekProjectIds.has(p.project));
+  }, [monthEffortProjects, selectedWeekEntries]);
 
   if (authLoading) {
     return (
@@ -194,6 +203,7 @@ export default function WeeklyEffort() {
             {hasExistingEntries && (
               <ExistingEntriesList
                 selectedWeekEntries={selectedWeekEntries}
+                monthOnlyProjects={monthOnlyProjects}
                 weekStart={weekStart}
                 isSubmitting={isSubmitting}
                 onUpdateHours={handleUpdateHours}

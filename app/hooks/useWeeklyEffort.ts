@@ -71,6 +71,8 @@ export type UseWeeklyEffortReturn = {
   targetMonth: string;
   /** Cumulative saved effort hours for the target month, keyed by project id. */
   monthHoursByProject: Record<string, number>;
+  /** Distinct projects the user logged any effort on in the target month (id + name). */
+  monthEffortProjects: { project: string; project_name: string }[];
   expectedHours: number | null;
   missingWeeks: string[];
   weekPersonalHolidays: PersonalHoliday[];
@@ -451,6 +453,14 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     return totals;
   }, [monthUserEntries]);
 
+  const monthEffortProjects = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const entry of monthUserEntries) {
+      if (!names.has(entry.project)) names.set(entry.project, entry.project_name);
+    }
+    return Array.from(names, ([project, project_name]) => ({ project, project_name }));
+  }, [monthUserEntries]);
+
   const refreshAfterHolidayChange = useCallback(
     async (currentWeekStart: string) => {
       await Promise.all([
@@ -472,6 +482,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     monthlyAssignments,
     targetMonth,
     monthHoursByProject,
+    monthEffortProjects,
     expectedHours,
     missingWeeks,
     weekPersonalHolidays,
