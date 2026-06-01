@@ -7,6 +7,8 @@ type ExistingEntriesListProps = {
   selectedWeekEntries: ProjectWeeklyEffort[];
   /** Projects with effort elsewhere this month but no entry in the displayed week; shown with a "-" effort. */
   monthOnlyProjects?: { project: string; project_name: string }[];
+  /** Cumulative saved effort hours for the target month, keyed by project id. */
+  monthHoursByProject?: Record<string, number>;
   weekStart: string;
   isSubmitting: boolean;
   onUpdateHours: (entryId: number, hours: number) => Promise<boolean> | void;
@@ -19,6 +21,7 @@ type ExistingEntriesListProps = {
 function ExistingEntriesListImpl({
   selectedWeekEntries,
   monthOnlyProjects = [],
+  monthHoursByProject = {},
   weekStart,
   isSubmitting,
   onUpdateHours,
@@ -37,6 +40,21 @@ function ExistingEntriesListImpl({
   const [isSubmittingInlineHoliday, setIsSubmittingInlineHoliday] = useState(false);
 
   const selectedWeekTotalHours = selectedWeekEntries.reduce((sum, e) => sum + e.hours, 0);
+  const monthTotalHours = Object.values(monthHoursByProject).reduce((sum, h) => sum + h, 0);
+
+  const weeklyPercent = (hours: number) =>
+    selectedWeekTotalHours > 0 ? Math.round((hours / selectedWeekTotalHours) * 100) : 0;
+  const cumulativePercent = (projectId: string) =>
+    monthTotalHours > 0
+      ? Math.round(((monthHoursByProject[projectId] || 0) / monthTotalHours) * 100)
+      : 0;
+  // Tooltip showing both the week's value and the month cumulative for a project.
+  const effortTooltip = (projectId: string, weekHours: number | null) => {
+    const weekPart =
+      weekHours === null ? "Weekly: —" : `Weekly: ${weekHours}h (${weeklyPercent(weekHours)}%)`;
+    const monthHours = monthHoursByProject[projectId] || 0;
+    return `${weekPart} · Cumulative monthly: ${monthHours}h (${cumulativePercent(projectId)}%)`;
+  };
 
   const startEditEntry = (entry: ProjectWeeklyEffort) => {
     setEditingEntryId(entry.id);
@@ -163,16 +181,13 @@ function ExistingEntriesListImpl({
 
       <div className="space-y-2">
         {selectedWeekEntries.map((entry) => {
-          const percentage =
-            selectedWeekTotalHours > 0
-              ? Math.round((entry.hours / selectedWeekTotalHours) * 100)
-              : 0;
           const isEditing = editingEntryId === entry.id;
 
           return (
             <div
               key={entry.id}
               className="group grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded cursor-pointer"
+              title={effortTooltip(entry.project, entry.hours)}
               onClick={() => !isEditing && !isSubmitting && startEditEntry(entry)}
             >
               <span className="text-gray-700 min-w-0 truncate">{entry.project_name}</span>
@@ -275,7 +290,7 @@ function ExistingEntriesListImpl({
                   </span>
                   <span className="text-gray-900 font-medium text-sm">時間</span>
                   <span className="text-right text-gray-500 text-sm tabular-nums">
-                    ({percentage}%)
+                    ({cumulativePercent(entry.project)}%)
                   </span>
                   <svg
                     className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end"
@@ -301,12 +316,14 @@ function ExistingEntriesListImpl({
           <div
             key={p.project}
             className="grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 opacity-60"
-            title="今月の累計には含まれますが、この週の入力はありません"
+            title={effortTooltip(p.project, null)}
           >
             <span className="text-gray-400 min-w-0 truncate">{p.project_name}</span>
             <span className="text-right text-gray-400 font-medium tabular-nums pr-2">-</span>
             <span className="text-gray-400 text-sm">時間</span>
-            <span />
+            <span className="text-right text-gray-400 text-sm tabular-nums">
+              ({cumulativePercent(p.project)}%)
+            </span>
             <span />
           </div>
         ))}

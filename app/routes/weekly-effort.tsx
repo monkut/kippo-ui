@@ -204,6 +204,7 @@ export default function WeeklyEffort() {
               <ExistingEntriesList
                 selectedWeekEntries={selectedWeekEntries}
                 monthOnlyProjects={monthOnlyProjects}
+                monthHoursByProject={monthHoursByProject}
                 weekStart={weekStart}
                 isSubmitting={isSubmitting}
                 onUpdateHours={handleUpdateHours}
