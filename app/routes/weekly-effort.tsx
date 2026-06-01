@@ -93,6 +93,12 @@ export default function WeeklyEffort() {
     refreshAfterHolidayChange(weekStart);
   }, [refreshAfterHolidayChange, weekStart]);
 
+  // Must run before the early returns below — hooks cannot be conditional (React #310).
+  const savedWeekProjectIds = useMemo(
+    () => selectedWeekEntries.map((e) => e.project),
+    [selectedWeekEntries],
+  );
+
   if (authLoading) {
     return (
       <Layout title="KIPPO プロジェクト週間稼働量">
@@ -106,10 +112,6 @@ export default function WeeklyEffort() {
   }
 
   const hasExistingEntries = selectedWeekEntries.length > 0;
-  const savedWeekProjectIds = useMemo(
-    () => selectedWeekEntries.map((e) => e.project),
-    [selectedWeekEntries],
-  );
 
   return (
     <Layout title="KIPPO プロジェクト週間稼働量">
