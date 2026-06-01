@@ -140,7 +140,7 @@ function WeeklyEffortFormImpl({
             <span className="block text-xs font-medium text-gray-500 mb-1">今月割合</span>
             <div
               className="text-sm font-semibold text-indigo-600 py-2"
-              title="今月の累計稼働に占める割合"
+              title="Cumulative Monthly Project Effort Percentage"
             >
               {entry.projectId && percentByProject[entry.projectId] !== undefined
                 ? `${percentByProject[entry.projectId]}%`
