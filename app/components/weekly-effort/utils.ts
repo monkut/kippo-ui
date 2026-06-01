@@ -53,6 +53,37 @@ export function twoWeekWindow(weekStart: string): { gte: string; lte: string } {
   return { gte: formatDateStr(gte), lte: formatDateStr(lte) };
 }
 
+/**
+ * Live per-project share of the TARGET month's cumulative effort.
+ *
+ * Combines the saved month hours with the current (unsaved) form entries so the
+ * percentage updates as the user types. Form entries whose project is already
+ * saved in the selected week are skipped: those hours are already included in
+ * `monthHoursByProject`, and re-entering such a project is a duplicate the
+ * submit path rejects — adding it here would double-count the week.
+ */
+export function computeMonthEffortPercents(
+  monthHoursByProject: Record<string, number>,
+  formEntries: ReadonlyArray<{ projectId: string; hours: number }>,
+  savedWeekProjectIds: Iterable<string> = [],
+): { percentByProject: Record<string, number>; monthTotalHours: number } {
+  const savedThisWeek = new Set(savedWeekProjectIds);
+  const live: Record<string, number> = { ...monthHoursByProject };
+  for (const entry of formEntries) {
+    if (entry.projectId && !savedThisWeek.has(entry.projectId)) {
+      live[entry.projectId] = (live[entry.projectId] || 0) + entry.hours;
+    }
+  }
+  const monthTotalHours = Object.values(live).reduce((sum, h) => sum + h, 0);
+  const percentByProject: Record<string, number> = {};
+  if (monthTotalHours > 0) {
+    for (const [projectId, hours] of Object.entries(live)) {
+      percentByProject[projectId] = Math.round((hours / monthTotalHours) * 100);
+    }
+  }
+  return { percentByProject, monthTotalHours };
+}
+
 export function isProjectOpenForWeek(
   project: KippoProject | undefined,
   weekStart: string,

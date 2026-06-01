@@ -1,7 +1,7 @@
 import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
 import type { FormEntry } from "./types";
-import { isProjectOpenForWeek, normalizeDigits } from "./utils";
+import { computeMonthEffortPercents, isProjectOpenForWeek, normalizeDigits } from "./utils";
 
 type WeeklyEffortFormProps = {
   entries: FormEntry[];
@@ -11,6 +11,8 @@ type WeeklyEffortFormProps = {
   onWeekStartChange?: (weekStart: string) => void;
   /** Saved cumulative effort hours for the target month, keyed by project id. */
   monthHoursByProject: Record<string, number>;
+  /** Project ids already saved for the selected week (excluded from the live sum to avoid double-counting). */
+  savedWeekProjectIds: string[];
   expectedHours: number | null;
   isSubmitting: boolean;
   onSubmit: () => void;
@@ -26,6 +28,7 @@ function WeeklyEffortFormImpl({
   weekStart,
   onWeekStartChange,
   monthHoursByProject,
+  savedWeekProjectIds,
   expectedHours,
   isSubmitting,
   onSubmit,
@@ -50,20 +53,10 @@ function WeeklyEffortFormImpl({
   // Live target-month cumulative effort: saved month hours plus the current (unsaved)
   // form entries. Each project's share of the month total drives the auto-calculated %
   // shown per row, directly comparable to the planned 今月の割当 percentages.
-  const { percentByProject, monthTotalHours } = useMemo(() => {
-    const live: Record<string, number> = { ...monthHoursByProject };
-    for (const e of entries) {
-      if (e.projectId) live[e.projectId] = (live[e.projectId] || 0) + e.hours;
-    }
-    const total = Object.values(live).reduce((sum, h) => sum + h, 0);
-    const percents: Record<string, number> = {};
-    if (total > 0) {
-      for (const [pid, hours] of Object.entries(live)) {
-        percents[pid] = Math.round((hours / total) * 100);
-      }
-    }
-    return { percentByProject: percents, monthTotalHours: total };
-  }, [monthHoursByProject, entries]);
+  const { percentByProject, monthTotalHours } = useMemo(
+    () => computeMonthEffortPercents(monthHoursByProject, entries, savedWeekProjectIds),
+    [monthHoursByProject, entries, savedWeekProjectIds],
+  );
 
   const updateEntry = (id: number, field: keyof FormEntry, value: string | number) => {
     onEntriesChange(

@@ -103,11 +103,18 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
   const [monthPublicHolidays, setMonthPublicHolidays] = useState<PublicHoliday[]>([]);
   const [isLoadingMonthHolidays, setIsLoadingMonthHolidays] = useState(false);
   const lastFetchedMonthRef = useRef<string | null>(null);
+  // Month (YYYY-MM) whose monthly data was last applied, and a monotonic request id.
+  // Tracked separately from holidays so an assignment/effort refresh never depends on
+  // the holiday fetch succeeding, and so a slow earlier-month response cannot overwrite
+  // a newer one (last request wins).
+  const lastFetchedAssignmentMonthRef = useRef<string | null>(null);
+  const monthlyRequestSeqRef = useRef(0);
 
   // Monthly assignments + cumulative weekly effort for the TARGET month (the month of
   // the selected week), so both the "今月の割当" panel and the input auto-calc follow
   // the week being entered rather than the wall-clock month.
   const fetchMonthlyData = useCallback(async (weekStartDate: string, username?: string) => {
+    const requestId = ++monthlyRequestSeqRef.current;
     const monthStart = getMonthStart(weekStartDate);
     const { dayGte, dayLte } = monthDateRange(weekStartDate);
     try {
@@ -119,6 +126,9 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
           week_start_lte: dayLte,
         }),
       ]);
+      // A newer request superseded this one (e.g. fast month navigation) — drop the
+      // stale result so it cannot clobber the current month's data.
+      if (requestId !== monthlyRequestSeqRef.current) return;
       if (assignmentsRes.data?.results) {
         const userAssignments = assignmentsRes.data.results
           .filter((a) => a.user_username === username)
@@ -126,6 +136,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         setMonthlyAssignments(userAssignments);
       }
       setMonthUserEntries(monthEffortRes.data?.results || []);
+      lastFetchedAssignmentMonthRef.current = weekStartDate.substring(0, 7);
     } catch {
       // Keep previously loaded monthly data on failure
     }
@@ -246,8 +257,11 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
 
     const updateWeekData = async () => {
       fetchExpectedHours(weekStart);
-      if (lastFetchedMonthRef.current !== weekStart.substring(0, 7)) {
+      const weekMonth = weekStart.substring(0, 7);
+      if (lastFetchedMonthRef.current !== weekMonth) {
         fetchMonthHolidays(weekStart);
+      }
+      if (lastFetchedAssignmentMonthRef.current !== weekMonth) {
         fetchMonthlyData(weekStart, user?.username);
       }
 
