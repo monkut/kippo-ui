@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
@@ -31,6 +31,8 @@ export default function WeeklyEffort() {
     projects,
     selectedWeekEntries,
     monthlyAssignments,
+    targetMonth,
+    monthHoursByProject,
     expectedHours,
     missingWeeks,
     weekPersonalHolidays,
@@ -104,6 +106,10 @@ export default function WeeklyEffort() {
   }
 
   const hasExistingEntries = selectedWeekEntries.length > 0;
+  const savedWeekProjectIds = useMemo(
+    () => selectedWeekEntries.map((e) => e.project),
+    [selectedWeekEntries],
+  );
 
   return (
     <Layout title="KIPPO プロジェクト週間稼働量">
@@ -177,7 +183,11 @@ export default function WeeklyEffort() {
             </div>
 
             <MissingWeeksPanel missingWeeks={missingWeeks} onWeekSelect={setWeekStart} />
-            <MonthlyAssignmentsPanel monthlyAssignments={monthlyAssignments} />
+            <MonthlyAssignmentsPanel
+              monthlyAssignments={monthlyAssignments}
+              monthHoursByProject={monthHoursByProject}
+              targetMonth={targetMonth}
+            />
 
             {hasExistingEntries && (
               <ExistingEntriesList
@@ -195,6 +205,8 @@ export default function WeeklyEffort() {
                   onEntriesChange={setEntries}
                   projects={projects}
                   weekStart={weekStart}
+                  monthHoursByProject={monthHoursByProject}
+                  savedWeekProjectIds={savedWeekProjectIds}
                   expectedHours={expectedHours}
                   isSubmitting={isSubmitting}
                   onSubmit={handleSubmit}
@@ -211,6 +223,8 @@ export default function WeeklyEffort() {
                 projects={projects}
                 weekStart={weekStart}
                 onWeekStartChange={setWeekStart}
+                monthHoursByProject={monthHoursByProject}
+                savedWeekProjectIds={savedWeekProjectIds}
                 expectedHours={expectedHours}
                 isSubmitting={isSubmitting}
                 onSubmit={handleSubmit}

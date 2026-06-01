@@ -1,7 +1,7 @@
 import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
 import type { FormEntry } from "./types";
-import { isProjectOpenForWeek, normalizeDigits } from "./utils";
+import { computeMonthEffortPercents, isProjectOpenForWeek, normalizeDigits } from "./utils";
 
 type WeeklyEffortFormProps = {
   entries: FormEntry[];
@@ -9,6 +9,10 @@ type WeeklyEffortFormProps = {
   projects: KippoProject[];
   weekStart: string;
   onWeekStartChange?: (weekStart: string) => void;
+  /** Saved cumulative effort hours for the target month, keyed by project id. */
+  monthHoursByProject: Record<string, number>;
+  /** Project ids already saved for the selected week (excluded from the live sum to avoid double-counting). */
+  savedWeekProjectIds: string[];
   expectedHours: number | null;
   isSubmitting: boolean;
   onSubmit: () => void;
@@ -23,6 +27,8 @@ function WeeklyEffortFormImpl({
   projects,
   weekStart,
   onWeekStartChange,
+  monthHoursByProject,
+  savedWeekProjectIds,
   expectedHours,
   isSubmitting,
   onSubmit,
@@ -43,6 +49,14 @@ function WeeklyEffortFormImpl({
   );
 
   const formTotalHours = useMemo(() => entries.reduce((sum, e) => sum + e.hours, 0), [entries]);
+
+  // Live target-month cumulative effort: saved month hours plus the current (unsaved)
+  // form entries. Each project's share of the month total drives the auto-calculated %
+  // shown per row, directly comparable to the planned 今月の割当 percentages.
+  const { percentByProject, monthTotalHours } = useMemo(
+    () => computeMonthEffortPercents(monthHoursByProject, entries, savedWeekProjectIds),
+    [monthHoursByProject, entries, savedWeekProjectIds],
+  );
 
   const updateEntry = (id: number, field: keyof FormEntry, value: string | number) => {
     onEntriesChange(
@@ -121,6 +135,17 @@ function WeeklyEffortFormImpl({
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
               disabled={isSubmitting}
             />
+          </div>
+          <div className="w-14 text-right">
+            <span className="block text-xs font-medium text-gray-500 mb-1">今月割合</span>
+            <div
+              className="text-sm font-semibold text-indigo-600 py-2"
+              title="今月の累計稼働に占める割合"
+            >
+              {entry.projectId && percentByProject[entry.projectId] !== undefined
+                ? `${percentByProject[entry.projectId]}%`
+                : "—"}
+            </div>
           </div>
           {entries.length > 1 && (
             <button
@@ -208,6 +233,13 @@ function WeeklyEffortFormImpl({
             )}
           </span>
         </div>
+
+        {monthTotalHours > 0 && (
+          <div className="flex justify-between items-center text-xs text-gray-500">
+            <span>今月の累計稼働 (割合の基準)</span>
+            <span className="font-medium text-gray-700">{monthTotalHours} 時間</span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3">
           <button

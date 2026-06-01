@@ -20,16 +20,17 @@ export function getPreviousWeekStartDate(): string {
   return formatDateStr(lastWeek);
 }
 
-export function getCurrentMonthStart(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
 // Format a Date as YYYY-MM-DD using local-time components.
 // `toISOString()` would return the UTC date, which is one day earlier than
 // the local date for any time before 09:00 in JST (UTC+9) — see issue #52.
 export function formatDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** First day (YYYY-MM-DD) of the month containing `dateStr`. */
+export function getMonthStart(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export function monthDateRange(dateStr: string): { dayGte: string; dayLte: string } {
@@ -50,6 +51,37 @@ export function twoWeekWindow(weekStart: string): { gte: string; lte: string } {
   const lte = new Date(d);
   lte.setDate(lte.getDate() + 6);
   return { gte: formatDateStr(gte), lte: formatDateStr(lte) };
+}
+
+/**
+ * Live per-project share of the TARGET month's cumulative effort.
+ *
+ * Combines the saved month hours with the current (unsaved) form entries so the
+ * percentage updates as the user types. Form entries whose project is already
+ * saved in the selected week are skipped: those hours are already included in
+ * `monthHoursByProject`, and re-entering such a project is a duplicate the
+ * submit path rejects — adding it here would double-count the week.
+ */
+export function computeMonthEffortPercents(
+  monthHoursByProject: Record<string, number>,
+  formEntries: ReadonlyArray<{ projectId: string; hours: number }>,
+  savedWeekProjectIds: Iterable<string> = [],
+): { percentByProject: Record<string, number>; monthTotalHours: number } {
+  const savedThisWeek = new Set(savedWeekProjectIds);
+  const live: Record<string, number> = { ...monthHoursByProject };
+  for (const entry of formEntries) {
+    if (entry.projectId && !savedThisWeek.has(entry.projectId)) {
+      live[entry.projectId] = (live[entry.projectId] || 0) + entry.hours;
+    }
+  }
+  const monthTotalHours = Object.values(live).reduce((sum, h) => sum + h, 0);
+  const percentByProject: Record<string, number> = {};
+  if (monthTotalHours > 0) {
+    for (const [projectId, hours] of Object.entries(live)) {
+      percentByProject[projectId] = Math.round((hours / monthTotalHours) * 100);
+    }
+  }
+  return { percentByProject, monthTotalHours };
 }
 
 export function isProjectOpenForWeek(
