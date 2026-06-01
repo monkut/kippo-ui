@@ -42,7 +42,10 @@ function MonthlyAssignmentsPanelImpl({
               <span className="text-gray-700">{assignment.project_name}</span>
               <span className="flex items-baseline gap-3 tabular-nums">
                 {actualPercent !== null && (
-                  <span className="text-xs text-gray-500" title="今月の累計稼働実績に占める割合">
+                  <span
+                    className="text-xs text-gray-500"
+                    title="Cumulative Monthly Project Effort Percentage"
+                  >
                     実績 {actualPercent}%
                   </span>
                 )}
