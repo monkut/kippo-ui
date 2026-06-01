@@ -1,5 +1,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { formatDateStr, getPreviousWeekStartDate } from "~/components/weekly-effort/utils";
+import {
+  formatDateStr,
+  getMonthStart,
+  getPreviousWeekStartDate,
+} from "~/components/weekly-effort/utils";
 
 // Regression tests for issue #52 — JST/UTC date handling. The unit project in
 // vitest.config.ts pins TZ=Asia/Tokyo so these assertions are reproducible.
@@ -15,6 +19,19 @@ describe("weekly-effort utils — JST date handling", () => {
     test("returns local-date components, not the UTC date", () => {
       const mondayMidnightJst = new Date(2026, 3, 20, 0, 0, 0);
       expect(formatDateStr(mondayMidnightJst)).toBe("2026-04-20");
+    });
+  });
+
+  describe("getMonthStart", () => {
+    test.each([
+      ["mid-month", "2026-06-15", "2026-06-01"],
+      ["first day", "2026-06-01", "2026-06-01"],
+      ["last day", "2026-06-30", "2026-06-01"],
+      // A Monday week_start late in a month resolves to that month, not the next.
+      ["late-month Monday", "2026-06-29", "2026-06-01"],
+      ["January boundary", "2026-01-05", "2026-01-01"],
+    ])("returns the first of the month for %s", (_label, input, expected) => {
+      expect(getMonthStart(input)).toBe(expected);
     });
   });
 

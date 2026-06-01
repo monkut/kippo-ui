@@ -24,7 +24,7 @@ import type { FormEntry } from "~/components/weekly-effort/types";
 import {
   createEmptyEntry,
   formatDateStr,
-  getCurrentMonthStart,
+  getMonthStart,
   isProjectOpenForWeek,
   monthDateRange,
   twoWeekWindow,
@@ -67,6 +67,10 @@ export type UseWeeklyEffortReturn = {
   recentUserEntries: ProjectWeeklyEffort[];
   selectedWeekEntries: ProjectWeeklyEffort[];
   monthlyAssignments: ProjectMonthlyAssignment[];
+  /** Target month (YYYY-MM-DD, first day) the assignments / cumulative effort reflect. */
+  targetMonth: string;
+  /** Cumulative saved effort hours for the target month, keyed by project id. */
+  monthHoursByProject: Record<string, number>;
   expectedHours: number | null;
   missingWeeks: string[];
   weekPersonalHolidays: PersonalHoliday[];
@@ -89,6 +93,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
   const [expectedHours, setExpectedHours] = useState<number | null>(null);
   const [missingWeeks, setMissingWeeks] = useState<string[]>([]);
   const [monthlyAssignments, setMonthlyAssignments] = useState<ProjectMonthlyAssignment[]>([]);
+  const [monthUserEntries, setMonthUserEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [recentUserEntries, setRecentUserEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [selectedWeekEntries, setSelectedWeekEntries] = useState<ProjectWeeklyEffort[]>([]);
   const [projects, setProjects] = useState<KippoProject[]>([]);
@@ -98,6 +103,33 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
   const [monthPublicHolidays, setMonthPublicHolidays] = useState<PublicHoliday[]>([]);
   const [isLoadingMonthHolidays, setIsLoadingMonthHolidays] = useState(false);
   const lastFetchedMonthRef = useRef<string | null>(null);
+
+  // Monthly assignments + cumulative weekly effort for the TARGET month (the month of
+  // the selected week), so both the "今月の割当" panel and the input auto-calc follow
+  // the week being entered rather than the wall-clock month.
+  const fetchMonthlyData = useCallback(async (weekStartDate: string, username?: string) => {
+    const monthStart = getMonthStart(weekStartDate);
+    const { dayGte, dayLte } = monthDateRange(weekStartDate);
+    try {
+      const [assignmentsRes, monthEffortRes] = await Promise.all([
+        monthlyAssignmentsList({ month: monthStart }),
+        projectsWeeklyeffortList({
+          user_username: username,
+          week_start_gte: dayGte,
+          week_start_lte: dayLte,
+        }),
+      ]);
+      if (assignmentsRes.data?.results) {
+        const userAssignments = assignmentsRes.data.results
+          .filter((a) => a.user_username === username)
+          .sort((a, b) => b.percentage - a.percentage);
+        setMonthlyAssignments(userAssignments);
+      }
+      setMonthUserEntries(monthEffortRes.data?.results || []);
+    } catch {
+      // Keep previously loaded monthly data on failure
+    }
+  }, []);
 
   const fetchExpectedHours = useCallback(async (weekStartDate: string) => {
     try {
@@ -156,7 +188,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
 
       try {
         const initialWindow = twoWeekWindow(weekStart);
-        const [allProjects, weeklyEffortRes, assignmentsRes, missingWeeksRes, expectedHoursRes] =
+        const [allProjects, weeklyEffortRes, , missingWeeksRes, expectedHoursRes] =
           await Promise.all([
             fetchAllProjects(),
             projectsWeeklyeffortList({
@@ -164,7 +196,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
               week_start_gte: initialWindow.gte,
               week_start_lte: initialWindow.lte,
             }),
-            monthlyAssignmentsList({ month: getCurrentMonthStart() }),
+            fetchMonthlyData(weekStart, user.username),
             weeklyEffortMissingWeeksRetrieve().catch(() => null),
             weeklyEffortExpectedHoursRetrieve({ week_start: weekStart }).catch(() => null),
             fetchMonthHolidays(weekStart),
@@ -198,13 +230,6 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
             );
           }
         }
-
-        if (assignmentsRes.data?.results) {
-          const userAssignments = assignmentsRes.data.results
-            .filter((a) => a.user_username === user.username)
-            .sort((a, b) => b.percentage - a.percentage);
-          setMonthlyAssignments(userAssignments);
-        }
       } catch {
         setError("データの取得に失敗しました");
       } finally {
@@ -223,6 +248,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
       fetchExpectedHours(weekStart);
       if (lastFetchedMonthRef.current !== weekStart.substring(0, 7)) {
         fetchMonthHolidays(weekStart);
+        fetchMonthlyData(weekStart, user?.username);
       }
 
       const window = twoWeekWindow(weekStart);
@@ -259,7 +285,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     // `projects` intentionally omitted: including it causes a duplicate-fetch cascade on initial mount (#44).
     // `projects` is set exactly once by Effect 1; the runtime early return above still gates first invocation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart, fetchExpectedHours, fetchMonthHolidays, user]);
+  }, [weekStart, fetchExpectedHours, fetchMonthHolidays, fetchMonthlyData, user]);
 
   const createEntries = useCallback(
     async (entries: FormEntry[], currentWeekStart: string): Promise<boolean> => {
@@ -320,6 +346,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
 
+        void fetchMonthlyData(currentWeekStart, user?.username);
         setTemplateEntries([createEmptyEntry()]);
         return true;
       } catch {
@@ -329,7 +356,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         setIsSubmitting(false);
       }
     },
-    [user, selectedWeekEntries],
+    [user, selectedWeekEntries, fetchMonthlyData],
   );
 
   const updateEntryHours = useCallback(
@@ -350,6 +377,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
           setRecentUserEntries(userEntries);
           setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
         }
+        void fetchMonthlyData(currentWeekStart, user?.username);
         return true;
       } catch {
         setError("更新に失敗しました");
@@ -358,7 +386,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         setIsSubmitting(false);
       }
     },
-    [user],
+    [user, fetchMonthlyData],
   );
 
   const deleteEntry = useCallback(
@@ -387,6 +415,7 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
+        void fetchMonthlyData(currentWeekStart, user?.username);
         return true;
       } catch {
         setError("削除に失敗しました");
@@ -395,8 +424,18 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
         setIsSubmitting(false);
       }
     },
-    [user],
+    [user, fetchMonthlyData],
   );
+
+  const targetMonth = useMemo(() => getMonthStart(weekStart), [weekStart]);
+
+  const monthHoursByProject = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const entry of monthUserEntries) {
+      totals[entry.project] = (totals[entry.project] || 0) + entry.hours;
+    }
+    return totals;
+  }, [monthUserEntries]);
 
   const refreshAfterHolidayChange = useCallback(
     async (currentWeekStart: string) => {
@@ -417,6 +456,8 @@ export function useWeeklyEffort(user: AuthUser | null, weekStart: string): UseWe
     recentUserEntries,
     selectedWeekEntries,
     monthlyAssignments,
+    targetMonth,
+    monthHoursByProject,
     expectedHours,
     missingWeeks,
     weekPersonalHolidays,

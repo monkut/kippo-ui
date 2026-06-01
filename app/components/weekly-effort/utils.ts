@@ -20,16 +20,17 @@ export function getPreviousWeekStartDate(): string {
   return formatDateStr(lastWeek);
 }
 
-export function getCurrentMonthStart(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
 // Format a Date as YYYY-MM-DD using local-time components.
 // `toISOString()` would return the UTC date, which is one day earlier than
 // the local date for any time before 09:00 in JST (UTC+9) — see issue #52.
 export function formatDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** First day (YYYY-MM-DD) of the month containing `dateStr`. */
+export function getMonthStart(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export function monthDateRange(dateStr: string): { dayGte: string; dayLte: string } {

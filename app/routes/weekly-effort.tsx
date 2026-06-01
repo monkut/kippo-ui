@@ -31,6 +31,8 @@ export default function WeeklyEffort() {
     projects,
     selectedWeekEntries,
     monthlyAssignments,
+    targetMonth,
+    monthHoursByProject,
     expectedHours,
     missingWeeks,
     weekPersonalHolidays,
@@ -177,7 +179,11 @@ export default function WeeklyEffort() {
             </div>
 
             <MissingWeeksPanel missingWeeks={missingWeeks} onWeekSelect={setWeekStart} />
-            <MonthlyAssignmentsPanel monthlyAssignments={monthlyAssignments} />
+            <MonthlyAssignmentsPanel
+              monthlyAssignments={monthlyAssignments}
+              monthHoursByProject={monthHoursByProject}
+              targetMonth={targetMonth}
+            />
 
             {hasExistingEntries && (
               <ExistingEntriesList
@@ -195,6 +201,7 @@ export default function WeeklyEffort() {
                   onEntriesChange={setEntries}
                   projects={projects}
                   weekStart={weekStart}
+                  monthHoursByProject={monthHoursByProject}
                   expectedHours={expectedHours}
                   isSubmitting={isSubmitting}
                   onSubmit={handleSubmit}
@@ -211,6 +218,7 @@ export default function WeeklyEffort() {
                 projects={projects}
                 weekStart={weekStart}
                 onWeekStartChange={setWeekStart}
+                monthHoursByProject={monthHoursByProject}
                 expectedHours={expectedHours}
                 isSubmitting={isSubmitting}
                 onSubmit={handleSubmit}
