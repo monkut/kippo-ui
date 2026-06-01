@@ -5,6 +5,8 @@ import { normalizeDigits } from "./utils";
 
 type ExistingEntriesListProps = {
   selectedWeekEntries: ProjectWeeklyEffort[];
+  /** Projects with effort elsewhere this month but no entry in the displayed week; shown with a "-" effort. */
+  monthOnlyProjects?: { project: string; project_name: string }[];
   weekStart: string;
   isSubmitting: boolean;
   onUpdateHours: (entryId: number, hours: number) => Promise<boolean> | void;
@@ -16,6 +18,7 @@ type ExistingEntriesListProps = {
 
 function ExistingEntriesListImpl({
   selectedWeekEntries,
+  monthOnlyProjects = [],
   weekStart,
   isSubmitting,
   onUpdateHours,
@@ -293,6 +296,20 @@ function ExistingEntriesListImpl({
             </div>
           );
         })}
+
+        {monthOnlyProjects.map((p) => (
+          <div
+            key={p.project}
+            className="grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 opacity-60"
+            title="今月の累計には含まれますが、この週の入力はありません"
+          >
+            <span className="text-gray-400 min-w-0 truncate">{p.project_name}</span>
+            <span className="text-right text-gray-400 font-medium tabular-nums pr-2">-</span>
+            <span className="text-gray-400 text-sm">時間</span>
+            <span />
+            <span />
+          </div>
+        ))}
 
         {showInlineHolidayInput && (
           <div className="mt-4 pt-4 border-t border-gray-200">

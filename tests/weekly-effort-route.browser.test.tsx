@@ -31,6 +31,7 @@ const HOOK_RETURN = {
   monthlyAssignments: [],
   targetMonth: "2026-06-01",
   monthHoursByProject: {},
+  monthEffortProjects: [],
   expectedHours: 40,
   missingWeeks: [],
   weekPersonalHolidays: [],
