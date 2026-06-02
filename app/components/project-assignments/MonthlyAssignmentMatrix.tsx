@@ -360,9 +360,9 @@ function ProjectRow({
 
 const FULL_CONFIDENCE = 100;
 
-/** 3-state per-project confirm toggle (switch): on = all confirmed (row locked),
- * mixed = some confirmed, off = none. Clicking an off/mixed toggle confirms the
- * whole project; clicking an on toggle unconfirms it.
+/** Binary per-project confirm toggle (switch): on = the project is confirmed
+ * (every assignment confirmed → row locked), off = not confirmed. Clicking an off
+ * toggle confirms the whole project; clicking an on toggle unconfirms it.
  *
  * Confirming is only allowed when the project's confidence (確度) is 100% — the
  * backend rejects it otherwise (HTTP 400). Unconfirming a confirmed row stays
@@ -378,44 +378,32 @@ function ConfirmToggle({
   onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
   isSaving: boolean;
 }) {
+  // A project row is binary: confirmed only when every one of its assignment rows
+  // is confirmed. `total`/`confirmed` are an implementation detail of that check
+  // (confirmation is stored per assignment in the backend) and are not surfaced.
   const total = confirmation?.total ?? 0;
   const confirmed = confirmation?.confirmed ?? 0;
-  const fullyConfirmed = total > 0 && confirmed === total;
-  const partial = confirmed > 0 && confirmed < total;
+  const isConfirmed = total > 0 && confirmed === total;
 
-  // Confirming (anything not already fully confirmed) requires 100% confidence;
-  // unconfirming a fully-confirmed row is always allowed.
-  const confirmBlockedByConfidence =
-    !fullyConfirmed && (projectConfidence ?? 0) !== FULL_CONFIDENCE;
+  // Confirming requires 100% confidence; unconfirming a confirmed row is always allowed.
+  const confirmBlockedByConfidence = !isConfirmed && (projectConfidence ?? 0) !== FULL_CONFIDENCE;
   const disabled = total === 0 || isSaving || !onBulkSetConfirmed || confirmBlockedByConfidence;
   const title =
     total === 0
       ? "割当なし"
       : confirmBlockedByConfidence
         ? `プロジェクトの確度が100%でないため確定できません（現在 ${projectConfidence ?? 0}%）`
-        : fullyConfirmed
+        : isConfirmed
           ? "確定済み（クリックで解除）"
-          : partial
-            ? `一部確定 (${confirmed}/${total})（クリックで全確定）`
-            : "未確定（クリックで確定）";
+          : "未確定（クリックで確定）";
 
   const handleClick = () => {
     if (disabled || !confirmation) return;
-    void onBulkSetConfirmed?.(confirmation.ids, !fullyConfirmed);
+    void onBulkSetConfirmed?.(confirmation.ids, !isConfirmed);
   };
 
-  const trackColor = disabled
-    ? "bg-gray-200"
-    : fullyConfirmed
-      ? "bg-indigo-600"
-      : partial
-        ? "bg-amber-400"
-        : "bg-gray-300";
-  const knobPosition = fullyConfirmed
-    ? "translate-x-4"
-    : partial
-      ? "translate-x-2"
-      : "translate-x-0.5";
+  const trackColor = disabled ? "bg-gray-200" : isConfirmed ? "bg-indigo-600" : "bg-gray-300";
+  const knobPosition = isConfirmed ? "translate-x-4" : "translate-x-0.5";
 
   return (
     // The title lives on the wrapper (not just the button) so the reason still shows
@@ -424,8 +412,8 @@ function ConfirmToggle({
     <span title={title} className={`inline-flex ${disabled ? "cursor-not-allowed" : ""}`}>
       <button
         type="button"
-        aria-pressed={partial ? "mixed" : fullyConfirmed}
-        aria-label={`プロジェクトの確定 (${confirmed}/${total})`}
+        aria-pressed={isConfirmed}
+        aria-label="プロジェクトの確定"
         title={title}
         disabled={disabled}
         onClick={handleClick}

@@ -103,7 +103,7 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
 
   const confirmBox = () => container.querySelector<HTMLButtonElement>("tbody button[aria-pressed]");
 
-  test("partial row → mixed; clicking confirms ALL of the project's ids", async () => {
+  test("partially-confirmed row → off (binary); clicking confirms ALL of the project's ids", async () => {
     const onBulkSetConfirmed = vi.fn(() => Promise.resolve(true));
     renderMatrix(root, {
       projects: [makeProject()],
@@ -117,7 +117,9 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     });
 
     const box = await waitFor(confirmBox);
-    expect(box?.getAttribute("aria-pressed")).toBe("mixed");
+    // Strict binary: a project is confirmed only when every assignment is — so a
+    // partially-confirmed project reads as off, not "mixed".
+    expect(box?.getAttribute("aria-pressed")).toBe("false");
 
     box?.click();
     expect(onBulkSetConfirmed).toHaveBeenCalledTimes(1);
