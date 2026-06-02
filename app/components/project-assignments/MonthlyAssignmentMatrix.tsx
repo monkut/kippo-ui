@@ -418,19 +418,24 @@ function ConfirmToggle({
       : "translate-x-0.5";
 
   return (
-    <button
-      type="button"
-      aria-pressed={partial ? "mixed" : fullyConfirmed}
-      aria-label={`プロジェクトの確定 (${confirmed}/${total})`}
-      title={title}
-      disabled={disabled}
-      onClick={handleClick}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${trackColor}`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${knobPosition}`}
-      />
-    </button>
+    // The title lives on the wrapper (not just the button) so the reason still shows
+    // on hover when the toggle is disabled — disabled <button>s don't surface their
+    // own title, and `disabled:pointer-events-none` lets the wrapper receive the hover.
+    <span title={title} className={`inline-flex ${disabled ? "cursor-not-allowed" : ""}`}>
+      <button
+        type="button"
+        aria-pressed={partial ? "mixed" : fullyConfirmed}
+        aria-label={`プロジェクトの確定 (${confirmed}/${total})`}
+        title={title}
+        disabled={disabled}
+        onClick={handleClick}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none ${trackColor}`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${knobPosition}`}
+        />
+      </button>
+    </span>
   );
 }
 

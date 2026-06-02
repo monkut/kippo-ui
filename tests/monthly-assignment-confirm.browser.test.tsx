@@ -187,6 +187,11 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     expect(box?.disabled).toBe(true);
     expect(box?.title).toContain("確度が100%でないため確定できません");
     expect(box?.title).toContain("80%");
+    // The wrapper carries the title too, so the reason still shows on hover while
+    // the button is disabled (disabled buttons don't surface their own title).
+    expect(box?.parentElement?.getAttribute("title")).toContain(
+      "確度が100%でないため確定できません",
+    );
   });
 
   test("confidence < 100 but already fully confirmed → still allowed to unconfirm", async () => {
