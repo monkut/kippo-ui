@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import {
@@ -291,7 +291,7 @@ function ProjectRow({
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
       <td className="py-2 pr-3 text-center">
-        <ConfirmCheckbox
+        <ConfirmToggle
           confirmation={confirmation}
           projectConfidence={row.project.confidence}
           onBulkSetConfirmed={onBulkSetConfirmed}
@@ -360,14 +360,14 @@ function ProjectRow({
 
 const FULL_CONFIDENCE = 100;
 
-/** 3-state per-project confirm checkbox: checked = all confirmed (row locked),
- * indeterminate = some confirmed, unchecked = none. Clicking an unchecked/partial
- * box confirms the whole project; clicking a checked box unconfirms it.
+/** 3-state per-project confirm toggle (switch): on = all confirmed (row locked),
+ * mixed = some confirmed, off = none. Clicking an off/mixed toggle confirms the
+ * whole project; clicking an on toggle unconfirms it.
  *
  * Confirming is only allowed when the project's confidence (確度) is 100% — the
  * backend rejects it otherwise (HTTP 400). Unconfirming a confirmed row stays
  * allowed regardless of confidence. */
-function ConfirmCheckbox({
+function ConfirmToggle({
   confirmation,
   projectConfidence,
   onBulkSetConfirmed,
@@ -382,11 +382,6 @@ function ConfirmCheckbox({
   const confirmed = confirmation?.confirmed ?? 0;
   const fullyConfirmed = total > 0 && confirmed === total;
   const partial = confirmed > 0 && confirmed < total;
-
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (ref.current) ref.current.indeterminate = partial;
-  }, [partial]);
 
   // Confirming (anything not already fully confirmed) requires 100% confidence;
   // unconfirming a fully-confirmed row is always allowed.
@@ -404,22 +399,38 @@ function ConfirmCheckbox({
             ? `一部確定 (${confirmed}/${total})（クリックで全確定）`
             : "未確定（クリックで確定）";
 
-  const handleChange = () => {
+  const handleClick = () => {
     if (disabled || !confirmation) return;
     void onBulkSetConfirmed?.(confirmation.ids, !fullyConfirmed);
   };
 
+  const trackColor = disabled
+    ? "bg-gray-200"
+    : fullyConfirmed
+      ? "bg-indigo-600"
+      : partial
+        ? "bg-amber-400"
+        : "bg-gray-300";
+  const knobPosition = fullyConfirmed
+    ? "translate-x-4"
+    : partial
+      ? "translate-x-2"
+      : "translate-x-0.5";
+
   return (
-    <input
-      ref={ref}
-      type="checkbox"
-      checked={fullyConfirmed}
-      disabled={disabled}
-      onChange={handleChange}
-      title={title}
+    <button
+      type="button"
+      aria-pressed={partial ? "mixed" : fullyConfirmed}
       aria-label={`プロジェクトの確定 (${confirmed}/${total})`}
-      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-    />
+      title={title}
+      disabled={disabled}
+      onClick={handleClick}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${trackColor}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${knobPosition}`}
+      />
+    </button>
   );
 }
 

@@ -247,9 +247,9 @@ describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
 
     await waitFor(() => container.querySelector("table"));
 
-    // The 確定 checkbox is checked (row confirmed)...
-    const confirmBox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
-    expect(confirmBox?.checked).toBe(true);
+    // The 確定 toggle is on (row confirmed)...
+    const confirmToggle = container.querySelector<HTMLButtonElement>("tbody button[aria-pressed]");
+    expect(confirmToggle?.getAttribute("aria-pressed")).toBe("true");
 
     // ...and the confirmed row's filled cell is a read-only <span>, not a button.
     const filledSpan = Array.from(container.querySelectorAll("td span")).find(

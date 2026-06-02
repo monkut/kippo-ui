@@ -105,7 +105,11 @@ describe("MonthlyAssignmentMatrix — #21 F4: unconfirmed cell styling", () => {
       members: [makeMember({ user_id: "u-1", display_name: "Alice" })],
     });
 
-    const cell = await waitFor(() => container.querySelector<HTMLSpanElement>("td span"));
+    const cell = await waitFor(() =>
+      Array.from(container.querySelectorAll<HTMLSpanElement>("td span")).find((s) =>
+        s.textContent?.includes("%"),
+      ),
+    );
     expect(cell?.textContent).toContain("25%");
     expect(cell?.className).toContain("bg-gray-50");
     expect(cell?.className).toContain("text-gray-600");
@@ -122,7 +126,11 @@ describe("MonthlyAssignmentMatrix — #21 F4: unconfirmed cell styling", () => {
       members: [makeMember({ user_id: "u-1", display_name: "Alice" })],
     });
 
-    const cell = await waitFor(() => container.querySelector<HTMLSpanElement>("td span"));
+    const cell = await waitFor(() =>
+      Array.from(container.querySelectorAll<HTMLSpanElement>("td span")).find((s) =>
+        s.textContent?.includes("%"),
+      ),
+    );
     expect(cell?.className).toContain("bg-indigo-100");
     expect(cell?.className).toContain("text-indigo-800");
   });

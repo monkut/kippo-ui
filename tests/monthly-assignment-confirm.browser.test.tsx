@@ -101,10 +101,9 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     container.remove();
   });
 
-  const confirmBox = () =>
-    container.querySelector<HTMLInputElement>('tbody input[type="checkbox"]');
+  const confirmBox = () => container.querySelector<HTMLButtonElement>("tbody button[aria-pressed]");
 
-  test("partial row → indeterminate; clicking confirms ALL of the project's ids", async () => {
+  test("partial row → mixed; clicking confirms ALL of the project's ids", async () => {
     const onBulkSetConfirmed = vi.fn(() => Promise.resolve(true));
     renderMatrix(root, {
       projects: [makeProject()],
@@ -118,15 +117,14 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     });
 
     const box = await waitFor(confirmBox);
-    expect(box?.checked).toBe(false);
-    expect(box?.indeterminate).toBe(true);
+    expect(box?.getAttribute("aria-pressed")).toBe("mixed");
 
     box?.click();
     expect(onBulkSetConfirmed).toHaveBeenCalledTimes(1);
     expect(onBulkSetConfirmed).toHaveBeenCalledWith([1, 2], true);
   });
 
-  test("fully-confirmed row → checked; clicking unconfirms ALL of the project's ids", async () => {
+  test("fully-confirmed row → on; clicking unconfirms ALL of the project's ids", async () => {
     const onBulkSetConfirmed = vi.fn(() => Promise.resolve(true));
     renderMatrix(root, {
       projects: [makeProject()],
@@ -140,14 +138,13 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     });
 
     const box = await waitFor(confirmBox);
-    expect(box?.checked).toBe(true);
-    expect(box?.indeterminate).toBe(false);
+    expect(box?.getAttribute("aria-pressed")).toBe("true");
 
     box?.click();
     expect(onBulkSetConfirmed).toHaveBeenCalledWith([1, 2], false);
   });
 
-  test("unconfirmed row → unchecked; clicking confirms", async () => {
+  test("unconfirmed row → off; clicking confirms", async () => {
     const onBulkSetConfirmed = vi.fn(() => Promise.resolve(true));
     renderMatrix(root, {
       projects: [makeProject()],
@@ -158,14 +155,13 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     });
 
     const box = await waitFor(confirmBox);
-    expect(box?.checked).toBe(false);
-    expect(box?.indeterminate).toBe(false);
+    expect(box?.getAttribute("aria-pressed")).toBe("false");
 
     box?.click();
     expect(onBulkSetConfirmed).toHaveBeenCalledWith([7], true);
   });
 
-  test("project with no assignments → checkbox disabled", async () => {
+  test("project with no assignments → toggle disabled", async () => {
     renderMatrix(root, {
       projects: [makeProject()],
       assignments: [],
@@ -204,7 +200,7 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
     });
 
     const box = await waitFor(confirmBox);
-    expect(box?.checked).toBe(true);
+    expect(box?.getAttribute("aria-pressed")).toBe("true");
     expect(box?.disabled).toBe(false);
     box?.click();
     expect(onBulkSetConfirmed).toHaveBeenCalledWith([1], false);
