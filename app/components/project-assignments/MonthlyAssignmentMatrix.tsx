@@ -1,18 +1,21 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import {
   buildCellTooltip,
   buildMonthlyMatrix,
+  buildProjectConfirmation,
   type CellState,
   CONFIRMED_CELL,
   formatRowMonthlyTotal,
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
+  isProjectRowConfirmed,
   MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
+  type ProjectConfirmation,
   type SortConfig,
   type SortKey,
   sortMatrixRows,
@@ -29,7 +32,8 @@ export type MatrixCellClickArgs = {
   assignment: ProjectMonthlyAssignment | null;
 };
 
-const FIXED_HEADER_COL_COUNT = 6;
+// プロジェクトID, 顧客, プロジェクト名, 開始日, 終了日, 月合計, 確定
+const FIXED_HEADER_COL_COUNT = 7;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 function MonthlyAssignmentMatrixImpl({
@@ -39,11 +43,17 @@ function MonthlyAssignmentMatrixImpl({
   hideUnassigned = false,
   editableMonth = false,
   onCellClick,
+  onBulkSetConfirmed,
+  isSaving = false,
 }: MonthlyAssignmentMatrixProps) {
   const matrix = useMemo(
     () => buildMonthlyMatrix(projects, assignments, members),
     [projects, assignments, members],
   );
+
+  // Per-project confirmation state (all users' rows for the displayed month), so
+  // the 確定 column can flip / lock a whole project row at once.
+  const projectConfirmation = useMemo(() => buildProjectConfirmation(assignments), [assignments]);
 
   // (project_id, user_id) → original ProjectMonthlyAssignment, used to resolve
   // the underlying record when a cell is clicked. The matrix builder merges
@@ -106,6 +116,9 @@ function MonthlyAssignmentMatrixImpl({
               editableMonth={editableMonth}
               onCellClick={onCellClick}
               assignmentByCell={assignmentByCell}
+              confirmation={projectConfirmation.get(row.project.id)}
+              onBulkSetConfirmed={onBulkSetConfirmed}
+              isSaving={isSaving}
             />
           ))}
         </tbody>
@@ -134,6 +147,12 @@ function HeaderRow({
 }) {
   return (
     <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
+      <th
+        className="py-2 pr-3 text-center font-medium"
+        title="プロジェクト単位の確定。チェックでこのプロジェクトの当月割当をすべて確定し、行をロックします。"
+      >
+        確定
+      </th>
       <SortableHeader
         label="プロジェクトID"
         sortKey="id"
@@ -242,13 +261,23 @@ function ProjectRow({
   editableMonth,
   onCellClick,
   assignmentByCell,
+  confirmation,
+  onBulkSetConfirmed,
+  isSaving,
 }: {
   row: MonthlyMatrixRow;
   users: MonthlyMatrixUser[];
   editableMonth: boolean;
   onCellClick?: (args: MatrixCellClickArgs) => void;
   assignmentByCell: Map<string, ProjectMonthlyAssignment>;
+  confirmation: ProjectConfirmation | undefined;
+  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
+  isSaving: boolean;
 }) {
+  // A fully-confirmed project row is locked: its cells become read-only until the
+  // 確定 checkbox is unticked. Past months (editableMonth=false) stay locked too.
+  const rowConfirmed = isProjectRowConfirmed(confirmation);
+  const rowEditable = editableMonth && !rowConfirmed;
   const effortSpentDays = getProjectEffortSpentDays(row.project);
   const breakdownTooltip =
     typeof row.rowEffortDays === "number"
@@ -261,6 +290,14 @@ function ProjectRow({
   const cellTitle = breakdownTooltip ?? `% 合計: ${row.rowTotal}%`;
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
+      <td className="py-2 pr-3 text-center">
+        <ConfirmCheckbox
+          confirmation={confirmation}
+          projectConfidence={row.project.confidence}
+          onBulkSetConfirmed={onBulkSetConfirmed}
+          isSaving={isSaving}
+        />
+      </td>
       <td className="py-2 pr-4">
         <CopyableProjectId projectId={row.project.id} />
       </td>
@@ -311,13 +348,78 @@ function ProjectRow({
             cell={row.cells.get(user.user_id)}
             user={user}
             project={row.project}
-            editableMonth={editableMonth}
+            editableMonth={rowEditable}
             onCellClick={onCellClick}
             assignmentByCell={assignmentByCell}
           />
         </td>
       ))}
     </tr>
+  );
+}
+
+const FULL_CONFIDENCE = 100;
+
+/** 3-state per-project confirm checkbox: checked = all confirmed (row locked),
+ * indeterminate = some confirmed, unchecked = none. Clicking an unchecked/partial
+ * box confirms the whole project; clicking a checked box unconfirms it.
+ *
+ * Confirming is only allowed when the project's confidence (確度) is 100% — the
+ * backend rejects it otherwise (HTTP 400). Unconfirming a confirmed row stays
+ * allowed regardless of confidence. */
+function ConfirmCheckbox({
+  confirmation,
+  projectConfidence,
+  onBulkSetConfirmed,
+  isSaving,
+}: {
+  confirmation: ProjectConfirmation | undefined;
+  projectConfidence: number | undefined;
+  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
+  isSaving: boolean;
+}) {
+  const total = confirmation?.total ?? 0;
+  const confirmed = confirmation?.confirmed ?? 0;
+  const fullyConfirmed = total > 0 && confirmed === total;
+  const partial = confirmed > 0 && confirmed < total;
+
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = partial;
+  }, [partial]);
+
+  // Confirming (anything not already fully confirmed) requires 100% confidence;
+  // unconfirming a fully-confirmed row is always allowed.
+  const confirmBlockedByConfidence =
+    !fullyConfirmed && (projectConfidence ?? 0) !== FULL_CONFIDENCE;
+  const disabled = total === 0 || isSaving || !onBulkSetConfirmed || confirmBlockedByConfidence;
+  const title =
+    total === 0
+      ? "割当なし"
+      : confirmBlockedByConfidence
+        ? `プロジェクトの確度が100%でないため確定できません（現在 ${projectConfidence ?? 0}%）`
+        : fullyConfirmed
+          ? "確定済み（クリックで解除）"
+          : partial
+            ? `一部確定 (${confirmed}/${total})（クリックで全確定）`
+            : "未確定（クリックで確定）";
+
+  const handleChange = () => {
+    if (disabled || !confirmation) return;
+    void onBulkSetConfirmed?.(confirmation.ids, !fullyConfirmed);
+  };
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={fullyConfirmed}
+      disabled={disabled}
+      onChange={handleChange}
+      title={title}
+      aria-label={`プロジェクトの確定 (${confirmed}/${total})`}
+      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+    />
   );
 }
 

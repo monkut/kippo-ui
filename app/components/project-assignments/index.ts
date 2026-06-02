@@ -3,7 +3,6 @@ export { AssignmentsTable } from "./AssignmentsTable";
 export { CreateProjectModal } from "./CreateProjectModal";
 export { EditAssignmentModal } from "./EditAssignmentModal";
 export { ForecastBar } from "./ForecastBar";
-export { MonthConfirmActions } from "./MonthConfirmActions";
 export { MonthPicker } from "./MonthPicker";
 export { MonthlyAssignmentMatrix } from "./MonthlyAssignmentMatrix";
 export type { MatrixCellClickArgs } from "./MonthlyAssignmentMatrix";
@@ -13,13 +12,14 @@ export {
   addMonths,
   buildGrid,
   buildMonthlyMatrix,
+  buildProjectConfirmation,
   countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
   firstOfMonth,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
-  isMonthConfirmed,
+  isProjectRowConfirmed,
 } from "./utils";
 export type {
   CellState,
@@ -28,4 +28,5 @@ export type {
   MonthlyMatrix,
   MonthlyMatrixRow,
   MonthlyMatrixUser,
+  ProjectConfirmation,
 } from "./utils";

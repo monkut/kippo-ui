@@ -114,9 +114,10 @@ describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
   const project = makeProject();
   const alice = makeMember({ user_id: "u-1", display_name: "Alice" });
   const bob = makeMember({ user_id: "u-2", display_name: "Bob" });
-  const aliceAssignment = makeAssignment({ user: "u-1", percentage: 50, is_confirmed: true });
+  // Unconfirmed so the project row stays editable (a fully-confirmed row locks).
+  const aliceAssignment = makeAssignment({ user: "u-1", percentage: 50, is_confirmed: false });
 
-  test("clicking a filled (confirmed) cell calls onCellClick with the source assignment", async () => {
+  test("clicking a filled cell calls onCellClick with the source assignment", async () => {
     const onCellClick = vi.fn();
     renderMatrix(root, {
       projects: [project],
@@ -232,5 +233,37 @@ describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
 
     const aliceBtn = await waitFor(() => cellButtonByText(container, "50%"));
     expect(aliceBtn?.getAttribute("title")).not.toContain("過去月のためロック");
+  });
+
+  test("a fully-confirmed project row locks its cells even when editableMonth is true", async () => {
+    const onCellClick = vi.fn();
+    renderMatrix(root, {
+      projects: [project],
+      assignments: [makeAssignment({ user: "u-1", percentage: 50, is_confirmed: true })],
+      members: [alice, bob],
+      editableMonth: true,
+      onCellClick,
+    });
+
+    await waitFor(() => container.querySelector("table"));
+
+    // The 確定 checkbox is checked (row confirmed)...
+    const confirmBox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(confirmBox?.checked).toBe(true);
+
+    // ...and the confirmed row's filled cell is a read-only <span>, not a button.
+    const filledSpan = Array.from(container.querySelectorAll("td span")).find(
+      (s) => s.textContent?.trim() === "50%",
+    );
+    expect(filledSpan?.tagName).toBe("SPAN");
+
+    // No percentage/empty cell buttons exist on the locked row.
+    const cellButtons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("td button"),
+    ).filter((b) => {
+      const txt = b.textContent?.trim() ?? "";
+      return txt === "—" || /%$/.test(txt);
+    });
+    expect(cellButtons.length).toBe(0);
   });
 });

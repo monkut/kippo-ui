@@ -6,12 +6,9 @@ import {
   CreateProjectModal,
   EditAssignmentModal,
   type MatrixCellClickArgs,
-  MonthConfirmActions,
   MonthPicker,
   MonthlyAssignmentMatrix,
-  filterAssignmentsToVisibleProjects,
   firstOfMonth,
-  isMonthConfirmed,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
@@ -50,19 +47,6 @@ export default function ProjectAssignmentsMonthly() {
   // a stale "today" can't leak through if the user leaves the tab open across
   // midnight. The dependency on `month` makes that intent explicit.
   const editableMonth = useMemo(() => isEditableMonth(month, new Date()), [month]);
-
-  // Scope MonthConfirmActions to projects the matrix actually renders. The
-  // matrix drops assignments for projects outside its window — without this
-  // filter, the button counts and bulk-flip set would include hidden rows.
-  const visibleAssignments = useMemo(
-    () => filterAssignmentsToVisibleProjects(assignments, projects),
-    [assignments, projects],
-  );
-
-  // The displayed month is "confirmed" once every visible assignment is confirmed
-  // (the この月を確定 state). While it's NOT confirmed the planner can still register
-  // a new project for the month (kippo#…). Empty months count as not-confirmed.
-  const monthConfirmed = useMemo(() => isMonthConfirmed(visibleAssignments), [visibleAssignments]);
 
   // Look up the project by id when the AddAssignmentModal is open so the
   // user-picker can prioritize this project's weekly-effort members.
@@ -127,22 +111,15 @@ export default function ProjectAssignmentsMonthly() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
           <div className="flex items-center gap-2">
-            {!monthConfirmed && (
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                disabled={mutations.isSaving}
-                className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 rounded-md hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="必須項目のみで新しいプロジェクトを作成"
-              >
-                ＋ 新規プロジェクト作成
-              </button>
-            )}
-            <MonthConfirmActions
-              assignments={visibleAssignments}
-              isSaving={mutations.isSaving}
-              onBulkSetConfirmed={mutations.bulkSetConfirmed}
-            />
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              disabled={mutations.isSaving}
+              className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 rounded-md hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="必須項目のみで新しいプロジェクトを作成"
+            >
+              ＋ 新規プロジェクト作成
+            </button>
           </div>
         </div>
         {createdProjectName && (
@@ -164,6 +141,8 @@ export default function ProjectAssignmentsMonthly() {
             hideUnassigned={hideUnassigned}
             editableMonth={editableMonth}
             onCellClick={handleCellClick}
+            onBulkSetConfirmed={mutations.bulkSetConfirmed}
+            isSaving={mutations.isSaving}
           />
         )}
       </div>
