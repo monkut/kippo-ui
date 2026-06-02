@@ -116,11 +116,19 @@ export default function ProjectAssignmentsMonthly() {
         </div>
         <MonthPicker month={month} onChange={setMonth} />
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <HideUnassignedToggle
-            checked={hideUnassigned}
-            onChange={setHideUnassigned}
-            hiddenMemberNames={hiddenMemberNames}
-          />
+          <div className="flex items-center gap-4 flex-wrap">
+            <HideUnassignedToggle
+              checked={hideUnassigned}
+              onChange={setHideUnassigned}
+              hiddenMemberNames={hiddenMemberNames}
+            />
+            {!isLoading && (
+              <span className="text-sm text-gray-600">
+                プロジェクト数:{" "}
+                <span className="font-semibold text-gray-900">{projects.length}</span>
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
