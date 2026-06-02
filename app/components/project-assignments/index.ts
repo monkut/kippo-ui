@@ -20,6 +20,7 @@ export {
   flattenPatternToAssignmentRequests,
   formatMonth,
   isProjectRowConfirmed,
+  unassignedMemberNames,
 } from "./utils";
 export type {
   CellState,

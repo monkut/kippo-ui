@@ -14,6 +14,7 @@ import {
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,
+  unassignedMemberNames,
 } from "~/components/project-assignments/utils";
 import type {
   KippoProject,
@@ -781,5 +782,37 @@ describe("isProjectInMonthWindow (#21 F3)", () => {
     expect(isProjectInMonthWindow({ start_date: null, target_date: "2026-12-31" }, month)).toBe(
       false,
     );
+  });
+});
+
+describe("unassignedMemberNames (未割当メンバーを非表示 tooltip)", () => {
+  const projects = [makeProject("p-1", "Project 1")];
+  const members = [
+    makeMember({ user_id: "u-1", display_name: "Alice" }),
+    makeMember({ user_id: "u-2", display_name: "Bob" }),
+    makeMember({ user_id: "u-3", display_name: "Carol" }),
+  ];
+
+  test("returns the display names of members with a 0 monthly total", () => {
+    // Only Alice has an assignment this month → Bob and Carol are unassigned.
+    const assignments = [makeAssignment({ id: 1, user: "u-1", percentage: 50 })];
+    expect(unassignedMemberNames(projects, assignments, members)).toEqual(["Bob", "Carol"]);
+  });
+
+  test("returns [] when every member is assigned", () => {
+    const assignments = [
+      makeAssignment({ id: 1, user: "u-1", percentage: 50 }),
+      makeAssignment({ id: 2, user: "u-2", percentage: 30 }),
+      makeAssignment({ id: 3, user: "u-3", percentage: 20 }),
+    ];
+    expect(unassignedMemberNames(projects, assignments, members)).toEqual([]);
+  });
+
+  test("a member assigned only at 0% counts as unassigned", () => {
+    const assignments = [
+      makeAssignment({ id: 1, user: "u-1", percentage: 50 }),
+      makeAssignment({ id: 2, user: "u-2", percentage: 0 }),
+    ];
+    expect(unassignedMemberNames(projects, assignments, members)).toEqual(["Bob", "Carol"]);
   });
 });

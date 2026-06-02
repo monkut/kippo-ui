@@ -37,6 +37,7 @@
       "!pnpm-lock.yaml",
       "!.react-router/**",
       "!.claude/**",
+      "!.gstack/**",
       "!app/lib/api/generated/**"
     ]
   }

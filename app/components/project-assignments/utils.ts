@@ -566,6 +566,20 @@ export function buildMonthlyMatrix(
   return { users, rows, userTotals, userEffortDays };
 }
 
+/** Display names of the members the "未割当メンバーを非表示" toggle hides — those whose
+ * summed monthly total across the displayed projects is 0. Built from the same
+ * `buildMonthlyMatrix` the matrix uses, so it stays in sync with the hidden columns. */
+export function unassignedMemberNames(
+  projects: KippoProject[],
+  assignments: ProjectMonthlyAssignment[],
+  members?: OrganizationMemberDetail[],
+): string[] {
+  const matrix = buildMonthlyMatrix(projects, assignments, members);
+  return matrix.users
+    .filter((u) => (matrix.userTotals.get(u.user_id) ?? 0) === 0)
+    .map((u) => u.display_name);
+}
+
 /** Σ_projects (cell.percentage / 100 × user.available_work_days) — keyed by user_id. */
 function computeUserEffortDays(
   users: MonthlyMatrixUser[],
