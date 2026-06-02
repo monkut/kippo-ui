@@ -293,6 +293,7 @@ function ProjectRow({
       <td className="py-2 pr-3 text-center">
         <ConfirmCheckbox
           confirmation={confirmation}
+          projectConfidence={row.project.confidence}
           onBulkSetConfirmed={onBulkSetConfirmed}
           isSaving={isSaving}
         />
@@ -357,15 +358,23 @@ function ProjectRow({
   );
 }
 
+const FULL_CONFIDENCE = 100;
+
 /** 3-state per-project confirm checkbox: checked = all confirmed (row locked),
  * indeterminate = some confirmed, unchecked = none. Clicking an unchecked/partial
- * box confirms the whole project; clicking a checked box unconfirms it. */
+ * box confirms the whole project; clicking a checked box unconfirms it.
+ *
+ * Confirming is only allowed when the project's confidence (確度) is 100% — the
+ * backend rejects it otherwise (HTTP 400). Unconfirming a confirmed row stays
+ * allowed regardless of confidence. */
 function ConfirmCheckbox({
   confirmation,
+  projectConfidence,
   onBulkSetConfirmed,
   isSaving,
 }: {
   confirmation: ProjectConfirmation | undefined;
+  projectConfidence: number | undefined;
   onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
   isSaving: boolean;
 }) {
@@ -379,15 +388,21 @@ function ConfirmCheckbox({
     if (ref.current) ref.current.indeterminate = partial;
   }, [partial]);
 
-  const disabled = total === 0 || isSaving || !onBulkSetConfirmed;
+  // Confirming (anything not already fully confirmed) requires 100% confidence;
+  // unconfirming a fully-confirmed row is always allowed.
+  const confirmBlockedByConfidence =
+    !fullyConfirmed && (projectConfidence ?? 0) !== FULL_CONFIDENCE;
+  const disabled = total === 0 || isSaving || !onBulkSetConfirmed || confirmBlockedByConfidence;
   const title =
     total === 0
       ? "割当なし"
-      : fullyConfirmed
-        ? "確定済み（クリックで解除）"
-        : partial
-          ? `一部確定 (${confirmed}/${total})（クリックで全確定）`
-          : "未確定（クリックで確定）";
+      : confirmBlockedByConfidence
+        ? `プロジェクトの確度が100%でないため確定できません（現在 ${projectConfidence ?? 0}%）`
+        : fullyConfirmed
+          ? "確定済み（クリックで解除）"
+          : partial
+            ? `一部確定 (${confirmed}/${total})（クリックで全確定）`
+            : "未確定（クリックで確定）";
 
   const handleChange = () => {
     if (disabled || !confirmation) return;

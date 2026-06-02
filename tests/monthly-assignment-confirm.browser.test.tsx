@@ -18,6 +18,7 @@ function makeProject(over: Partial<KippoProject> = {}): KippoProject {
     name: "Project 1",
     start_date: "2026-01-01",
     target_date: "2026-12-31",
+    confidence: 100,
     ...over,
   } as unknown as KippoProject;
 }
@@ -175,5 +176,37 @@ describe("MonthlyAssignmentMatrix — per-project 確定 column", () => {
 
     const box = await waitFor(confirmBox);
     expect(box?.disabled).toBe(true);
+  });
+
+  test("confidence < 100 → confirm disabled with an explaining tooltip", async () => {
+    renderMatrix(root, {
+      projects: [makeProject({ confidence: 80 })],
+      assignments: [makeAssignment({ id: 1, user: "u-1", is_confirmed: false })],
+      members: [alice],
+      editableMonth: true,
+      onBulkSetConfirmed: vi.fn(() => Promise.resolve(true)),
+    });
+
+    const box = await waitFor(confirmBox);
+    expect(box?.disabled).toBe(true);
+    expect(box?.title).toContain("確度が100%でないため確定できません");
+    expect(box?.title).toContain("80%");
+  });
+
+  test("confidence < 100 but already fully confirmed → still allowed to unconfirm", async () => {
+    const onBulkSetConfirmed = vi.fn(() => Promise.resolve(true));
+    renderMatrix(root, {
+      projects: [makeProject({ confidence: 80 })],
+      assignments: [makeAssignment({ id: 1, user: "u-1", is_confirmed: true })],
+      members: [alice],
+      editableMonth: true,
+      onBulkSetConfirmed,
+    });
+
+    const box = await waitFor(confirmBox);
+    expect(box?.checked).toBe(true);
+    expect(box?.disabled).toBe(false);
+    box?.click();
+    expect(onBulkSetConfirmed).toHaveBeenCalledWith([1], false);
   });
 });
