@@ -9,6 +9,7 @@ import {
   MonthPicker,
   MonthlyAssignmentMatrix,
   firstOfMonth,
+  unassignedMemberNames,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
@@ -47,6 +48,12 @@ export default function ProjectAssignmentsMonthly() {
   // a stale "today" can't leak through if the user leaves the tab open across
   // midnight. The dependency on `month` makes that intent explicit.
   const editableMonth = useMemo(() => isEditableMonth(month, new Date()), [month]);
+
+  // Members the "未割当メンバーを非表示" toggle hides (monthly total 0) — shown in its tooltip.
+  const hiddenMemberNames = useMemo(
+    () => unassignedMemberNames(projects, assignments, members),
+    [projects, assignments, members],
+  );
 
   // Look up the project by id when the AddAssignmentModal is open so the
   // user-picker can prioritize this project's weekly-effort members.
@@ -109,7 +116,19 @@ export default function ProjectAssignmentsMonthly() {
         </div>
         <MonthPicker month={month} onChange={setMonth} />
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <HideUnassignedToggle checked={hideUnassigned} onChange={setHideUnassigned} />
+          <div className="flex items-center gap-4 flex-wrap">
+            <HideUnassignedToggle
+              checked={hideUnassigned}
+              onChange={setHideUnassigned}
+              hiddenMemberNames={hiddenMemberNames}
+            />
+            {!isLoading && (
+              <span className="text-sm text-gray-600">
+                プロジェクト数:{" "}
+                <span className="font-semibold text-gray-900">{projects.length}</span>
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -234,12 +253,19 @@ function Modals({
 function HideUnassignedToggle({
   checked,
   onChange,
+  hiddenMemberNames,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
+  hiddenMemberNames: string[];
 }) {
+  const count = hiddenMemberNames.length;
+  const title =
+    count > 0
+      ? `非表示対象の未割当メンバー (${count}名):\n${hiddenMemberNames.join("\n")}`
+      : "未割当メンバーはいません";
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-700">
+    <div className="flex items-center gap-2 text-sm text-gray-700" title={title}>
       <input
         id="hide-unassigned-members"
         type="checkbox"
@@ -248,7 +274,7 @@ function HideUnassignedToggle({
         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
       />
       <label htmlFor="hide-unassigned-members" className="cursor-pointer select-none">
-        未割当メンバーを非表示
+        未割当メンバーを非表示{count > 0 ? ` (${count})` : ""}
       </label>
     </div>
   );
