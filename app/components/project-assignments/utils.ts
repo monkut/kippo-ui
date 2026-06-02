@@ -94,14 +94,33 @@ export function countAssignmentsByConfirmation(assignments: ProjectMonthlyAssign
   return { confirmed, unconfirmed };
 }
 
-/** A month is "confirmed" (locked) once it has at least one assignment and every
- * one of them is confirmed — the state produced by the page's この月を確定 action.
- * Derived from per-row `is_confirmed`; there is no separate month-confirmation
- * record. An empty month (no assignments yet) is treated as not-confirmed so the
- * planner can still create projects for it. */
-export function isMonthConfirmed(assignments: ProjectMonthlyAssignment[]): boolean {
-  const { confirmed, unconfirmed } = countAssignmentsByConfirmation(assignments);
-  return confirmed > 0 && unconfirmed === 0;
+export type ProjectConfirmation = { ids: number[]; confirmed: number; total: number };
+
+/** Per-project confirmation state for the displayed month, keyed by project id.
+ * `ids` are every assignment row for the project (all users), so the 確定 column
+ * can flip the whole project at once. */
+export function buildProjectConfirmation(
+  assignments: ProjectMonthlyAssignment[],
+): Map<string, ProjectConfirmation> {
+  const map = new Map<string, ProjectConfirmation>();
+  for (const a of assignments) {
+    let entry = map.get(a.project);
+    if (!entry) {
+      entry = { ids: [], confirmed: 0, total: 0 };
+      map.set(a.project, entry);
+    }
+    entry.ids.push(a.id);
+    entry.total += 1;
+    if (a.is_confirmed) entry.confirmed += 1;
+  }
+  return map;
+}
+
+/** A project row is fully confirmed (locked) once it has ≥1 assignment and every
+ * one is confirmed. An empty project (no assignments) is never "confirmed", so it
+ * stays editable. */
+export function isProjectRowConfirmed(c: ProjectConfirmation | undefined): boolean {
+  return c !== undefined && c.total > 0 && c.confirmed === c.total;
 }
 
 export type CellState = {
@@ -399,6 +418,12 @@ export type MonthlyAssignmentMatrixProps = {
     user: MonthlyMatrixUser;
     assignment: ProjectMonthlyAssignment | null;
   }) => void;
+  /** Flip every assignment of a project (for the displayed month) to `isConfirmed`.
+   * Wired to the per-row 確定 column checkbox. When omitted, the column renders
+   * disabled checkboxes (read-only confirmation state). */
+  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
+  /** Disables the 確定 checkboxes while a mutation is in flight. */
+  isSaving?: boolean;
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */

@@ -1,12 +1,13 @@
 import { describe, expect, test } from "vitest";
 import {
   buildGrid,
+  buildProjectConfirmation,
   countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
   firstOfNextMonth,
   flattenPatternToAssignmentRequests,
   formatMonth,
-  isMonthConfirmed,
+  isProjectRowConfirmed,
 } from "~/components/project-assignments/utils";
 import type {
   ProjectAssignmentPattern,
@@ -278,33 +279,26 @@ describe("countAssignmentsByConfirmation (kippo#23)", () => {
   });
 });
 
-describe("isMonthConfirmed (gates 新規プロジェクト作成)", () => {
-  test("empty month is NOT confirmed", () => {
-    expect(isMonthConfirmed([])).toBe(false);
+describe("buildProjectConfirmation + isProjectRowConfirmed (per-project 確定)", () => {
+  test("groups assignment ids per project with confirmed/total counts", () => {
+    const map = buildProjectConfirmation([
+      makeAssignment({ id: 1, project: "proj-a", is_confirmed: true }),
+      makeAssignment({ id: 2, project: "proj-a", is_confirmed: false }),
+      makeAssignment({ id: 3, project: "proj-b", is_confirmed: true }),
+    ]);
+    expect(map.get("proj-a")).toEqual({ ids: [1, 2], confirmed: 1, total: 2 });
+    expect(map.get("proj-b")).toEqual({ ids: [3], confirmed: 1, total: 1 });
   });
 
-  test("all assignments confirmed → confirmed", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: true }),
-      makeAssignment({ id: 2, is_confirmed: true }),
-    ];
-    expect(isMonthConfirmed(rows)).toBe(true);
+  test("isProjectRowConfirmed: true only when every row is confirmed", () => {
+    expect(isProjectRowConfirmed({ ids: [1, 2], confirmed: 2, total: 2 })).toBe(true);
+    expect(isProjectRowConfirmed({ ids: [1, 2], confirmed: 1, total: 2 })).toBe(false);
+    expect(isProjectRowConfirmed({ ids: [1], confirmed: 0, total: 1 })).toBe(false);
   });
 
-  test("any unconfirmed assignment → NOT confirmed", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: true }),
-      makeAssignment({ id: 2, is_confirmed: false }),
-    ];
-    expect(isMonthConfirmed(rows)).toBe(false);
-  });
-
-  test("all unconfirmed → NOT confirmed", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: false }),
-      makeAssignment({ id: 2, is_confirmed: false }),
-    ];
-    expect(isMonthConfirmed(rows)).toBe(false);
+  test("isProjectRowConfirmed: empty / missing project is never confirmed", () => {
+    expect(isProjectRowConfirmed(undefined)).toBe(false);
+    expect(isProjectRowConfirmed({ ids: [], confirmed: 0, total: 0 })).toBe(false);
   });
 });
 
