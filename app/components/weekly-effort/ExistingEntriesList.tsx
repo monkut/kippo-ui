@@ -56,6 +56,18 @@ function ExistingEntriesListImpl({
     return `${weekPart} · Cumulative monthly: ${monthHours}h (${cumulativePercent(projectId)}%)`;
   };
 
+  // Both groups are ordered by cumulative monthly % (highest first). Month-only
+  // projects (previously entered, no data this week) render above the week's
+  // entries — see the render order below.
+  const byCumulativePercentDesc = (a: string, b: string) =>
+    cumulativePercent(b) - cumulativePercent(a);
+  const sortedWeekEntries = [...selectedWeekEntries].sort((a, b) =>
+    byCumulativePercentDesc(a.project, b.project),
+  );
+  const sortedMonthOnlyProjects = [...monthOnlyProjects].sort((a, b) =>
+    byCumulativePercentDesc(a.project, b.project),
+  );
+
   const startEditEntry = (entry: ProjectWeeklyEffort) => {
     setEditingEntryId(entry.id);
     setEditingHours(String(entry.hours));
@@ -180,7 +192,23 @@ function ExistingEntriesListImpl({
       </div>
 
       <div className="space-y-2">
-        {selectedWeekEntries.map((entry) => {
+        {sortedMonthOnlyProjects.map((p) => (
+          <div
+            key={p.project}
+            className="grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 opacity-60"
+            title={effortTooltip(p.project, null)}
+          >
+            <span className="text-gray-400 min-w-0 truncate">{p.project_name}</span>
+            <span className="text-right text-gray-400 font-medium tabular-nums pr-2">-</span>
+            <span className="text-gray-400 text-sm">時間</span>
+            <span className="text-right text-gray-400 text-sm tabular-nums">
+              ({cumulativePercent(p.project)}%)
+            </span>
+            <span />
+          </div>
+        ))}
+
+        {sortedWeekEntries.map((entry) => {
           const isEditing = editingEntryId === entry.id;
 
           return (
@@ -311,22 +339,6 @@ function ExistingEntriesListImpl({
             </div>
           );
         })}
-
-        {monthOnlyProjects.map((p) => (
-          <div
-            key={p.project}
-            className="grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 opacity-60"
-            title={effortTooltip(p.project, null)}
-          >
-            <span className="text-gray-400 min-w-0 truncate">{p.project_name}</span>
-            <span className="text-right text-gray-400 font-medium tabular-nums pr-2">-</span>
-            <span className="text-gray-400 text-sm">時間</span>
-            <span className="text-right text-gray-400 text-sm tabular-nums">
-              ({cumulativePercent(p.project)}%)
-            </span>
-            <span />
-          </div>
-        ))}
 
         {showInlineHolidayInput && (
           <div className="mt-4 pt-4 border-t border-gray-200">

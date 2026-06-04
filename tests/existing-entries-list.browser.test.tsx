@@ -76,4 +76,31 @@ describe("ExistingEntriesList — month-only projects + cumulative monthly %", (
     expect(container.textContent).toContain("合計");
     expect(container.textContent).toContain("5 時間");
   });
+
+  test("month-only rows render above the week's entries, each group ordered by cumulative % desc", async () => {
+    // Month totals: pa=10, pb=30, pc=20, pd=40 → total 100h → 10/30/20/40%.
+    // Week entries: pa(10%), pb(30%) → expect pb before pa.
+    // Month-only: pc(20%), pd(40%) → expect pd before pc, and both above the week rows.
+    root.render(
+      <ExistingEntriesList
+        selectedWeekEntries={[weekEntry("pa", "Week A", 1), weekEntry("pb", "Week B", 3)]}
+        monthOnlyProjects={[
+          { project: "pc", project_name: "Month C" },
+          { project: "pd", project_name: "Month D" },
+        ]}
+        monthHoursByProject={{ pa: 10, pb: 30, pc: 20, pd: 40 }}
+        weekStart="2026-05-25"
+        isSubmitting={false}
+        onUpdateHours={() => Promise.resolve(true)}
+        onDelete={() => Promise.resolve(true)}
+        onAddEntry={() => {}}
+        onHolidayCreated={() => {}}
+      />,
+    );
+    await flush();
+
+    const names = [...container.querySelectorAll(".truncate")].map((el) => el.textContent);
+    // Month-only (desc): Month D (40%), Month C (20%); then week (desc): Week B (30%), Week A (10%).
+    expect(names).toEqual(["Month D", "Month C", "Week B", "Week A"]);
+  });
 });
