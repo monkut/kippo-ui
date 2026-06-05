@@ -12,7 +12,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +27,16 @@ export default function Login() {
       localStorage.removeItem("authExpired");
     }
   }, [user, navigate]);
+
+  // Auth check still running, or an authenticated user is about to be redirected:
+  // render a loading placeholder instead of flashing the login form.
+  if (isLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-gray-500">読み込み中...</div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
