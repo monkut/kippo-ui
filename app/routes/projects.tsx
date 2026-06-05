@@ -4,9 +4,9 @@ import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated/projects/projects";
 import type { KippoProject } from "~/lib/api/generated/models";
+import { useHiddenProjectCategories } from "~/hooks/useHiddenProjectCategories";
 
-// Categories to exclude from the project list
-const EXCLUDED_CATEGORIES = ["PAO", "r&d", "講師", "maintenance", "保守運用"];
+const UNCATEGORIZED_LABEL = "未分類";
 
 export function meta() {
   return [{ title: "プロジェクト一覧 - Kippo要件管理" }];
@@ -18,6 +18,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hiddenCategories, setHiddenCategories] = useHiddenProjectCategories();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,15 +39,13 @@ export default function Projects() {
     try {
       const response = await projectsList({ is_active: true });
       if (response.data?.results) {
-        const filteredProjects = response.data.results
-          .filter((project) => !project.category || !EXCLUDED_CATEGORIES.includes(project.category))
-          .sort((a, b) => {
-            if (!a.start_date && !b.start_date) return 0;
-            if (!a.start_date) return 1;
-            if (!b.start_date) return -1;
-            return a.start_date.localeCompare(b.start_date);
-          });
-        setProjects(filteredProjects);
+        const sortedProjects = [...response.data.results].sort((a, b) => {
+          if (!a.start_date && !b.start_date) return 0;
+          if (!a.start_date) return 1;
+          if (!b.start_date) return -1;
+          return a.start_date.localeCompare(b.start_date);
+        });
+        setProjects(sortedProjects);
       }
     } catch (err) {
       console.error("Failed to load projects:", err);
@@ -56,11 +55,38 @@ export default function Projects() {
     }
   };
 
-  // Separate projects into those with and without requirements
+  // All distinct categories present across the loaded projects (sorted), used to
+  // populate the "hide category" control.
+  const allCategories = useMemo(() => {
+    const categories = new Set<string>();
+    for (const project of projects) {
+      if (project.category) categories.add(project.category);
+    }
+    return [...categories].sort();
+  }, [projects]);
+
+  // Projects visible after applying the user's hidden-category selection.
+  const visibleProjects = useMemo(
+    () =>
+      projects.filter((project) => !project.category || !hiddenCategories.has(project.category)),
+    [projects, hiddenCategories],
+  );
+
+  const handleToggleCategory = (category: string) => {
+    const next = new Set(hiddenCategories);
+    if (next.has(category)) {
+      next.delete(category);
+    } else {
+      next.add(category);
+    }
+    setHiddenCategories(next);
+  };
+
+  // Separate visible projects into those with and without requirements
   const { projectsWithRequirements, projectsWithoutRequirements } = useMemo(() => {
     const withReqs: KippoProject[] = [];
     const withoutReqs: KippoProject[] = [];
-    for (const project of projects) {
+    for (const project of visibleProjects) {
       if (project.has_requirements) {
         withReqs.push(project);
       } else {
@@ -68,7 +94,7 @@ export default function Projects() {
       }
     }
     return { projectsWithRequirements: withReqs, projectsWithoutRequirements: withoutReqs };
-  }, [projects]);
+  }, [visibleProjects]);
 
   if (authLoading) {
     return (
@@ -89,6 +115,13 @@ export default function Projects() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">プロジェクト一覧</h1>
+          {allCategories.length > 0 && (
+            <HideCategoryControl
+              categories={allCategories}
+              hiddenCategories={hiddenCategories}
+              onToggle={handleToggleCategory}
+            />
+          )}
         </div>
 
         {error && (
@@ -104,6 +137,12 @@ export default function Projects() {
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">プロジェクトがありません</p>
+          </div>
+        ) : visibleProjects.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              表示するプロジェクトがありません（すべてのカテゴリが非表示です）
+            </p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -141,6 +180,45 @@ export default function Projects() {
   );
 }
 
+// Dropdown letting the user hide projects by category. Lists every category
+// present across the loaded projects; a checked box hides that category's
+// projects. Uses a native <details> element so it closes on outside interaction
+// without extra state.
+function HideCategoryControl({
+  categories,
+  hiddenCategories,
+  onToggle,
+}: {
+  categories: string[];
+  hiddenCategories: Set<string>;
+  onToggle: (category: string) => void;
+}) {
+  const hiddenCount = categories.filter((category) => hiddenCategories.has(category)).length;
+  return (
+    <details className="relative">
+      <summary className="cursor-pointer select-none list-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+        カテゴリを非表示{hiddenCount > 0 ? ` (${hiddenCount})` : ""}
+      </summary>
+      <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 bg-white p-2 shadow-lg">
+        {categories.map((category) => (
+          <label
+            key={category}
+            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={hiddenCategories.has(category)}
+              onChange={() => onToggle(category)}
+            />
+            {category}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 // Reusable component for rendering a project list item
 function ProjectListItem({ project }: { project: KippoProject }) {
   return (
@@ -164,11 +242,9 @@ function ProjectListItem({ project }: { project: KippoProject }) {
           </div>
           <div className="mt-2 sm:flex sm:justify-between">
             <div className="sm:flex gap-4">
-              {project.category && (
-                <p className="flex items-center text-sm text-gray-500">
-                  カテゴリ: {project.category}
-                </p>
-              )}
+              <p className="flex items-center text-sm text-gray-500">
+                カテゴリ: {project.category || UNCATEGORIZED_LABEL}
+              </p>
             </div>
             <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 gap-4">
               <p>
