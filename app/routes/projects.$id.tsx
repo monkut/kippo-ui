@@ -61,6 +61,9 @@ const FONT_LEVEL_OPTIONS = [
   { level: 2, label: "大" },
 ];
 
+// Parse a comma-separated section list from a URL param into a Set.
+const parseSectionSet = (value: string | null) => new Set((value ?? "").split(",").filter(Boolean));
+
 export function meta() {
   return [{ title: "プロジェクト詳細 - Kippo要件管理" }];
 }
@@ -245,11 +248,6 @@ export default function ProjectDetails() {
   );
   const [editingTechReq, setEditingTechReq] = useState<TechnicalRequirementType | null>(null);
 
-  const [problemsExpanded, setProblemsExpanded] = useState(true);
-  const [assumptionsExpanded, setAssumptionsExpanded] = useState(true);
-  const [businessReqsExpanded, setBusinessReqsExpanded] = useState(true);
-  const [techReqsExpanded, setTechReqsExpanded] = useState(true);
-
   // Display selections persisted in the URL so they can be copied and re-applied.
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -274,21 +272,17 @@ export default function ProjectDetails() {
     [setSearchParams],
   );
 
-  // Per-section "compact" selections (?compact=assumptions,problems,business,technical).
-  const compactSections = useMemo(
-    () => new Set((searchParams.get("compact") ?? "").split(",").filter(Boolean)),
-    [searchParams],
-  );
-  const toggleCompact = useCallback(
-    (section: string) => {
+  // Toggle a section key within a comma-separated URL param (?compact=, ?collapsed=).
+  const toggleSectionFlag = useCallback(
+    (param: string, section: string) => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          const sections = new Set((next.get("compact") ?? "").split(",").filter(Boolean));
+          const sections = parseSectionSet(next.get(param));
           if (sections.has(section)) sections.delete(section);
           else sections.add(section);
-          if (sections.size > 0) next.set("compact", [...sections].join(","));
-          else next.delete("compact");
+          if (sections.size > 0) next.set(param, [...sections].join(","));
+          else next.delete(param);
           return next;
         },
         { replace: true },
@@ -296,10 +290,26 @@ export default function ProjectDetails() {
     },
     [setSearchParams],
   );
+
+  // Per-section "compact" selections (?compact=assumptions,problems,business,technical).
+  const compactSections = useMemo(
+    () => parseSectionSet(searchParams.get("compact")),
+    [searchParams],
+  );
   const assumptionsCompact = compactSections.has("assumptions");
   const problemsCompact = compactSections.has("problems");
   const businessReqsCompact = compactSections.has("business");
   const techReqsCompact = compactSections.has("technical");
+
+  // Per-section collapse (?collapsed=...); sections are expanded by default.
+  const collapsedSections = useMemo(
+    () => parseSectionSet(searchParams.get("collapsed")),
+    [searchParams],
+  );
+  const assumptionsExpanded = !collapsedSections.has("assumptions");
+  const problemsExpanded = !collapsedSections.has("problems");
+  const businessReqsExpanded = !collapsedSections.has("business");
+  const techReqsExpanded = !collapsedSections.has("technical");
 
   const [expandedComments, setExpandedComments] = useState<number | null>(null);
   const [businessReqComments, setBusinessReqComments] = useState<CommentData[]>([]);
@@ -606,7 +616,7 @@ export default function ProjectDetails() {
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <button
               type="button"
-              onClick={() => setAssumptionsExpanded(!assumptionsExpanded)}
+              onClick={() => toggleSectionFlag("collapsed", "assumptions")}
               className="flex items-center gap-2 text-lg font-medium text-gray-900 hover:text-gray-700"
             >
               <ChevronIcon isExpanded={assumptionsExpanded} />
@@ -621,7 +631,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleCompact("assumptions")}
+                  onClick={() => toggleSectionFlag("compact", "assumptions")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     assumptionsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -755,7 +765,7 @@ export default function ProjectDetails() {
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <button
               type="button"
-              onClick={() => setProblemsExpanded(!problemsExpanded)}
+              onClick={() => toggleSectionFlag("collapsed", "problems")}
               className="flex items-center gap-2 text-lg font-medium text-gray-900 hover:text-gray-700"
             >
               <ChevronIcon isExpanded={problemsExpanded} />
@@ -770,7 +780,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleCompact("problems")}
+                  onClick={() => toggleSectionFlag("compact", "problems")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     problemsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -897,7 +907,7 @@ export default function ProjectDetails() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setBusinessReqsExpanded(!businessReqsExpanded)}
+                onClick={() => toggleSectionFlag("collapsed", "business")}
                 className="flex items-center gap-2 text-lg font-medium text-gray-900 hover:text-gray-700"
               >
                 <ChevronIcon isExpanded={businessReqsExpanded} />
@@ -918,7 +928,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleCompact("business")}
+                  onClick={() => toggleSectionFlag("compact", "business")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     businessReqsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -1149,7 +1159,7 @@ export default function ProjectDetails() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setTechReqsExpanded(!techReqsExpanded)}
+                onClick={() => toggleSectionFlag("collapsed", "technical")}
                 className="flex items-center gap-2 text-lg font-medium text-gray-900 hover:text-gray-700"
               >
                 <ChevronIcon isExpanded={techReqsExpanded} />
@@ -1170,7 +1180,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => toggleCompact("technical")}
+                  onClick={() => toggleSectionFlag("compact", "technical")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     techReqsCompact
                       ? "bg-gray-200 text-gray-700"
