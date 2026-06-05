@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
 import { MultiSelect } from "~/components/multi-select";
@@ -49,6 +49,17 @@ type AssumptionCategoryChoice = {
   value: string;
   label: string;
 };
+
+// Display font-size levels (0=small/previous, 1=medium/default, 2=large), persisted in the URL (?fs=).
+// Class literals are kept whole so Tailwind's source scanner emits them.
+const TITLE_FONT_SIZES = ["text-sm", "text-xl", "text-2xl"] as const;
+const BODY_FONT_SIZES = ["text-xs", "text-lg", "text-xl"] as const;
+const DEFAULT_FONT_LEVEL = 1;
+const FONT_LEVEL_OPTIONS = [
+  { level: 0, label: "小" },
+  { level: 1, label: "中" },
+  { level: 2, label: "大" },
+];
 
 export function meta() {
   return [{ title: "プロジェクト詳細 - Kippo要件管理" }];
@@ -235,13 +246,60 @@ export default function ProjectDetails() {
   const [editingTechReq, setEditingTechReq] = useState<TechnicalRequirementType | null>(null);
 
   const [problemsExpanded, setProblemsExpanded] = useState(true);
-  const [problemsCompact, setProblemsCompact] = useState(false);
   const [assumptionsExpanded, setAssumptionsExpanded] = useState(true);
-  const [assumptionsCompact, setAssumptionsCompact] = useState(false);
   const [businessReqsExpanded, setBusinessReqsExpanded] = useState(true);
-  const [businessReqsCompact, setBusinessReqsCompact] = useState(false);
   const [techReqsExpanded, setTechReqsExpanded] = useState(true);
-  const [techReqsCompact, setTechReqsCompact] = useState(false);
+
+  // Display selections persisted in the URL so they can be copied and re-applied.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Font size level (?fs=); default to middle when absent or invalid.
+  const parsedFontLevel = Number.parseInt(searchParams.get("fs") ?? "", 10);
+  const fontLevel =
+    parsedFontLevel === 0 || parsedFontLevel === 2 ? parsedFontLevel : DEFAULT_FONT_LEVEL;
+  const titleSize = TITLE_FONT_SIZES[fontLevel];
+  const bodySize = BODY_FONT_SIZES[fontLevel];
+  const setFontLevel = useCallback(
+    (level: number) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (level === DEFAULT_FONT_LEVEL) next.delete("fs");
+          else next.set("fs", String(level));
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  // Per-section "compact" selections (?compact=assumptions,problems,business,technical).
+  const compactSections = useMemo(
+    () => new Set((searchParams.get("compact") ?? "").split(",").filter(Boolean)),
+    [searchParams],
+  );
+  const toggleCompact = useCallback(
+    (section: string) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          const sections = new Set((next.get("compact") ?? "").split(",").filter(Boolean));
+          if (sections.has(section)) sections.delete(section);
+          else sections.add(section);
+          if (sections.size > 0) next.set("compact", [...sections].join(","));
+          else next.delete("compact");
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+  const assumptionsCompact = compactSections.has("assumptions");
+  const problemsCompact = compactSections.has("problems");
+  const businessReqsCompact = compactSections.has("business");
+  const techReqsCompact = compactSections.has("technical");
 
   const [expandedComments, setExpandedComments] = useState<number | null>(null);
   const [businessReqComments, setBusinessReqComments] = useState<CommentData[]>([]);
@@ -521,6 +579,28 @@ export default function ProjectDetails() {
   return (
     <Layout projectName={project.name} projectId={projectId}>
       <div className="space-y-6">
+        {/* Display controls (font size) */}
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm text-gray-500">文字サイズ</span>
+          <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+            {FONT_LEVEL_OPTIONS.map((option) => (
+              <button
+                key={option.level}
+                type="button"
+                onClick={() => setFontLevel(option.level)}
+                aria-pressed={fontLevel === option.level}
+                className={`px-3 py-1 text-sm font-medium border-l border-gray-300 first:border-l-0 ${
+                  fontLevel === option.level
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Assumptions Section */}
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -541,7 +621,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setAssumptionsCompact(!assumptionsCompact)}
+                  onClick={() => toggleCompact("assumptions")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     assumptionsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -582,7 +662,7 @@ export default function ProjectDetails() {
                       >
                         {assumption.category_display}
                       </span>
-                      <span className="text-xl text-gray-900 truncate min-w-0">
+                      <span className={`${titleSize} text-gray-900 truncate min-w-0`}>
                         {assumption.title}
                       </span>
                     </div>
@@ -615,7 +695,7 @@ export default function ProjectDetails() {
                             >
                               {assumption.category_display}
                             </span>
-                            <span className="text-xl text-gray-900">{assumption.title}</span>
+                            <span className={`${titleSize} text-gray-900`}>{assumption.title}</span>
                             {assumption.is_internal && (
                               <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
                                 社内のみ
@@ -644,7 +724,9 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {assumption.details && (
-                          <p className="mt-1 text-xl text-gray-500 ml-16 whitespace-pre-line">
+                          <p
+                            className={`mt-1 ${titleSize} text-gray-500 ml-16 whitespace-pre-line`}
+                          >
                             {assumption.details}
                           </p>
                         )}
@@ -688,7 +770,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setProblemsCompact(!problemsCompact)}
+                  onClick={() => toggleCompact("problems")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     problemsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -728,7 +810,7 @@ export default function ProjectDetails() {
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {problem.display_id}
                       </span>
-                      <span className="text-xl text-gray-900 truncate min-w-0">
+                      <span className={`${titleSize} text-gray-900 truncate min-w-0`}>
                         {problem.title}
                       </span>
                     </div>
@@ -762,7 +844,7 @@ export default function ProjectDetails() {
                             <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
                               {problem.display_id}
                             </span>
-                            <span className="text-xl text-gray-900">{problem.title}</span>
+                            <span className={`${titleSize} text-gray-900`}>{problem.title}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
@@ -784,7 +866,9 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {problem.details && (
-                          <p className="mt-1 text-xl text-gray-500 ml-16 whitespace-pre-line">
+                          <p
+                            className={`mt-1 ${titleSize} text-gray-500 ml-16 whitespace-pre-line`}
+                          >
                             {problem.details}
                           </p>
                         )}
@@ -834,7 +918,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setBusinessReqsCompact(!businessReqsCompact)}
+                  onClick={() => toggleCompact("business")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     businessReqsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -882,7 +966,9 @@ export default function ProjectDetails() {
                       >
                         {getBusinessReqCategoryName(req.category, businessRequirementCategories)}
                       </span>
-                      <span className="text-xl text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className={`${titleSize} text-gray-900 truncate min-w-0`}>
+                        {req.title}
+                      </span>
                       {req.problems && req.problems.length > 0 && (
                         <span className="text-xs text-gray-500 shrink-0">
                           ({getProblemDisplayIds(req.problems, problemDefinitions)})
@@ -937,13 +1023,15 @@ export default function ProjectDetails() {
                                     businessRequirementCategories,
                                   )}
                                 </span>
-                                <span className="text-xl text-gray-900">{req.title}</span>
+                                <span className={`${titleSize} text-gray-900`}>{req.title}</span>
                               </div>
-                              <p className="mt-1 text-lg text-gray-500 ml-16">
+                              <p className={`mt-1 ${bodySize} text-gray-500 ml-16`}>
                                 課題: {getProblemDisplayIds(req.problems, problemDefinitions)}
                               </p>
                               {req.details && (
-                                <p className="mt-1 text-lg text-gray-500 ml-16 whitespace-pre-line">
+                                <p
+                                  className={`mt-1 ${bodySize} text-gray-500 ml-16 whitespace-pre-line`}
+                                >
                                   {req.details}
                                 </p>
                               )}
@@ -1082,7 +1170,7 @@ export default function ProjectDetails() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setTechReqsCompact(!techReqsCompact)}
+                  onClick={() => toggleCompact("technical")}
                   className={`px-2 py-1 text-xs font-medium rounded-md ${
                     techReqsCompact
                       ? "bg-gray-200 text-gray-700"
@@ -1125,7 +1213,9 @@ export default function ProjectDetails() {
                       >
                         {req.category_name}
                       </span>
-                      <span className="text-xl text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className={`${titleSize} text-gray-900 truncate min-w-0`}>
+                        {req.title}
+                      </span>
                       {req.estimate && (
                         <span className="text-xs text-gray-500 ml-auto shrink-0">
                           {req.estimate.days}日
@@ -1168,15 +1258,15 @@ export default function ProjectDetails() {
                               >
                                 {req.category_name}
                               </span>
-                              <span className="text-xl text-gray-900">{req.title}</span>
+                              <span className={`${titleSize} text-gray-900`}>{req.title}</span>
                               {req.estimate && (
-                                <span className="text-xl font-medium text-gray-600">
+                                <span className={`${titleSize} font-medium text-gray-600`}>
                                   {req.estimate.days}日 ({Math.round(req.estimate.confidence * 100)}
                                   %)
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 text-lg text-gray-500 ml-16">
+                            <p className={`mt-1 ${bodySize} text-gray-500 ml-16`}>
                               ビジネス要件:{" "}
                               {req.business_requirements && req.business_requirements.length > 0
                                 ? businessRequirements
@@ -1186,7 +1276,9 @@ export default function ProjectDetails() {
                                 : "-"}
                             </p>
                             {req.details && (
-                              <p className="mt-1 text-lg text-gray-500 ml-16 whitespace-pre-line">
+                              <p
+                                className={`mt-1 ${bodySize} text-gray-500 ml-16 whitespace-pre-line`}
+                              >
                                 {req.details}
                               </p>
                             )}
