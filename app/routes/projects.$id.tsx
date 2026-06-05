@@ -582,7 +582,7 @@ export default function ProjectDetails() {
                       >
                         {assumption.category_display}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">
+                      <span className="text-xl text-gray-900 truncate min-w-0">
                         {assumption.title}
                       </span>
                     </div>
@@ -615,7 +615,7 @@ export default function ProjectDetails() {
                             >
                               {assumption.category_display}
                             </span>
-                            <span className="text-sm text-gray-900">{assumption.title}</span>
+                            <span className="text-xl text-gray-900">{assumption.title}</span>
                             {assumption.is_internal && (
                               <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
                                 社内のみ
@@ -644,7 +644,7 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {assumption.details && (
-                          <p className="mt-1 text-sm text-gray-500 ml-16 whitespace-pre-line">
+                          <p className="mt-1 text-xl text-gray-500 ml-16 whitespace-pre-line">
                             {assumption.details}
                           </p>
                         )}
@@ -728,7 +728,7 @@ export default function ProjectDetails() {
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0">
                         {problem.display_id}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">
+                      <span className="text-xl text-gray-900 truncate min-w-0">
                         {problem.title}
                       </span>
                     </div>
@@ -762,7 +762,7 @@ export default function ProjectDetails() {
                             <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
                               {problem.display_id}
                             </span>
-                            <span className="text-sm text-gray-900">{problem.title}</span>
+                            <span className="text-xl text-gray-900">{problem.title}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
@@ -784,7 +784,7 @@ export default function ProjectDetails() {
                           </div>
                         </div>
                         {problem.details && (
-                          <p className="mt-1 text-sm text-gray-500 ml-16 whitespace-pre-line">
+                          <p className="mt-1 text-xl text-gray-500 ml-16 whitespace-pre-line">
                             {problem.details}
                           </p>
                         )}
@@ -882,7 +882,7 @@ export default function ProjectDetails() {
                       >
                         {getBusinessReqCategoryName(req.category, businessRequirementCategories)}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className="text-xl text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.problems && req.problems.length > 0 && (
                         <span className="text-xs text-gray-500 shrink-0">
                           ({getProblemDisplayIds(req.problems, problemDefinitions)})
@@ -937,13 +937,13 @@ export default function ProjectDetails() {
                                     businessRequirementCategories,
                                   )}
                                 </span>
-                                <span className="text-sm text-gray-900">{req.title}</span>
+                                <span className="text-xl text-gray-900">{req.title}</span>
                               </div>
-                              <p className="mt-1 text-xs text-gray-500 ml-16">
+                              <p className="mt-1 text-lg text-gray-500 ml-16">
                                 課題: {getProblemDisplayIds(req.problems, problemDefinitions)}
                               </p>
                               {req.details && (
-                                <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">
+                                <p className="mt-1 text-lg text-gray-500 ml-16 whitespace-pre-line">
                                   {req.details}
                                 </p>
                               )}
@@ -1125,7 +1125,7 @@ export default function ProjectDetails() {
                       >
                         {req.category_name}
                       </span>
-                      <span className="text-sm text-gray-900 truncate min-w-0">{req.title}</span>
+                      <span className="text-xl text-gray-900 truncate min-w-0">{req.title}</span>
                       {req.estimate && (
                         <span className="text-xs text-gray-500 ml-auto shrink-0">
                           {req.estimate.days}日
@@ -1168,15 +1168,15 @@ export default function ProjectDetails() {
                               >
                                 {req.category_name}
                               </span>
-                              <span className="text-sm text-gray-900">{req.title}</span>
+                              <span className="text-xl text-gray-900">{req.title}</span>
                               {req.estimate && (
-                                <span className="text-sm font-medium text-gray-600">
+                                <span className="text-xl font-medium text-gray-600">
                                   {req.estimate.days}日 ({Math.round(req.estimate.confidence * 100)}
                                   %)
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 text-xs text-gray-500 ml-16">
+                            <p className="mt-1 text-lg text-gray-500 ml-16">
                               ビジネス要件:{" "}
                               {req.business_requirements && req.business_requirements.length > 0
                                 ? businessRequirements
@@ -1186,7 +1186,7 @@ export default function ProjectDetails() {
                                 : "-"}
                             </p>
                             {req.details && (
-                              <p className="mt-1 text-xs text-gray-500 ml-16 whitespace-pre-line">
+                              <p className="mt-1 text-lg text-gray-500 ml-16 whitespace-pre-line">
                                 {req.details}
                               </p>
                             )}
