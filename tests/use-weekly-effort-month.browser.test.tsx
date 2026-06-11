@@ -35,7 +35,13 @@ const ctl = vi.hoisted(() => {
 vi.mock("~/lib/api/pagination", () => ({
   fetchAllProjects: vi.fn(() =>
     Promise.resolve([
-      { id: "pa", name: "PA", phase: "project-development", closed_datetime: null },
+      {
+        id: "pa",
+        name: "PA",
+        phase: "under-contract",
+        category: "ai-development",
+        closed_datetime: null,
+      },
     ]),
   ),
 }));

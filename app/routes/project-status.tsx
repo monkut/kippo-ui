@@ -20,8 +20,9 @@ export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
 }
 
-// Phases to exclude from the project list
-const EXCLUDED_PHASES = ["anon-project"];
+// Categories to exclude from the project list (kippo#36 moved the anon check
+// from phase=="anon-project" to category=="non-project")
+const EXCLUDED_CATEGORIES = ["non-project"];
 
 export default function ProjectStatus() {
   const { user, isLoading: authLoading } = useAuth();
@@ -53,13 +54,13 @@ export default function ProjectStatus() {
     try {
       const response = await projectsList({ is_active: true });
       if (response.data?.results) {
-        // Filter projects: display_as_active=True, is_closed=False, phase not in excluded
+        // Filter projects: display_as_active=True, is_closed=False, category not in excluded
         const filteredProjects = response.data.results
           .filter(
             (project) =>
               project.display_as_active === true &&
               project.is_closed === false &&
-              (!project.phase || !EXCLUDED_PHASES.includes(project.phase)),
+              (!project.category || !EXCLUDED_CATEGORIES.includes(project.category)),
           )
           // Sort by: -confidence (large to small), target_date (earliest to latest), name
           .sort((a, b) => {
@@ -373,9 +374,9 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
         {/* Infra Cost */}
         <InfraCostDisplay costs={monthlyCosts} />
 
-        {/* Confidence indicator */}
+        {/* Project status label (kippo#37: phase_display replaces the 確度 % readout) */}
         <div className="pt-4 border-t border-gray-200">
-          <span className="text-sm text-gray-500">確度: {project.confidence ?? 0}%</span>
+          <span className="text-sm text-gray-500">ステータス: {project.phase_display}</span>
         </div>
       </div>
     </div>

@@ -39,10 +39,10 @@ function WeeklyEffortFormImpl({
   const { projectProjects, nonProjectProjects } = useMemo(
     () => ({
       projectProjects: projects
-        .filter((p) => p.phase !== "anon-project" && isProjectOpenForWeek(p, weekStart))
+        .filter((p) => p.category !== "non-project" && isProjectOpenForWeek(p, weekStart))
         .sort((a, b) => a.name.localeCompare(b.name)),
       nonProjectProjects: projects
-        .filter((p) => p.phase === "anon-project" && isProjectOpenForWeek(p, weekStart))
+        .filter((p) => p.category === "non-project" && isProjectOpenForWeek(p, weekStart))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }),
     [projects, weekStart],

@@ -46,7 +46,7 @@ function buildTemplateEntries(
     .map((e, idx) => {
       const project = projectsMap.get(e.project);
       const filterType: "project" | "anon-project" =
-        project?.phase === "anon-project" ? "anon-project" : "project";
+        project?.category === "non-project" ? "anon-project" : "project";
       return {
         id: Date.now() + idx,
         projectId: e.project,

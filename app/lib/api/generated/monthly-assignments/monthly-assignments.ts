@@ -27,7 +27,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -91,7 +92,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -149,7 +151,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -206,7 +209,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -265,7 +269,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -324,7 +329,8 @@ Manages monthly workload percentage assignments for users on projects.
 **Filtering:**
 - project: Filter by project UUID
 - user: Filter by user ID
-- month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+- month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+  current month (JST) when none of month/month_gte/month_lte is supplied.
 - month_gte: Filter by month >= date (YYYY-MM-DD format)
 - month_lte: Filter by month <= date (YYYY-MM-DD format)
 

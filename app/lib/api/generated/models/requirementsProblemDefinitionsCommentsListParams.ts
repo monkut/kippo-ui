@@ -6,15 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type ProjectsListParams = {
-/**
- * Filter by category (exact match on the KippoProject.category value, e.g. 'PAO')
- */
-category?: string;
-/**
- * Filter by active status (display_as_active field)
- */
-is_active?: boolean;
+export type RequirementsProblemDefinitionsCommentsListParams = {
 /**
  * A page number within the paginated result set.
  */
@@ -23,4 +15,8 @@ page?: number;
  * Number of results to return per page.
  */
 page_size?: number;
+/**
+ * Return only top-level comments (no replies)
+ */
+top_level_only?: boolean;
 };

@@ -609,15 +609,16 @@ describe("sortMatrixRows", () => {
   });
 });
 
-describe("compareActiveKippoProjects: phase + confidence", () => {
-  test("anon-project phase comes before everything else", () => {
+describe("compareActiveKippoProjects: category + confidence", () => {
+  test("non-project category comes before everything else", () => {
     const anon = makeProject("a", "Z-Anon", {
-      phase: "anon-project",
+      category: "non-project",
       confidence: 0,
       target_date: "2099-12-31",
     } as Partial<KippoProject>);
     const live = makeProject("b", "A-Live", {
-      phase: "project-development",
+      category: "ai-development",
+      phase: "under-contract",
       confidence: 100,
       target_date: "2026-01-01",
     } as Partial<KippoProject>);
