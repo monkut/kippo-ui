@@ -6,7 +6,6 @@
  * OpenAPI spec version: 1.1.0
  */
 import type { GithubRepositoryInline } from './githubRepositoryInline';
-import type { KippoProjectCategoryEnum } from './kippoProjectCategoryEnum';
 import type { LatestCommentInline } from './latestCommentInline';
 import type { PhaseEnum } from './phaseEnum';
 import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline';
@@ -38,18 +37,20 @@ export interface KippoProject {
   columnset?: string;
   /** State or phase of the project
 
-  * `anon-project` - Non-Project
-  * `lead-evaluation` - Lead Evaluation
-  * `project-proposal` - Project Proposal Preparation
-  * `project-development` - Project Development */
+  * `keep-in-touch` - KIT
+  * `proposing-low` - 提案(低)
+  * `proposing-mid` - 提案(中)
+  * `proposing-high` - 提案(高)
+  * `verbal-order` - 口頭受注
+  * `under-contract` - 契約稼働中
+  * `completed` - 完了
+  * `lost` - 失注 */
   phase?: PhaseEnum;
-  /**
-     * 0-100, Confidence level of the project proceeding to the next phase
-     * @minimum 0
-     * @maximum 100
-     */
-  confidence?: number;
-  category?: KippoProjectCategoryEnum;
+  readonly phase_display: string;
+  /** 0-100, auto-derived from phase (read-only) */
+  readonly confidence: number;
+  /** Project category key (e.g. 'ai-development', 'other', 'non-project'). */
+  category?: string;
   /**
      * Conversation Channel — invite the organization's slack bot to enable channel notification
      * @maxLength 80

@@ -24,9 +24,8 @@ export interface ProjectWeeklyEffort {
   readonly user_username: string | null;
   readonly user_display_name: string;
   /**
-     * Actual effort in hours performed on the project for the given 'week start'
-     * @minimum -32768
-     * @maximum 32767
+     * @minimum 0
+     * @maximum 168
      */
   hours: number;
   readonly created_datetime: string;

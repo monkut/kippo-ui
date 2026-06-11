@@ -7,17 +7,25 @@
  */
 
 /**
- * * `anon-project` - Non-Project
-* `lead-evaluation` - Lead Evaluation
-* `project-proposal` - Project Proposal Preparation
-* `project-development` - Project Development
+ * * `keep-in-touch` - KIT
+* `proposing-low` - 提案(低)
+* `proposing-mid` - 提案(中)
+* `proposing-high` - 提案(高)
+* `verbal-order` - 口頭受注
+* `under-contract` - 契約稼働中
+* `completed` - 完了
+* `lost` - 失注
  */
 export type PhaseEnum = typeof PhaseEnum[keyof typeof PhaseEnum];
 
 
 export const PhaseEnum = {
-  'anon-project': 'anon-project',
-  'lead-evaluation': 'lead-evaluation',
-  'project-proposal': 'project-proposal',
-  'project-development': 'project-development',
+  'keep-in-touch': 'keep-in-touch',
+  'proposing-low': 'proposing-low',
+  'proposing-mid': 'proposing-mid',
+  'proposing-high': 'proposing-high',
+  'verbal-order': 'verbal-order',
+  'under-contract': 'under-contract',
+  completed: 'completed',
+  lost: 'lost',
 } as const;

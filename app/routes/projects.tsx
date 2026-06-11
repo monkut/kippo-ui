@@ -228,9 +228,9 @@ function ProjectListItem({ project }: { project: KippoProject }) {
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-indigo-600 truncate">{project.name}</p>
             <div className="ml-2 flex-shrink-0 flex gap-2">
-              {project.phase && (
+              {project.phase_display && (
                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {project.phase}
+                  {project.phase_display}
                 </span>
               )}
               {project.allocated_staff_days && (

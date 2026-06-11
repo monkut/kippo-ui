@@ -467,16 +467,17 @@ export function sortMatrixRows(
   return sorted;
 }
 
-/** Sort comparator matching ActiveKippoProjectAdmin (kippo/projects/admin.py:1117):
+/** Sort comparator matching ActiveKippoProjectAdmin:
  *
- * 1. anon-project phase first (admin shows non-project entries first)
+ * 1. non-project category first (admin shows non-project entries first; kippo#36 moved
+ *    the anon check from phase=="anon-project" to category=="non-project")
  * 2. confidence descending (nulls/undefined last)
  * 3. target_date ascending (nulls/undefined last)
  * 4. name ascending
  */
 export function compareActiveKippoProjects(a: KippoProject, b: KippoProject): number {
-  const aAnon = a.phase === "anon-project" ? 0 : 1;
-  const bAnon = b.phase === "anon-project" ? 0 : 1;
+  const aAnon = a.category === "non-project" ? 0 : 1;
+  const bAnon = b.category === "non-project" ? 0 : 1;
   if (aAnon !== bAnon) return aAnon - bAnon;
 
   const aConfidence = a.confidence ?? -Infinity;

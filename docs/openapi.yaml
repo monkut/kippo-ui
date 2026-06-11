@@ -744,7 +744,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -761,7 +762,8 @@ paths:
         name: month
         schema:
           type: string
-        description: Filter by exact month (YYYY-MM-DD format)
+        description: Filter by exact month (YYYY-MM-DD format). When omitted (and
+          no month_gte/month_lte), defaults to the current month in JST.
       - in: query
         name: month_gte
         schema:
@@ -820,7 +822,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -871,7 +874,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -916,7 +920,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -973,7 +978,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -1029,7 +1035,8 @@ paths:
         **Filtering:**
         - project: Filter by project UUID
         - user: Filter by user ID
-        - month: Filter by exact month (YYYY-MM-DD format, day should be 01)
+        - month: Filter by exact month (YYYY-MM-DD format, day should be 01). Defaults to the
+          current month (JST) when none of month/month_gte/month_lte is supplied.
         - month_gte: Filter by month >= date (YYYY-MM-DD format)
         - month_lte: Filter by month <= date (YYYY-MM-DD format)
 
@@ -2083,6 +2090,12 @@ paths:
         - Update (PUT/PATCH): Authenticated users for projects in orgs they belong to; superusers any project
         - Delete (DELETE): Superusers only
       parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: Filter by category (exact match on the KippoProject.category
+          value, e.g. 'PAO')
       - in: query
         name: is_active
         schema:
@@ -4635,6 +4648,336 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDefinitionEvaluation'
           description: ''
+  /api/requirements/problem-definitions/{problem_definition_pk}/comments/:
+    get:
+      operationId: requirements_problem_definitions_comments_list
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: top_level_only
+        schema:
+          type: boolean
+        description: Return only top-level comments (no replies)
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectProblemDefinitionCommentList'
+          description: ''
+    post:
+      operationId: requirements_problem_definitions_comments_create
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinitionComment'
+          description: ''
+  /api/requirements/problem-definitions/{problem_definition_pk}/comments/{id}/:
+    get:
+      operationId: requirements_problem_definitions_comments_retrieve
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Comment.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinitionComment'
+          description: ''
+    put:
+      operationId: requirements_problem_definitions_comments_update
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Comment.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinitionComment'
+          description: ''
+    patch:
+      operationId: requirements_problem_definitions_comments_partial_update
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Comment.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectProblemDefinitionCommentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinitionComment'
+          description: ''
+    delete:
+      operationId: requirements_problem_definitions_comments_destroy
+      description: |-
+        ViewSet for ProjectProblemDefinitionComment model.
+
+        Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+        Comments on problem definitions with nested reply support.
+
+        **Organization Scoping:**
+        - Regular users can only access comments for projects in their organizations
+        - Superusers can access all comments
+
+        **Filtering:**
+        - top_level_only: Return only top-level comments (true/false)
+
+        **Actions:**
+        - toggle_resolved: Toggle the is_resolved status for a top-level comment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Comment.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/requirements/problem-definitions/{problem_definition_pk}/comments/{id}/toggle_resolved/:
+    post:
+      operationId: requirements_problem_definitions_comments_toggle_resolved_create
+      description: Toggle the is_resolved status for a top-level comment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem Definition Comment.
+        required: true
+      - in: path
+        name: problem_definition_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectProblemDefinitionCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectProblemDefinitionComment'
+          description: ''
   /api/requirements/problem-definitions/{problem_definition_pk}/evaluations/:
     get:
       operationId: requirements_problem_definitions_evaluations_list
@@ -6829,21 +7172,26 @@ components:
           description: |-
             State or phase of the project
 
-            * `anon-project` - Non-Project
-            * `lead-evaluation` - Lead Evaluation
-            * `project-proposal` - Project Proposal Preparation
-            * `project-development` - Project Development
+            * `keep-in-touch` - KIT
+            * `proposing-low` - 提案(低)
+            * `proposing-mid` - 提案(中)
+            * `proposing-high` - 提案(高)
+            * `verbal-order` - 口頭受注
+            * `under-contract` - 契約稼働中
+            * `completed` - 完了
+            * `lost` - 失注
+        phase_display:
+          type: string
+          readOnly: true
         confidence:
           type: integer
-          maximum: 100
-          minimum: 0
+          readOnly: true
           title: 確度
-          description: 0-100, Confidence level of the project proceeding to the next
-            phase
+          description: 0-100, auto-derived from phase (read-only)
         category:
-          allOf:
-          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
-          title: カテゴリ
+          type: string
+          title: キー
+          description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
@@ -6986,6 +7334,7 @@ components:
       - allocated_effort_hours
       - assignment_rates
       - closed_datetime
+      - confidence
       - created_datetime
       - customer_name
       - github_repositories
@@ -6995,36 +7344,13 @@ components:
       - name
       - organization
       - organization_name
+      - phase_display
       - project_manager_username
       - projectstatus_display
       - slug
       - survey_users
       - updated_datetime
       - weekly_effort_users
-    KippoProjectCategoryEnum:
-      enum:
-      - new-proposal
-      - maintenance
-      - poc
-      - instructor
-      - r-and-d
-      - PAO
-      - upsell-improvement
-      - upsell-new-proposal
-      - upsell-new-department
-      - other
-      type: string
-      description: |-
-        * `new-proposal` - 新規提案
-        * `maintenance` - 保守
-        * `poc` - poc
-        * `instructor` - 講師
-        * `r-and-d` - R&D
-        * `PAO` - PAO
-        * `upsell-improvement` - (Upsell) 追加改善・拡張
-        * `upsell-new-proposal` - (Upsell) 新規提案
-        * `upsell-new-department` - (Upsell) 別部署紹介
-        * `other` - その他
     KippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -7057,21 +7383,19 @@ components:
           description: |-
             State or phase of the project
 
-            * `anon-project` - Non-Project
-            * `lead-evaluation` - Lead Evaluation
-            * `project-proposal` - Project Proposal Preparation
-            * `project-development` - Project Development
-        confidence:
-          type: integer
-          maximum: 100
-          minimum: 0
-          title: 確度
-          description: 0-100, Confidence level of the project proceeding to the next
-            phase
+            * `keep-in-touch` - KIT
+            * `proposing-low` - 提案(低)
+            * `proposing-mid` - 提案(中)
+            * `proposing-high` - 提案(高)
+            * `verbal-order` - 口頭受注
+            * `under-contract` - 契約稼働中
+            * `completed` - 完了
+            * `lost` - 失注
         category:
-          allOf:
-          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
-          title: カテゴリ
+          type: string
+          minLength: 1
+          title: キー
+          description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
@@ -7780,6 +8104,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectMonthlyCost'
+    PaginatedProjectProblemDefinitionCommentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectProblemDefinitionComment'
     PaginatedProjectProblemDefinitionList:
       type: object
       required:
@@ -8052,21 +8399,19 @@ components:
           description: |-
             State or phase of the project
 
-            * `anon-project` - Non-Project
-            * `lead-evaluation` - Lead Evaluation
-            * `project-proposal` - Project Proposal Preparation
-            * `project-development` - Project Development
-        confidence:
-          type: integer
-          maximum: 100
-          minimum: 0
-          title: 確度
-          description: 0-100, Confidence level of the project proceeding to the next
-            phase
+            * `keep-in-touch` - KIT
+            * `proposing-low` - 提案(低)
+            * `proposing-mid` - 提案(中)
+            * `proposing-high` - 提案(高)
+            * `verbal-order` - 口頭受注
+            * `under-contract` - 契約稼働中
+            * `completed` - 完了
+            * `lost` - 失注
         category:
-          allOf:
-          - $ref: '#/components/schemas/KippoProjectCategoryEnum'
-          title: カテゴリ
+          type: string
+          minLength: 1
+          title: キー
+          description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
@@ -8320,6 +8665,18 @@ components:
           $ref: '#/components/schemas/CurrencyEnum'
         itemized_cost:
           nullable: true
+    PatchedProjectProblemDefinitionCommentRequest:
+      type: object
+      properties:
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
     PatchedProjectProblemDefinitionRequest:
       type: object
       properties:
@@ -8401,10 +8758,8 @@ components:
           nullable: true
         hours:
           type: integer
-          maximum: 32767
-          minimum: -32768
-          description: Actual effort in hours performed on the project for the given
-            'week start'
+          maximum: 168
+          minimum: 0
     PersonalHoliday:
       type: object
       description: |-
@@ -8477,16 +8832,24 @@ components:
       - day
     PhaseEnum:
       enum:
-      - anon-project
-      - lead-evaluation
-      - project-proposal
-      - project-development
+      - keep-in-touch
+      - proposing-low
+      - proposing-mid
+      - proposing-high
+      - verbal-order
+      - under-contract
+      - completed
+      - lost
       type: string
       description: |-
-        * `anon-project` - Non-Project
-        * `lead-evaluation` - Lead Evaluation
-        * `project-proposal` - Project Proposal Preparation
-        * `project-development` - Project Development
+        * `keep-in-touch` - KIT
+        * `proposing-low` - 提案(低)
+        * `proposing-mid` - 提案(中)
+        * `proposing-high` - 提案(高)
+        * `verbal-order` - 口頭受注
+        * `under-contract` - 契約稼働中
+        * `completed` - 完了
+        * `lost` - 失注
     ProblemDefinitionEvaluation:
       type: object
       properties:
@@ -9362,6 +9725,74 @@ components:
       - project
       - title
       - updated_datetime
+    ProjectProblemDefinitionComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requirement:
+          type: integer
+          readOnly: true
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        replies:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - comment
+      - created_by
+      - created_by_name
+      - created_datetime
+      - id
+      - replies
+      - requirement
+      - updated_by
+      - updated_datetime
+    ProjectProblemDefinitionCommentRequest:
+      type: object
+      properties:
+        parent_comment:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+          minLength: 1
+        is_resolved:
+          type: boolean
+          description: is_resolved is only relevant for top-level comments
+      required:
+      - comment
     ProjectProblemDefinitionRequest:
       type: object
       properties:
@@ -9725,10 +10156,8 @@ components:
           readOnly: true
         hours:
           type: integer
-          maximum: 32767
-          minimum: -32768
-          description: Actual effort in hours performed on the project for the given
-            'week start'
+          maximum: 168
+          minimum: 0
         created_datetime:
           type: string
           format: date-time
@@ -9767,10 +10196,8 @@ components:
           nullable: true
         hours:
           type: integer
-          maximum: 32767
-          minimum: -32768
-          description: Actual effort in hours performed on the project for the given
-            'week start'
+          maximum: 168
+          minimum: 0
       required:
       - hours
       - project

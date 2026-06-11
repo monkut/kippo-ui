@@ -17,6 +17,7 @@ import type {
   PaginatedProjectBusinessRequirementCommentList,
   PaginatedProjectBusinessRequirementEstimateList,
   PaginatedProjectBusinessRequirementListList,
+  PaginatedProjectProblemDefinitionCommentList,
   PaginatedProjectProblemDefinitionList,
   PaginatedProjectTechnicalRequirementCategoryList,
   PaginatedProjectTechnicalRequirementCommentList,
@@ -28,6 +29,7 @@ import type {
   PatchedProjectBusinessRequirementCommentRequest,
   PatchedProjectBusinessRequirementEstimateRequest,
   PatchedProjectBusinessRequirementRequest,
+  PatchedProjectProblemDefinitionCommentRequest,
   PatchedProjectProblemDefinitionRequest,
   PatchedProjectTechnicalRequirementCategoryRequest,
   PatchedProjectTechnicalRequirementCommentRequest,
@@ -46,6 +48,8 @@ import type {
   ProjectBusinessRequirementEstimateRequest,
   ProjectBusinessRequirementRequest,
   ProjectProblemDefinition,
+  ProjectProblemDefinitionComment,
+  ProjectProblemDefinitionCommentRequest,
   ProjectProblemDefinitionRequest,
   ProjectTechnicalRequirement,
   ProjectTechnicalRequirementCategory,
@@ -63,6 +67,7 @@ import type {
   RequirementsBusinessRequirementsCommentsListParams,
   RequirementsBusinessRequirementsEvaluationsListParams,
   RequirementsBusinessRequirementsListParams,
+  RequirementsProblemDefinitionsCommentsListParams,
   RequirementsProblemDefinitionsEvaluationsListParams,
   RequirementsProblemDefinitionsListParams,
   RequirementsTechnicalRequirementCategoriesListParams,
@@ -1958,6 +1963,362 @@ export const requirementsProblemDefinitionsEvaluateCreate = async (id: number, o
     method: 'POST'
 
 
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsListResponse200 = {
+  data: PaginatedProjectProblemDefinitionCommentList
+  status: 200
+}
+
+export type requirementsProblemDefinitionsCommentsListResponseSuccess = (requirementsProblemDefinitionsCommentsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsListResponse = (requirementsProblemDefinitionsCommentsListResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsListUrl = (problemDefinitionPk: string,
+    params?: RequirementsProblemDefinitionsCommentsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/?${stringifiedParams}` : `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/`
+}
+
+export const requirementsProblemDefinitionsCommentsList = async (problemDefinitionPk: string,
+    params?: RequirementsProblemDefinitionsCommentsListParams, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsListResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsListResponse>(getRequirementsProblemDefinitionsCommentsListUrl(problemDefinitionPk,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsCreateResponse201 = {
+  data: ProjectProblemDefinitionComment
+  status: 201
+}
+
+export type requirementsProblemDefinitionsCommentsCreateResponseSuccess = (requirementsProblemDefinitionsCommentsCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsCreateResponse = (requirementsProblemDefinitionsCommentsCreateResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsCreateUrl = (problemDefinitionPk: string,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/`
+}
+
+export const requirementsProblemDefinitionsCommentsCreate = async (problemDefinitionPk: string,
+    projectProblemDefinitionCommentRequest: ProjectProblemDefinitionCommentRequest, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsCreateResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsCreateResponse>(getRequirementsProblemDefinitionsCommentsCreateUrl(problemDefinitionPk),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectProblemDefinitionCommentRequest,)
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsRetrieveResponse200 = {
+  data: ProjectProblemDefinitionComment
+  status: 200
+}
+
+export type requirementsProblemDefinitionsCommentsRetrieveResponseSuccess = (requirementsProblemDefinitionsCommentsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsRetrieveResponse = (requirementsProblemDefinitionsCommentsRetrieveResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsRetrieveUrl = (problemDefinitionPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/${id}/`
+}
+
+export const requirementsProblemDefinitionsCommentsRetrieve = async (problemDefinitionPk: string,
+    id: number, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsRetrieveResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsRetrieveResponse>(getRequirementsProblemDefinitionsCommentsRetrieveUrl(problemDefinitionPk,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsUpdateResponse200 = {
+  data: ProjectProblemDefinitionComment
+  status: 200
+}
+
+export type requirementsProblemDefinitionsCommentsUpdateResponseSuccess = (requirementsProblemDefinitionsCommentsUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsUpdateResponse = (requirementsProblemDefinitionsCommentsUpdateResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsUpdateUrl = (problemDefinitionPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/${id}/`
+}
+
+export const requirementsProblemDefinitionsCommentsUpdate = async (problemDefinitionPk: string,
+    id: number,
+    projectProblemDefinitionCommentRequest: ProjectProblemDefinitionCommentRequest, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsUpdateResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsUpdateResponse>(getRequirementsProblemDefinitionsCommentsUpdateUrl(problemDefinitionPk,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectProblemDefinitionCommentRequest,)
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsPartialUpdateResponse200 = {
+  data: ProjectProblemDefinitionComment
+  status: 200
+}
+
+export type requirementsProblemDefinitionsCommentsPartialUpdateResponseSuccess = (requirementsProblemDefinitionsCommentsPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsPartialUpdateResponse = (requirementsProblemDefinitionsCommentsPartialUpdateResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsPartialUpdateUrl = (problemDefinitionPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/${id}/`
+}
+
+export const requirementsProblemDefinitionsCommentsPartialUpdate = async (problemDefinitionPk: string,
+    id: number,
+    patchedProjectProblemDefinitionCommentRequest: PatchedProjectProblemDefinitionCommentRequest, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsPartialUpdateResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsPartialUpdateResponse>(getRequirementsProblemDefinitionsCommentsPartialUpdateUrl(problemDefinitionPk,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedProjectProblemDefinitionCommentRequest,)
+  }
+);}
+
+
+/**
+ * ViewSet for ProjectProblemDefinitionComment model.
+
+Nested under: /problem-definitions/{problem_definition_pk}/comments/
+
+Comments on problem definitions with nested reply support.
+
+**Organization Scoping:**
+- Regular users can only access comments for projects in their organizations
+- Superusers can access all comments
+
+**Filtering:**
+- top_level_only: Return only top-level comments (true/false)
+
+**Actions:**
+- toggle_resolved: Toggle the is_resolved status for a top-level comment
+ */
+export type requirementsProblemDefinitionsCommentsDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type requirementsProblemDefinitionsCommentsDestroyResponseSuccess = (requirementsProblemDefinitionsCommentsDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsDestroyResponse = (requirementsProblemDefinitionsCommentsDestroyResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsDestroyUrl = (problemDefinitionPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/${id}/`
+}
+
+export const requirementsProblemDefinitionsCommentsDestroy = async (problemDefinitionPk: string,
+    id: number, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsDestroyResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsDestroyResponse>(getRequirementsProblemDefinitionsCommentsDestroyUrl(problemDefinitionPk,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+/**
+ * Toggle the is_resolved status for a top-level comment.
+ */
+export type requirementsProblemDefinitionsCommentsToggleResolvedCreateResponse200 = {
+  data: ProjectProblemDefinitionComment
+  status: 200
+}
+
+export type requirementsProblemDefinitionsCommentsToggleResolvedCreateResponseSuccess = (requirementsProblemDefinitionsCommentsToggleResolvedCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type requirementsProblemDefinitionsCommentsToggleResolvedCreateResponse = (requirementsProblemDefinitionsCommentsToggleResolvedCreateResponseSuccess)
+
+export const getRequirementsProblemDefinitionsCommentsToggleResolvedCreateUrl = (problemDefinitionPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/requirements/problem-definitions/${problemDefinitionPk}/comments/${id}/toggle_resolved/`
+}
+
+export const requirementsProblemDefinitionsCommentsToggleResolvedCreate = async (problemDefinitionPk: string,
+    id: number,
+    projectProblemDefinitionCommentRequest: ProjectProblemDefinitionCommentRequest, options?: RequestInit): Promise<requirementsProblemDefinitionsCommentsToggleResolvedCreateResponse> => {
+
+  return customFetch<requirementsProblemDefinitionsCommentsToggleResolvedCreateResponse>(getRequirementsProblemDefinitionsCommentsToggleResolvedCreateUrl(problemDefinitionPk,id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectProblemDefinitionCommentRequest,)
   }
 );}
 

@@ -8,7 +8,7 @@
 
 export type MonthlyAssignmentsListParams = {
 /**
- * Filter by exact month (YYYY-MM-DD format)
+ * Filter by exact month (YYYY-MM-DD format). When omitted (and no month_gte/month_lte), defaults to the current month in JST.
  */
 month?: string;
 /**

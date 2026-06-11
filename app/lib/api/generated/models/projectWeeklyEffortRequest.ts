@@ -19,9 +19,8 @@ export interface ProjectWeeklyEffortRequest {
   /** @nullable */
   user?: string | null;
   /**
-     * Actual effort in hours performed on the project for the given 'week start'
-     * @minimum -32768
-     * @maximum 32767
+     * @minimum 0
+     * @maximum 168
      */
   hours: number;
 }
