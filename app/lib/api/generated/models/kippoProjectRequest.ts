@@ -89,6 +89,11 @@ export interface KippoProjectRequest {
      */
   actual_date?: string | null;
   /**
+     * Date the project is billed. Defaults to the target date when left blank.
+     * @nullable
+     */
+  billing_date?: string | null;
+  /**
      * URL of where documents for the projects are maintained
      * @maxLength 200
      */
