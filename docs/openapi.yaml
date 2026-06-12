@@ -7152,6 +7152,11 @@ components:
           type: string
           readOnly: true
           nullable: true
+        customer_document_url:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
         name:
           type: string
           title: プロジェクト名
@@ -7192,6 +7197,20 @@ components:
           type: string
           title: キー
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
+        category_label:
+          type: string
+          readOnly: true
+          nullable: true
+        billing_types:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        monthly_billing_schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthlyBillingScheduleEntry'
+          readOnly: true
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
@@ -7277,6 +7296,23 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
+        billing_date:
+          type: string
+          format: date
+          nullable: true
+          title: 請求日
+          description: Date the project is billed. Defaults to the target date when
+            left blank.
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+        contract_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
         document_folder_url:
           type: string
           format: uri
@@ -7333,14 +7369,19 @@ components:
       required:
       - allocated_effort_hours
       - assignment_rates
+      - billing_types
+      - category_label
       - closed_datetime
       - confidence
+      - contract_amount
       - created_datetime
+      - customer_document_url
       - customer_name
       - github_repositories
       - has_requirements
       - id
       - latest_comment
+      - monthly_billing_schedule
       - name
       - organization
       - organization_name
@@ -7349,6 +7390,7 @@ components:
       - projectstatus_display
       - slug
       - survey_users
+      - total_revenue
       - updated_datetime
       - weekly_effort_users
     KippoProjectRequest:
@@ -7462,6 +7504,13 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
+        billing_date:
+          type: string
+          format: date
+          nullable: true
+          title: 請求日
+          description: Date the project is billed. Defaults to the target date when
+            left blank.
         document_folder_url:
           type: string
           format: uri
@@ -7587,6 +7636,23 @@ components:
       - created_by_display_name
       - created_by_username
       - created_datetime
+    MonthlyBillingScheduleEntry:
+      type: object
+      description: 'One planned monthly billing row (kippo#39 / T15): month-end date
+        + amount.'
+      properties:
+        month:
+          type: string
+          format: date
+          description: Month-end (月末) billing date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          description: Billed amount for the month (JPY).
+      required:
+      - amount
+      - month
     NullEnum:
       enum:
       - null
@@ -8478,6 +8544,13 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
+        billing_date:
+          type: string
+          format: date
+          nullable: true
+          title: 請求日
+          description: Date the project is billed. Defaults to the target date when
+            left blank.
         document_folder_url:
           type: string
           format: uri

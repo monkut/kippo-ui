@@ -1,25 +1,38 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { CreateProjectModal } from "../app/components/project-assignments/CreateProjectModal";
 
-// CreateProjectModal registers a new KippoProject from its required fields only
-// (organization + name). `columnset` is resolved from the org default on the
-// backend, so the modal never asks for it. The org list is fetched on open.
+// CreateProjectModal registers a new KippoProject. Since kippo#40 (T19) registration requires
+// customer / project_manager / start_date / target_date in addition to organization + name;
+// the 企業 field is a search autocomplete (kippo#34 / T04) that also surfaces the customer's
+// contract-folder URL. `columnset` is resolved from the org default on the backend.
 
 const organizationsList = vi.fn();
+const organizationsMembersRetrieve = vi.fn();
+const customersList = vi.fn();
+
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsList: (...args: unknown[]) => organizationsList(...args),
+  organizationsMembersRetrieve: (...args: unknown[]) => organizationsMembersRetrieve(...args),
+}));
+vi.mock("~/lib/api/generated/customers/customers", () => ({
+  customersList: (...args: unknown[]) => customersList(...args),
 }));
 
 function makeOrg(id: string, name: string) {
   return { id, name, github_organization_name: name };
 }
 
-// The runtime `/api/organizations/` payload is `{organizations: [...]}` (the schema
-// auto-paginates, but the endpoint does not) — mirror the runtime shape here.
 function orgResponse(orgs: ReturnType<typeof makeOrg>[]) {
   return { status: 200 as const, data: { organizations: orgs } };
+}
+
+function membersResponse(members: { user_id: string; username: string; display_name: string }[]) {
+  return { status: 200 as const, data: { members } };
+}
+
+function customersResponse(customers: { id: string; name: string; document_url?: string }[]) {
+  return { status: 200 as const, data: { results: customers } };
 }
 
 async function waitFor<T>(probe: () => T | null | undefined, timeout = 2000): Promise<T | null> {
@@ -52,12 +65,53 @@ function setSelectValue(select: HTMLSelectElement, value: string) {
   select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-describe("CreateProjectModal — required-fields-only project creation", () => {
+/** Fill every required registration field except organization (single-org auto-selected). */
+async function fillRequiredFields(container: HTMLElement) {
+  setInputValue(
+    container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
+    "Apollo",
+  );
+
+  // 企業: type to search, pick the first result
+  const customerInput = container.querySelector<HTMLInputElement>("#create-project-customer");
+  setInputValue(customerInput as HTMLInputElement, "Beta");
+  const customerOption = await waitFor(() => findButton(container, "Beta Co"));
+  customerOption?.click();
+
+  // 担当PM: select the loaded member
+  const pmSelect = await waitFor(() => {
+    const select = container.querySelector<HTMLSelectElement>("#create-project-pm");
+    return select && select.querySelectorAll("option").length > 1 ? select : null;
+  });
+  setSelectValue(pmSelect as HTMLSelectElement, "user-1");
+
+  setInputValue(
+    container.querySelector<HTMLInputElement>("#create-project-start") as HTMLInputElement,
+    "2026-02-01",
+  );
+  setInputValue(
+    container.querySelector<HTMLInputElement>("#create-project-target") as HTMLInputElement,
+    "2026-08-31",
+  );
+}
+
+describe("CreateProjectModal — registration with required fields", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
     organizationsList.mockReset();
+    organizationsMembersRetrieve.mockReset();
+    customersList.mockReset();
+    organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
+    organizationsMembersRetrieve.mockResolvedValue(
+      membersResponse([{ user_id: "user-1", username: "pm", display_name: "PM User" }]),
+    );
+    customersList.mockResolvedValue(
+      customersResponse([
+        { id: "cust-1", name: "Beta Co", document_url: "https://drive.example.com/beta" },
+      ]),
+    );
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -68,8 +122,7 @@ describe("CreateProjectModal — required-fields-only project creation", () => {
     container.remove();
   });
 
-  test("single org: renders read-only org label + name, submits org+name only", async () => {
-    organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
+  test("single org: submits the full registration payload", async () => {
     const onSubmit = vi.fn().mockResolvedValue(true);
     const onClose = vi.fn();
 
@@ -77,13 +130,10 @@ describe("CreateProjectModal — required-fields-only project creation", () => {
       <CreateProjectModal open={true} isSaving={false} onClose={onClose} onSubmit={onSubmit} />,
     );
 
-    // Org loads → single org shown as a read-only label (no <select>).
     await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
-    expect(container.querySelector("#create-project-org")).toBeNull();
+    expect(container.querySelector("#create-project-org")).toBeNull(); // single org → label
 
-    const nameInput = container.querySelector<HTMLInputElement>("#create-project-name");
-    expect(nameInput).not.toBeNull();
-    setInputValue(nameInput as HTMLInputElement, "Apollo");
+    await fillRequiredFields(container);
 
     const submitBtn = await waitFor(() =>
       findButton(container, "作成")?.disabled === false ? findButton(container, "作成") : null,
@@ -91,79 +141,59 @@ describe("CreateProjectModal — required-fields-only project creation", () => {
     submitBtn?.click();
 
     await waitFor(() => (onSubmit.mock.calls.length > 0 ? true : null));
-    expect(onSubmit).toHaveBeenCalledWith({ organization: "org-1", name: "Apollo" });
+    expect(onSubmit).toHaveBeenCalledWith({
+      organization: "org-1",
+      name: "Apollo",
+      customer: "cust-1",
+      project_manager: "user-1",
+      start_date: "2026-02-01",
+      target_date: "2026-08-31",
+    });
     await waitFor(() => (onClose.mock.calls.length > 0 ? true : null));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  test("selecting a customer shows its contract-folder URL", async () => {
+    root.render(
+      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
+    );
+    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
+
+    const customerInput = container.querySelector<HTMLInputElement>("#create-project-customer");
+    setInputValue(customerInput as HTMLInputElement, "Beta");
+    const option = await waitFor(() => findButton(container, "Beta Co"));
+    option?.click();
+
+    await waitFor(() => (container.textContent?.includes("契約書フォルダ") ? true : null));
+    const link = Array.from(container.querySelectorAll("a")).find(
+      (a) => a.getAttribute("href") === "https://drive.example.com/beta",
+    );
+    expect(link).toBeTruthy();
+  });
+
+  test("作成 stays disabled until all required fields are filled", async () => {
+    root.render(
+      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
+    );
+    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
+    // name only → still disabled (customer / PM / dates missing)
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
+      "X",
+    );
+    await new Promise((r) => setTimeout(r, 60));
+    expect(findButton(container, "作成")?.disabled).toBe(true);
+
+    await fillRequiredFields(container);
+    await waitFor(() => (findButton(container, "作成")?.disabled === false ? true : null));
+    expect(findButton(container, "作成")?.disabled).toBe(false);
+  });
+
   test("explains that columnset uses the org default", async () => {
-    organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
     root.render(
       <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
     );
     await waitFor(() => (container.textContent?.includes("カラムセット") ? true : null));
     expect(container.textContent).toContain("組織の既定値");
-  });
-
-  test("multiple orgs: renders a select, submits the chosen org", async () => {
-    organizationsList.mockResolvedValue(
-      orgResponse([makeOrg("org-1", "Acme"), makeOrg("org-2", "Globex")]),
-    );
-    const onSubmit = vi.fn().mockResolvedValue(true);
-
-    root.render(
-      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={onSubmit} />,
-    );
-
-    const select = await waitFor(() =>
-      container.querySelector<HTMLSelectElement>("#create-project-org"),
-    );
-    expect(select).not.toBeNull();
-    expect(select?.querySelectorAll("option").length).toBe(2);
-
-    setSelectValue(select as HTMLSelectElement, "org-2");
-    setInputValue(
-      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
-      "Mercury",
-    );
-
-    const submitBtn = await waitFor(() =>
-      findButton(container, "作成")?.disabled === false ? findButton(container, "作成") : null,
-    );
-    submitBtn?.click();
-
-    await waitFor(() => (onSubmit.mock.calls.length > 0 ? true : null));
-    expect(onSubmit).toHaveBeenCalledWith({ organization: "org-2", name: "Mercury" });
-  });
-
-  test("作成 stays disabled until a name is entered", async () => {
-    organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
-    root.render(
-      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
-    );
-
-    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
-    expect(findButton(container, "作成")?.disabled).toBe(true);
-
-    setInputValue(
-      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
-      "X",
-    );
-    await waitFor(() => (findButton(container, "作成")?.disabled === false ? true : null));
-    expect(findButton(container, "作成")?.disabled).toBe(false);
-  });
-
-  test("whitespace-only name does not enable 作成", async () => {
-    organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
-    root.render(
-      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
-    );
-    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
-    setInputValue(
-      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
-      "   ",
-    );
-    await new Promise((r) => setTimeout(r, 60));
-    expect(findButton(container, "作成")?.disabled).toBe(true);
   });
 });

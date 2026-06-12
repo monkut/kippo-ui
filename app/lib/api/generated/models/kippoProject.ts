@@ -7,6 +7,7 @@
  */
 import type { GithubRepositoryInline } from './githubRepositoryInline';
 import type { LatestCommentInline } from './latestCommentInline';
+import type { MonthlyBillingScheduleEntry } from './monthlyBillingScheduleEntry';
 import type { PhaseEnum } from './phaseEnum';
 import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline';
 import type { ProjectProgressStatusInline } from './projectProgressStatusInline';
@@ -27,6 +28,8 @@ export interface KippoProject {
   customer?: string | null;
   /** @nullable */
   readonly customer_name: string | null;
+  /** @nullable */
+  readonly customer_document_url: string | null;
   /**
      * Name of the project
      * @maxLength 256
@@ -51,6 +54,10 @@ export interface KippoProject {
   readonly confidence: number;
   /** Project category key (e.g. 'ai-development', 'other', 'non-project'). */
   category?: string;
+  /** @nullable */
+  readonly category_label: string | null;
+  readonly billing_types: readonly string[];
+  readonly monthly_billing_schedule: readonly MonthlyBillingScheduleEntry[];
   /**
      * Conversation Channel — invite the organization's slack bot to enable channel notification
      * @maxLength 80
@@ -105,6 +112,15 @@ export interface KippoProject {
      * @nullable
      */
   actual_date?: string | null;
+  /**
+     * Date the project is billed. Defaults to the target date when left blank.
+     * @nullable
+     */
+  billing_date?: string | null;
+  /** @pattern ^-?\d{0,12}(?:\.\d{0,0})?$ */
+  readonly total_revenue: string;
+  /** @pattern ^-?\d{0,12}(?:\.\d{0,0})?$ */
+  readonly contract_amount: string;
   /**
      * URL of where documents for the projects are maintained
      * @maxLength 200
