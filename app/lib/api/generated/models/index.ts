@@ -35,6 +35,7 @@ export * from './kippoProjectUserStatisfactionResult';
 export * from './kippoProjectUserStatisfactionResultRequest';
 export * from './latestCommentInline';
 export * from './monthlyAssignmentsListParams';
+export * from './monthlyBillingScheduleEntry';
 export * from './monthlyCostsListParams';
 export * from './nullEnum';
 export * from './octocatGithubRepositoriesListParams';

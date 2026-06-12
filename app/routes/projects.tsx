@@ -29,6 +29,12 @@ const formatJpy = (value: string | null | undefined): string => {
   return Number.isNaN(n) ? "-" : `¥${n.toLocaleString("ja-JP")}`;
 };
 
+// Month-end date ("2026-01-31") -> "2026年1月" (kippo#39 / T15).
+const formatBillingMonth = (monthEnd: string): string => {
+  const [year, month] = monthEnd.split("-");
+  return `${year}年${Number(month)}月`;
+};
+
 export function meta() {
   return [{ title: "プロジェクト一覧 - Kippo要件管理" }];
 }
@@ -361,6 +367,33 @@ function ProjectListItem({ project }: { project: KippoProject }) {
           </div>
         </div>
       </Link>
+      {/* 月額は契約期間内、毎月行を表示 (kippo#39 / T15) — per-month rows for monthly projects.
+          Outside the <Link> so expanding the schedule doesn't navigate. */}
+      {(project.monthly_billing_schedule?.length ?? 0) > 0 && (
+        <MonthlyScheduleRows schedule={project.monthly_billing_schedule} />
+      )}
     </li>
+  );
+}
+
+// Expandable per-month billing rows for a monthly-billing project (kippo#39 / T15).
+function MonthlyScheduleRows({ schedule }: { schedule: KippoProject["monthly_billing_schedule"] }) {
+  return (
+    <details className="border-t border-gray-100 bg-gray-50 px-4 sm:px-6">
+      <summary className="cursor-pointer select-none list-none py-2 text-xs text-gray-500 hover:text-gray-700">
+        月額請求 {schedule.length} ヶ月分を表示
+      </summary>
+      <ul className="pb-3">
+        {schedule.map((entry) => (
+          <li
+            key={entry.month}
+            className="flex justify-between py-1 text-sm text-gray-600 border-b border-gray-100 last:border-b-0"
+          >
+            <span>{formatBillingMonth(entry.month)}</span>
+            <span>{formatJpy(entry.amount)}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

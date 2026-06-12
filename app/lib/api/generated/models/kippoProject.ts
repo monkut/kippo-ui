@@ -7,6 +7,7 @@
  */
 import type { GithubRepositoryInline } from './githubRepositoryInline';
 import type { LatestCommentInline } from './latestCommentInline';
+import type { MonthlyBillingScheduleEntry } from './monthlyBillingScheduleEntry';
 import type { PhaseEnum } from './phaseEnum';
 import type { ProjectAssignmentRateInline } from './projectAssignmentRateInline';
 import type { ProjectProgressStatusInline } from './projectProgressStatusInline';
@@ -56,6 +57,7 @@ export interface KippoProject {
   /** @nullable */
   readonly category_label: string | null;
   readonly billing_types: readonly string[];
+  readonly monthly_billing_schedule: readonly MonthlyBillingScheduleEntry[];
   /**
      * Conversation Channel — invite the organization's slack bot to enable channel notification
      * @maxLength 80

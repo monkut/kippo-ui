@@ -7206,6 +7206,11 @@ components:
           items:
             type: string
           readOnly: true
+        monthly_billing_schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthlyBillingScheduleEntry'
+          readOnly: true
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
@@ -7376,6 +7381,7 @@ components:
       - has_requirements
       - id
       - latest_comment
+      - monthly_billing_schedule
       - name
       - organization
       - organization_name
@@ -7630,6 +7636,23 @@ components:
       - created_by_display_name
       - created_by_username
       - created_datetime
+    MonthlyBillingScheduleEntry:
+      type: object
+      description: 'One planned monthly billing row (kippo#39 / T15): month-end date
+        + amount.'
+      properties:
+        month:
+          type: string
+          format: date
+          description: Month-end (月末) billing date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          description: Billed amount for the month (JPY).
+      required:
+      - amount
+      - month
     NullEnum:
       enum:
       - null
