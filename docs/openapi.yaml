@@ -2083,6 +2083,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -2096,6 +2098,12 @@ paths:
           type: string
         description: Filter by category (exact match on the KippoProject.category
           value, e.g. 'PAO')
+      - in: query
+        name: exclude_category
+        schema:
+          type: string
+        description: Exclude projects whose category key matches this value (e.g.
+          'non-project').
       - in: query
         name: is_active
         schema:
@@ -2137,6 +2145,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -2180,6 +2190,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -2218,6 +2230,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -2268,6 +2282,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -2317,6 +2333,8 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - category: Include only the given category key (exact match)
+        - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -6594,6 +6612,146 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/weekly-effort-unlocks/:
+    get:
+      operationId: weekly_effort_unlocks_list
+      description: |-
+        週間稼働アンロックの申請・承認 API (kippo#33 / T18).
+
+        - **Create (POST)**: 認証ユーザが自分の締め後の週のアンロックを `organization` + `week_start` + `reason` で申請する
+          (承認待ち。`user` は申請者本人に固定)。
+        - **approve (POST, detail)**: 組織admin (superuser または当該組織の `is_project_manager`) が承認し、
+          再ロック期限 `expires_datetime` を設定する。承認されるとその期限まで当該週が編集可能になり、期限経過で自動再ロック。
+        - 自分のアンロック申請は自分で承認できない (staff が自分の週を勝手に開けられない原則を踏襲。superuser は除く)。
+
+        アンロックは申請ログでもあるため更新・削除は不可 (GET/POST のみ)。組織スコープ: 非superuserは所属組織の申請のみ閲覧可。
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - weekly-effort-unlocks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectWeeklyEffortUnlockList'
+          description: ''
+    post:
+      operationId: weekly_effort_unlocks_create
+      description: |-
+        週間稼働アンロックの申請・承認 API (kippo#33 / T18).
+
+        - **Create (POST)**: 認証ユーザが自分の締め後の週のアンロックを `organization` + `week_start` + `reason` で申請する
+          (承認待ち。`user` は申請者本人に固定)。
+        - **approve (POST, detail)**: 組織admin (superuser または当該組織の `is_project_manager`) が承認し、
+          再ロック期限 `expires_datetime` を設定する。承認されるとその期限まで当該週が編集可能になり、期限経過で自動再ロック。
+        - 自分のアンロック申請は自分で承認できない (staff が自分の週を勝手に開けられない原則を踏襲。superuser は除く)。
+
+        アンロックは申請ログでもあるため更新・削除は不可 (GET/POST のみ)。組織スコープ: 非superuserは所属組織の申請のみ閲覧可。
+      tags:
+      - weekly-effort-unlocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffortUnlock'
+          description: ''
+  /api/weekly-effort-unlocks/{id}/:
+    get:
+      operationId: weekly_effort_unlocks_retrieve
+      description: |-
+        週間稼働アンロックの申請・承認 API (kippo#33 / T18).
+
+        - **Create (POST)**: 認証ユーザが自分の締め後の週のアンロックを `organization` + `week_start` + `reason` で申請する
+          (承認待ち。`user` は申請者本人に固定)。
+        - **approve (POST, detail)**: 組織admin (superuser または当該組織の `is_project_manager`) が承認し、
+          再ロック期限 `expires_datetime` を設定する。承認されるとその期限まで当該週が編集可能になり、期限経過で自動再ロック。
+        - 自分のアンロック申請は自分で承認できない (staff が自分の週を勝手に開けられない原則を踏襲。superuser は除く)。
+
+        アンロックは申請ログでもあるため更新・削除は不可 (GET/POST のみ)。組織スコープ: 非superuserは所属組織の申請のみ閲覧可。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this プロジェクト週間稼働アンロック.
+        required: true
+      tags:
+      - weekly-effort-unlocks
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffortUnlock'
+          description: ''
+  /api/weekly-effort-unlocks/{id}/approve/:
+    post:
+      operationId: weekly_effort_unlocks_approve_create
+      description: アンロック申請を承認し、再ロック期限を設定する (組織admin限定)。
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this プロジェクト週間稼働アンロック.
+        required: true
+      tags:
+      - weekly-effort-unlocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockApproveRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockApproveRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectWeeklyEffortUnlockApproveRequestRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectWeeklyEffortUnlock'
+          description: ''
   /api/weekly-effort/expected-hours/:
     get:
       operationId: weekly_effort_expected_hours_retrieve
@@ -7190,9 +7348,8 @@ components:
           readOnly: true
         confidence:
           type: integer
-          readOnly: true
-          title: 確度
-          description: 0-100, auto-derived from phase (read-only)
+          maximum: 100
+          minimum: 0
         category:
           type: string
           title: キー
@@ -7372,7 +7529,6 @@ components:
       - billing_types
       - category_label
       - closed_datetime
-      - confidence
       - contract_amount
       - created_datetime
       - customer_document_url
@@ -7433,6 +7589,10 @@ components:
             * `under-contract` - 契約稼働中
             * `completed` - 完了
             * `lost` - 失注
+        confidence:
+          type: integer
+          maximum: 100
+          minimum: 0
         category:
           type: string
           minLength: 1
@@ -8331,6 +8491,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectWeeklyEffort'
+    PaginatedProjectWeeklyEffortUnlockList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectWeeklyEffortUnlock'
     PaginatedPublicHolidayList:
       type: object
       required:
@@ -8473,6 +8656,10 @@ components:
             * `under-contract` - 契約稼働中
             * `completed` - 完了
             * `lost` - 失注
+        confidence:
+          type: integer
+          maximum: 100
+          minimum: 0
         category:
           type: string
           minLength: 1
@@ -10231,6 +10418,9 @@ components:
           type: integer
           maximum: 168
           minimum: 0
+        is_closed:
+          type: boolean
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -10243,6 +10433,7 @@ components:
       - created_datetime
       - hours
       - id
+      - is_closed
       - project
       - project_name
       - updated_datetime
@@ -10274,6 +10465,117 @@ components:
       required:
       - hours
       - project
+    ProjectWeeklyEffortUnlock:
+      type: object
+      description: |-
+        週間稼働アンロックの申請/承認シリアライザ (kippo#33 / T18).
+
+        Create = 申請: ユーザは `organization` + `week_start` + `reason` を送信する。`user` は申請者本人に固定され、
+        承認関連フィールドは read-only。承認は viewset の `approve` アクション (組織admin限定) で行う。
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_username:
+          type: string
+          readOnly: true
+        week_start:
+          type: string
+          format: date
+          description: Unlocked Effort Week Start (MONDAY)
+        reason:
+          type: string
+          description: 'アンロック申請理由 (DCAA: 締め後編集には記録された正当な理由が必要)'
+        approved_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: 承認した組織admin (未設定 = 承認待ち)
+        approved_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        approved_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: 承認日時 (未設定 = 承認待ち)
+        expires_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: '再ロック期限: 承認時に設定され、この日時を過ぎると編集不可に戻る'
+        is_active:
+          type: boolean
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - approved_by
+      - approved_by_username
+      - approved_datetime
+      - created_by
+      - created_datetime
+      - expires_datetime
+      - id
+      - is_active
+      - organization
+      - reason
+      - updated_datetime
+      - user
+      - user_username
+      - week_start
+    ProjectWeeklyEffortUnlockApproveRequestRequest:
+      type: object
+      properties:
+        expires_datetime:
+          type: string
+          format: date-time
+          description: 再ロック期限 (省略時はデフォルト7日後)
+    ProjectWeeklyEffortUnlockRequest:
+      type: object
+      description: |-
+        週間稼働アンロックの申請/承認シリアライザ (kippo#33 / T18).
+
+        Create = 申請: ユーザは `organization` + `week_start` + `reason` を送信する。`user` は申請者本人に固定され、
+        承認関連フィールドは read-only。承認は viewset の `approve` アクション (組織admin限定) で行う。
+      properties:
+        organization:
+          type: string
+          format: uuid
+        week_start:
+          type: string
+          format: date
+          description: Unlocked Effort Week Start (MONDAY)
+        reason:
+          type: string
+          minLength: 1
+          description: 'アンロック申請理由 (DCAA: 締め後編集には記録された正当な理由が必要)'
+      required:
+      - organization
+      - reason
+      - week_start
     PublicHoliday:
       type: object
       description: |-

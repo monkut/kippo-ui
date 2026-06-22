@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ExistingEntriesList } from "../app/components/weekly-effort/ExistingEntriesList";
 import type { ProjectWeeklyEffort } from "../app/lib/api/generated/models";
 
@@ -17,6 +17,7 @@ function weekEntry(project: string, projectName: string, hours: number): Project
     user_username: "me",
     user_display_name: "me",
     hours,
+    is_closed: false,
     created_datetime: "2026-05-25T00:00:00Z",
     updated_datetime: "2026-05-25T00:00:00Z",
   };

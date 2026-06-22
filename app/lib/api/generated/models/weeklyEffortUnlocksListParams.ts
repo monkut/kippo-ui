@@ -6,19 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type ProjectsListParams = {
-/**
- * Filter by category (exact match on the KippoProject.category value, e.g. 'PAO')
- */
-category?: string;
-/**
- * Exclude projects whose category key matches this value (e.g. 'non-project').
- */
-exclude_category?: string;
-/**
- * Filter by active status (display_as_active field)
- */
-is_active?: boolean;
+export type WeeklyEffortUnlocksListParams = {
 /**
  * A page number within the paginated result set.
  */

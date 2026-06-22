@@ -1,18 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
-import { Layout } from "~/components/layout";
 import {
-  InfraCostDisplay,
   fetchAllMonthlyCostsForProject,
+  InfraCostDisplay,
   type ProjectMonthlyCost,
 } from "~/components/infra-cost-display";
-import { projectsList } from "~/lib/api/generated";
+import { Layout } from "~/components/layout";
 import type {
   KippoProject,
   ProjectProgressStatusInline,
   SurveyUserInline,
 } from "~/lib/api/generated";
+import { projectsList } from "~/lib/api/generated";
+import { useAuth } from "~/lib/auth-context";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
@@ -20,9 +20,9 @@ export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
 }
 
-// Categories to exclude from the project list (kippo#36 moved the anon check
-// from phase=="anon-project" to category=="non-project")
-const EXCLUDED_CATEGORIES = ["non-project"];
+// Non-project rows are excluded server-side via the API's exclude_category filter
+// (kippo#36 moved the anon check from phase=="anon-project" to category=="non-project").
+const NON_PROJECT_CATEGORY = "non-project";
 
 export default function ProjectStatus() {
   const { user, isLoading: authLoading } = useAuth();
@@ -52,16 +52,14 @@ export default function ProjectStatus() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await projectsList({ is_active: true });
+      const response = await projectsList({
+        is_active: true,
+        exclude_category: NON_PROJECT_CATEGORY,
+      });
       if (response.data?.results) {
-        // Filter projects: display_as_active=True, is_closed=False, category not in excluded
+        // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
         const filteredProjects = response.data.results
-          .filter(
-            (project) =>
-              project.display_as_active === true &&
-              project.is_closed === false &&
-              (!project.category || !EXCLUDED_CATEGORIES.includes(project.category)),
-          )
+          .filter((project) => project.display_as_active === true && project.is_closed === false)
           // Sort by: -confidence (large to small), target_date (earliest to latest), name
           .sort((a, b) => {
             // First: confidence descending (large to small)

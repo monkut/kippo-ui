@@ -28,6 +28,7 @@ export interface ProjectWeeklyEffort {
      * @maximum 168
      */
   hours: number;
+  readonly is_closed: boolean;
   readonly created_datetime: string;
   readonly updated_datetime: string;
 }

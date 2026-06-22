@@ -50,8 +50,11 @@ export interface KippoProject {
   * `lost` - 失注 */
   phase?: PhaseEnum;
   readonly phase_display: string;
-  /** 0-100, auto-derived from phase (read-only) */
-  readonly confidence: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence?: number;
   /** Project category key (e.g. 'ai-development', 'other', 'non-project'). */
   category?: string;
   /** @nullable */

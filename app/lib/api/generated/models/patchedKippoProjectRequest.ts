@@ -37,6 +37,11 @@ export interface PatchedKippoProjectRequest {
   * `lost` - 失注 */
   phase?: PhaseEnum;
   /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence?: number;
+  /**
      * Project category key (e.g. 'ai-development', 'other', 'non-project').
      * @minLength 1
      */
