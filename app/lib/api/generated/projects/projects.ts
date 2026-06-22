@@ -39,6 +39,8 @@ import { customFetch } from '../../custom-fetch';
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -95,6 +97,8 @@ export const projectsList = async (params?: ProjectsListParams, options?: Reques
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -145,6 +149,8 @@ export const projectsCreate = async (kippoProjectRequest: KippoProjectRequest, o
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -194,6 +200,8 @@ export const projectsRetrieve = async (id: string, options?: RequestInit): Promi
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -245,6 +253,8 @@ export const projectsUpdate = async (id: string,
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
@@ -296,6 +306,8 @@ export const projectsPartialUpdate = async (id: string,
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- category: Include only the given category key (exact match)
+- exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users)
