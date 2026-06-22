@@ -372,9 +372,10 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
         {/* Infra Cost */}
         <InfraCostDisplay costs={monthlyCosts} />
 
-        {/* Project status label (kippo#37: phase_display replaces the 確度 % readout) */}
+        {/* Phase status value + confidence % (no labels) */}
         <div className="pt-4 border-t border-gray-200">
-          <span className="text-sm text-gray-500">ステータス: {project.phase_display}</span>
+          <div className="text-sm text-gray-500">{project.phase_display}</div>
+          <div className="text-sm text-gray-500">{project.confidence}%</div>
         </div>
       </div>
     </div>
