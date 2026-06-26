@@ -1,0 +1,160 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+
+// In-SPA KippoProject record edit (kippo#42): loads the project, edits its fields, PATCHes.
+
+const navigateSpy = vi.hoisted(() => vi.fn());
+const projectsRetrieve = vi.hoisted(() => vi.fn());
+const projectsPartialUpdate = vi.hoisted(() => vi.fn());
+const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
+const projectCategoriesList = vi.hoisted(() => vi.fn());
+
+vi.mock("react-router", () => ({
+  useNavigate: () => navigateSpy,
+  useParams: () => ({ id: "proj-1" }),
+  useLocation: () => ({ pathname: "/projects/proj-1/edit" }),
+  Link: ({ children }: { children: unknown }) => children,
+}));
+vi.mock("~/lib/auth-context", () => ({
+  useAuth: () => ({ user: { username: "u" }, isLoading: false }),
+}));
+vi.mock("~/lib/api/generated/projects/projects", () => ({
+  projectsRetrieve: (...a: unknown[]) => projectsRetrieve(...a),
+  projectsPartialUpdate: (...a: unknown[]) => projectsPartialUpdate(...a),
+}));
+vi.mock("~/lib/api/generated/organizations/organizations", () => ({
+  organizationsMembersRetrieve: (...a: unknown[]) => organizationsMembersRetrieve(...a),
+}));
+vi.mock("~/lib/api/generated/project-categories/project-categories", () => ({
+  projectCategoriesList: (...a: unknown[]) => projectCategoriesList(...a),
+}));
+
+import ProjectEdit from "../app/routes/projects.$id.edit";
+
+async function waitFor<T>(probe: () => T | null | undefined, timeout = 2000): Promise<T | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const value = probe();
+    if (value) return value;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  return null;
+}
+
+function findButton(container: HTMLElement, text: string): HTMLButtonElement | null {
+  return (
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
+      (b.textContent ?? "").includes(text),
+    ) ?? null
+  );
+}
+
+function setInputValue(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+describe("ProjectEdit route", () => {
+  let container: HTMLDivElement;
+  let root: ReturnType<typeof createRoot>;
+
+  beforeEach(() => {
+    navigateSpy.mockReset();
+    projectsRetrieve.mockReset();
+    projectsPartialUpdate.mockReset();
+    organizationsMembersRetrieve.mockReset();
+    projectCategoriesList.mockReset();
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: {
+        organization: "org-1",
+        organization_name: "Acme",
+        customer_name: "Beta Co",
+        name: "Old Name",
+        phase: "proposing-low",
+        category: "ai-development",
+        project_manager: "user-1",
+        problem_definition: "old problem",
+        start_date: "2026-02-01",
+        target_date: "2026-08-31",
+        allocated_staff_days: 5,
+        document_folder_url: "",
+        docbase_tag: "",
+        slack_channel_name: "",
+        slack_notification_channel_name: "",
+        github_project_html_url: "",
+        display_as_active: true,
+        display_in_project_report: true,
+        is_closed: false,
+      },
+    });
+    organizationsMembersRetrieve.mockResolvedValue({
+      status: 200,
+      data: { members: [{ user_id: "user-1", username: "pm", display_name: "PM" }] },
+    });
+    projectCategoriesList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            key: "ai-development",
+            label: "AI開発",
+            organization: null,
+            sort_order: 0,
+            is_active: true,
+          },
+        ],
+      },
+    });
+    projectsPartialUpdate.mockResolvedValue({ status: 200, data: {} });
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    root.unmount();
+    container.remove();
+  });
+
+  test("loads the project, edits a field, and PATCHes", async () => {
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    expect(projectsRetrieve).toHaveBeenCalledWith("proj-1");
+    expect(container.textContent).toContain("Acme"); // org read-only
+    expect(container.querySelector<HTMLInputElement>("#p-allocated")?.value).toBe("5");
+
+    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
+    // wait for categories to load so the writable-category guard includes the selected key
+    await waitFor(() => {
+      const s = container.querySelector<HTMLSelectElement>("#p-category");
+      return s && s.querySelectorAll("option").length > 1 ? true : null;
+    });
+
+    findButton(container, "保存")?.click();
+    await waitFor(() => (projectsPartialUpdate.mock.calls.length > 0 ? true : null));
+    // Exact payload: is_closed / display_in_project_report are NOT sent (admin-managed per #41).
+    expect(projectsPartialUpdate).toHaveBeenCalledWith("proj-1", {
+      name: "New Name",
+      phase: "proposing-low",
+      category: "ai-development",
+      project_manager: "user-1",
+      problem_definition: "old problem",
+      start_date: "2026-02-01",
+      target_date: "2026-08-31",
+      allocated_staff_days: 5,
+      document_folder_url: "",
+      docbase_tag: "",
+      slack_channel_name: "",
+      slack_notification_channel_name: "",
+      github_project_html_url: "",
+      display_as_active: true,
+    });
+    await waitFor(() => (navigateSpy.mock.calls.length > 0 ? true : null));
+    expect(navigateSpy).toHaveBeenCalledWith(-1);
+  });
+});

@@ -5,8 +5,6 @@ import { organizationsList } from "~/lib/api/generated/organizations/organizatio
 // Create/edit a KippoCustomer, mirroring KippoCustomerAdmin's add/change form (kippo#42).
 // `customer` present → edit mode (organization is fixed and shown read-only); absent → create.
 // 名前 is required and unique per organization; all other fields are optional.
-// TODO(kippo#44): add 契約書フォルダURL (contract_folder_url) once the field is released in the
-// generated client via `pnpm update:api`.
 type CustomerFormModalProps = {
   open: boolean;
   isSaving: boolean;
@@ -67,6 +65,7 @@ function useCustomerForm(open: boolean, customer: KippoCustomer | null | undefin
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
+  const [contractFolderUrl, setContractFolderUrl] = useState("");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -77,6 +76,7 @@ function useCustomerForm(open: boolean, customer: KippoCustomer | null | undefin
     setPhone(customer?.phone ?? "");
     setWebsite(customer?.website ?? "");
     setDocumentUrl(customer?.document_url ?? "");
+    setContractFolderUrl(customer?.contract_folder_url ?? "");
     setNotes(customer?.notes ?? "");
   }, [open, customer]);
 
@@ -93,6 +93,8 @@ function useCustomerForm(open: boolean, customer: KippoCustomer | null | undefin
     setWebsite,
     documentUrl,
     setDocumentUrl,
+    contractFolderUrl,
+    setContractFolderUrl,
     notes,
     setNotes,
   };
@@ -136,6 +138,7 @@ export function CustomerFormModal({
       phone: form.phone.trim(),
       website: form.website.trim(),
       document_url: form.documentUrl.trim(),
+      contract_folder_url: form.contractFolderUrl.trim(),
       notes: form.notes,
     });
     if (ok) onClose();
@@ -198,6 +201,15 @@ export function CustomerFormModal({
           type="url"
           value={form.documentUrl}
           onChange={form.setDocumentUrl}
+          disabled={isSaving}
+          maxLength={200}
+        />
+        <TextField
+          id="customer-form-contract-folder-url"
+          label="契約書フォルダURL"
+          type="url"
+          value={form.contractFolderUrl}
+          onChange={form.setContractFolderUrl}
           disabled={isSaving}
           maxLength={200}
         />

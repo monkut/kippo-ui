@@ -94,6 +94,7 @@ describe("CustomerFormModal", () => {
       phone: "",
       website: "",
       document_url: "",
+      contract_folder_url: "",
       notes: "",
     });
     await waitFor(() => (onClose.mock.calls.length > 0 ? true : null));
@@ -124,6 +125,7 @@ describe("CustomerFormModal", () => {
       name: "Beta Co",
       email: "ops@beta.example",
       document_url: "https://drive.example.com/beta",
+      contract_folder_url: "https://drive.example.com/beta/contracts",
       active_project_count: 0,
       active_projects_contract_total: 0,
       compliance_verified: false,
@@ -156,11 +158,15 @@ describe("CustomerFormModal", () => {
     );
     submitBtn?.click();
     await waitFor(() => (onSubmit.mock.calls.length > 0 ? true : null));
+    expect(
+      container.querySelector<HTMLInputElement>("#customer-form-contract-folder-url")?.value,
+    ).toBe("https://drive.example.com/beta/contracts");
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       organization: "org-1",
       name: "Beta Co",
       email: "ops@beta.example",
       document_url: "https://drive.example.com/beta",
+      contract_folder_url: "https://drive.example.com/beta/contracts",
     });
   });
 });

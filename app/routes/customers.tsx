@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
 import { CustomerFormModal } from "~/components/customers/CustomerFormModal";
+import {
+  CustomerProjectModal,
+  type ProjectFormTarget,
+} from "~/components/customers/CustomerProjectModal";
 import { useCustomerMutations } from "~/hooks/useCustomerMutations";
+import { useCustomerProjectMutations } from "~/hooks/useCustomerProjectMutations";
 import { fetchAllCustomers } from "~/lib/api/pagination";
 import {
   customersActiveProjectsList,
@@ -62,6 +67,8 @@ export default function Customers() {
   const [recentEndingOnly, setRecentEndingOnly] = useState(false);
   // Modal state: null = closed; { customer: null } = create; { customer } = edit.
   const [editing, setEditing] = useState<{ customer: KippoCustomer | null } | null>(null);
+  // Project create/edit modal (add project for a customer, or edit an active project).
+  const [projectModal, setProjectModal] = useState<ProjectFormTarget | null>(null);
   // Expand/collapse of the per-customer active-project detail (lazily fetched).
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [activeProjects, setActiveProjects] = useState<
@@ -119,6 +126,11 @@ export default function Customers() {
   }, [user, loadData]);
 
   const { isSaving, createCustomer, updateCustomer } = useCustomerMutations(loadData, setError);
+  const {
+    isSaving: isSavingProject,
+    createProject,
+    updateProject,
+  } = useCustomerProjectMutations(loadData, setError);
 
   const handleToggleExpand = useCallback(
     async (customer: KippoCustomer) => {
@@ -273,6 +285,16 @@ export default function Customers() {
                     detail={activeProjects[customer.id]}
                     onToggle={() => handleToggleExpand(customer)}
                     onEdit={() => setEditing({ customer })}
+                    onAddProject={() => setProjectModal({ mode: "create", customer })}
+                    onEditProject={(project) =>
+                      setProjectModal({
+                        mode: "edit",
+                        projectId: project.id,
+                        organizationId: customer.organization,
+                        organizationName: customer.organization_name,
+                        customerName: customer.name,
+                      })
+                    }
                   />
                 ))}
               </tbody>
@@ -287,6 +309,15 @@ export default function Customers() {
         customer={editing?.customer}
         onClose={() => setEditing(null)}
         onSubmit={handleSubmit}
+      />
+
+      <CustomerProjectModal
+        open={projectModal !== null}
+        target={projectModal}
+        isSaving={isSavingProject}
+        onClose={() => setProjectModal(null)}
+        onCreate={createProject}
+        onUpdate={updateProject}
       />
     </Layout>
   );
@@ -350,12 +381,16 @@ function CustomerRow({
   detail,
   onToggle,
   onEdit,
+  onAddProject,
+  onEditProject,
 }: {
   customer: KippoCustomer;
   expanded: boolean;
   detail: CustomerActiveProject[] | "loading" | undefined;
   onToggle: () => void;
   onEdit: () => void;
+  onAddProject: () => void;
+  onEditProject: (project: CustomerActiveProject) => void;
 }) {
   const count = customer.active_project_count;
   return (
@@ -410,7 +445,14 @@ function CustomerRow({
         <td className="px-4 py-3 whitespace-nowrap text-gray-500">
           {formatDate(customer.updated_datetime)}
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-4 py-3 text-right whitespace-nowrap">
+          <button
+            type="button"
+            onClick={onAddProject}
+            className="mr-2 rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+          >
+            ＋プロジェクト
+          </button>
           <button
             type="button"
             onClick={onEdit}
@@ -423,7 +465,7 @@ function CustomerRow({
       {expanded && (
         <tr className="bg-gray-50">
           <td colSpan={5} className="px-4 py-3">
-            <ActiveProjectsDetail detail={detail} />
+            <ActiveProjectsDetail detail={detail} onEditProject={onEditProject} />
           </td>
         </tr>
       )}
@@ -433,8 +475,10 @@ function CustomerRow({
 
 function ActiveProjectsDetail({
   detail,
+  onEditProject,
 }: {
   detail: CustomerActiveProject[] | "loading" | undefined;
+  onEditProject: (project: CustomerActiveProject) => void;
 }) {
   if (detail === "loading" || detail === undefined) {
     return <div className="text-sm text-gray-500">読み込み中...</div>;
@@ -450,15 +494,30 @@ function ActiveProjectsDetail({
           <th className="px-2 py-1 text-right">入金済合計(今期)</th>
           <th className="px-2 py-1 text-right">契約金額</th>
           <th className="px-2 py-1">契約終了日</th>
+          <th className="px-2 py-1" />
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100">
         {detail.map((project) => (
           <tr key={project.id} className="text-gray-700">
-            <td className="px-2 py-1">{project.name}</td>
+            <td className="px-2 py-1">
+              {/* KippoProject record edit in the SPA (not /projects/:id, which is the requirements view). */}
+              <Link to={`/projects/${project.id}/edit`} className="text-indigo-600 hover:underline">
+                {project.name}
+              </Link>
+            </td>
             <td className="px-2 py-1 text-right">{formatJpy(project.received_total_current_fy)}</td>
             <td className="px-2 py-1 text-right">{formatJpy(project.contract_amount)}</td>
             <td className="px-2 py-1">{formatDate(project.contract_end_date)}</td>
+            <td className="px-2 py-1 text-right">
+              <button
+                type="button"
+                onClick={() => onEditProject(project)}
+                className="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                編集
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
