@@ -119,6 +119,17 @@ export function Layout({ children, projectName, projectId, title, fullHeight }: 
                   要件管理
                 </Link>
                 <Link
+                  to="/customers"
+                  onClick={() => setMenuOpen(false)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive("/customers")
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  顧客管理
+                </Link>
+                <Link
                   to="/project-status"
                   onClick={() => setMenuOpen(false)}
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
