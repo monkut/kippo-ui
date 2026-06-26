@@ -8,6 +8,10 @@
 
 /**
  * Serializer for KippoCustomer model.
+
+Changelist-parity read-only additions (kippo#45): ``active_project_count`` (annotated scalar
+Subquery in the viewset), ``active_projects_contract_total`` (Σ active projects' contract totals,
+from the prefetched active-projects set), and ``compliance_verified``.
  */
 export interface KippoCustomer {
   readonly id: string;
@@ -26,9 +30,15 @@ export interface KippoCustomer {
      * @maxLength 200
      */
   document_url?: string;
+  /**
+     * Link to the customer's contract documents folder (drive, etc.)
+     * @maxLength 200
+     */
+  contract_folder_url?: string;
   notes?: string;
-  /** If False, hidden from default admin lists */
-  display_as_active?: boolean;
+  readonly active_project_count: number;
+  readonly active_projects_contract_total: number;
+  readonly compliance_verified: boolean;
   readonly created_datetime: string;
   readonly updated_datetime: string;
 }

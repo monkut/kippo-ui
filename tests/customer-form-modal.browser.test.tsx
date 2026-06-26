@@ -124,6 +124,9 @@ describe("CustomerFormModal", () => {
       name: "Beta Co",
       email: "ops@beta.example",
       document_url: "https://drive.example.com/beta",
+      active_project_count: 0,
+      active_projects_contract_total: 0,
+      compliance_verified: false,
       created_datetime: "2026-01-01T00:00:00Z",
       updated_datetime: "2026-01-01T00:00:00Z",
     };

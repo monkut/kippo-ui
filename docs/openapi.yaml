@@ -297,8 +297,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -307,11 +308,6 @@ paths:
         - Update (PUT/PATCH): Authenticated users (organization-scoped).
         - Delete (DELETE): Superusers only.
       parameters:
-      - in: query
-        name: is_active
-        schema:
-          type: boolean
-        description: Filter by display_as_active (true/false)
       - in: query
         name: organization
         schema:
@@ -329,6 +325,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: recent_ending
+        schema:
+          type: boolean
+        description: When true, only customers with 1+ project ending in the previous
+          or current fiscal year.
       - in: query
         name: search
         schema:
@@ -356,8 +358,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -400,8 +403,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -439,8 +443,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -490,8 +495,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -540,8 +546,9 @@ paths:
         - Superusers see all customers.
 
         **Filtering:**
-        - is_active: Filter by display_as_active (true/false).
         - organization: UUID filter (still intersected with user's memberships).
+        - recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+          last two fiscal years (previous + current FY) of the customer's organization.
         - search: SearchFilter on `name`, `email`.
 
         **Permissions:**
@@ -565,6 +572,77 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/customers/{id}/active-projects/:
+    get:
+      operationId: customers_active_projects_list
+      description: |-
+        List the customer's active (open + display_as_active) projects with contract amount, end
+        date, and current-FY received-billing total (mirrors the admin's active-project detail rows).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this 顧客.
+        required: true
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerActiveProject'
+          description: ''
+  /api/customers/fiscal-year-summary/:
+    get:
+      operationId: customers_fiscal_year_summary_list
+      description: |-
+        Per-organization current-fiscal-year summary over the filtered in-scope customers (same
+        org-scope + organization + recent_ending filters as list).
+      parameters:
+      - in: query
+        name: organization
+        schema:
+          type: string
+        description: Filter by organization UUID
+      - in: query
+        name: recent_ending
+        schema:
+          type: boolean
+        description: Restrict to customers with projects ending this/prev FY.
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FiscalYearSummary'
+          description: ''
   /api/feedback/feedback/:
     get:
       operationId: feedback_feedback_list
@@ -1794,6 +1872,92 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/project-categories/:
+    get:
+      operationId: project_categories_list
+      description: |-
+        Read-only list of selectable project categories (kippo#43).
+
+        Backs the kippo-ui project create/edit form category picker.
+
+        **Organization Scoping:**
+        - Regular users see global default categories plus the categories of organizations they belong to.
+        - Superusers see all active categories.
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's categories (intersected with the
+          user's memberships) while still including the global defaults.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+      parameters:
+      - in: query
+        name: organization
+        schema:
+          type: string
+        description: Filter by organization UUID (globals always included)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - project-categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectOrganizationCategoryList'
+          description: ''
+  /api/project-categories/{id}/:
+    get:
+      operationId: project_categories_retrieve
+      description: |-
+        Read-only list of selectable project categories (kippo#43).
+
+        Backs the kippo-ui project create/edit form category picker.
+
+        **Organization Scoping:**
+        - Regular users see global default categories plus the categories of organizations they belong to.
+        - Superusers see all active categories.
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's categories (intersected with the
+          user's memberships) while still including the global defaults.
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクトカテゴリ.
+        required: true
+      tags:
+      - project-categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectOrganizationCategory'
+          description: ''
   /api/project-surveys/:
     get:
       operationId: project_surveys_list
@@ -2690,6 +2854,484 @@ paths:
               schema:
                 $ref: '#/components/schemas/AutoExtendResponse'
           description: ''
+  /api/projects/{project_pk}/billing-entries/:
+    get:
+      operationId: projects_billing_entries_list
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectBillingEntryList'
+          description: ''
+    post:
+      operationId: projects_billing_entries_create
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectBillingEntry'
+          description: ''
+  /api/projects/{project_pk}/billing-entries/{id}/:
+    get:
+      operationId: projects_billing_entries_retrieve
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 請求エントリ.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectBillingEntry'
+          description: ''
+    put:
+      operationId: projects_billing_entries_update
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 請求エントリ.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectBillingEntryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectBillingEntry'
+          description: ''
+    patch:
+      operationId: projects_billing_entries_partial_update
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 請求エントリ.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectBillingEntryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectBillingEntryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectBillingEntryRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectBillingEntry'
+          description: ''
+    delete:
+      operationId: projects_billing_entries_destroy
+      description: |-
+        A project contract's billing-ledger entries (kippo#31), nested under
+        ``/projects/{project_pk}/billing-entries/``.
+
+        Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+        project (the project must already have a contract). ``received_by`` is stamped from the acting
+        user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+        the model.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 請求エントリ.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/projects/{project_pk}/contract/:
+    get:
+      operationId: projects_contract_list
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectContractList'
+          description: ''
+    post:
+      operationId: projects_contract_create
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectContract'
+          description: ''
+  /api/projects/{project_pk}/contract/{id}/:
+    get:
+      operationId: projects_contract_retrieve
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 契約.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectContract'
+          description: ''
+    put:
+      operationId: projects_contract_update
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 契約.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectContractRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectContract'
+          description: ''
+    patch:
+      operationId: projects_contract_partial_update
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 契約.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectContractRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectContractRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectContractRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectContract'
+          description: ''
+    delete:
+      operationId: projects_contract_destroy
+      description: |-
+        Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+        OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+        (the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+        / ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+        comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+        organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 契約.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -6878,6 +7520,17 @@ components:
       required:
       - created
       - skip_reason
+    BillingTypeEnum:
+      enum:
+      - delivery
+      - monthly
+      type: string
+      description: |-
+        * `delivery` - 納品
+        * `monthly` - 月額
+    BlankEnum:
+      enum:
+      - ''
     BusinessRequirementEvaluation:
       type: object
       properties:
@@ -6925,6 +7578,42 @@ components:
         * `USD` - USD
         * `JPY` - JPY
         * `EUR` - EUR
+    CustomerActiveProject:
+      type: object
+      description: |-
+        One active project row for GET /api/customers/{id}/active-projects/ (mirrors the admin's
+        expandable active-project detail). ``received_total_current_fy`` is set by the viewset.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        contract_amount:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        contract_end_date:
+          type: string
+          nullable: true
+          readOnly: true
+        received_total_current_fy:
+          type: number
+          format: double
+          maximum: 100000000000000
+          minimum: -100000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+          readOnly: true
+      required:
+      - contract_amount
+      - contract_end_date
+      - id
+      - name
+      - received_total_current_fy
     ErrorResponse:
       type: object
       description: Serializer for error responses.
@@ -7051,6 +7740,77 @@ components:
       required:
       - comment
       - title
+    FiscalYearMonthlyBreakdown:
+      type: object
+      description: 'One FY-month planned-billing total: {"month": "YYYY/MM", "amount":
+        decimal}.'
+      properties:
+        month:
+          type: string
+        amount:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+      required:
+      - amount
+      - month
+    FiscalYearSummary:
+      type: object
+      description: Per-organization current-fiscal-year summary for GET /api/customers/fiscal-year-summary/.
+      properties:
+        organization:
+          $ref: '#/components/schemas/FiscalYearSummaryOrganization'
+        fiscal_year_start:
+          type: string
+          format: date
+        fiscal_year_end:
+          type: string
+          format: date
+        customer_count:
+          type: integer
+        project_count:
+          type: integer
+        planned_total:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        received_total:
+          type: number
+          format: double
+          maximum: 10000000000000000
+          minimum: -10000000000000000
+          exclusiveMaximum: true
+          exclusiveMinimum: true
+        monthly_planned_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalYearMonthlyBreakdown'
+      required:
+      - customer_count
+      - fiscal_year_end
+      - fiscal_year_start
+      - monthly_planned_breakdown
+      - organization
+      - planned_total
+      - project_count
+      - received_total
+    FiscalYearSummaryOrganization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     FullfillmentScoreEnum:
       enum:
       - 1
@@ -7185,7 +7945,12 @@ components:
         * `5` - 5
     KippoCustomer:
       type: object
-      description: Serializer for KippoCustomer model.
+      description: |-
+        Serializer for KippoCustomer model.
+
+        Changelist-parity read-only additions (kippo#45): ``active_project_count`` (annotated scalar
+        Subquery in the viewset), ``active_projects_contract_total`` (Σ active projects' contract totals,
+        from the prefetched active-projects set), and ``compliance_verified``.
       properties:
         id:
           type: string
@@ -7222,12 +7987,25 @@ components:
           title: ドキュメントURL
           description: Link to customer-related documents (folder, drive, wiki, etc.)
           maxLength: 200
+        contract_folder_url:
+          type: string
+          format: uri
+          title: 契約フォルダURL
+          description: Link to the customer's contract documents folder (drive, etc.)
+          maxLength: 200
         notes:
           type: string
           title: メモ
-        display_as_active:
+        active_project_count:
+          type: integer
+          readOnly: true
+        active_projects_contract_total:
+          type: number
+          format: double
+          readOnly: true
+        compliance_verified:
           type: boolean
-          description: If False, hidden from default admin lists
+          readOnly: true
         created_datetime:
           type: string
           format: date-time
@@ -7237,6 +8015,9 @@ components:
           format: date-time
           readOnly: true
       required:
+      - active_project_count
+      - active_projects_contract_total
+      - compliance_verified
       - created_datetime
       - id
       - name
@@ -7245,7 +8026,12 @@ components:
       - updated_datetime
     KippoCustomerRequest:
       type: object
-      description: Serializer for KippoCustomer model.
+      description: |-
+        Serializer for KippoCustomer model.
+
+        Changelist-parity read-only additions (kippo#45): ``active_project_count`` (annotated scalar
+        Subquery in the viewset), ``active_projects_contract_total`` (Σ active projects' contract totals,
+        from the prefetched active-projects set), and ``compliance_verified``.
       properties:
         organization:
           type: string
@@ -7276,12 +8062,15 @@ components:
           title: ドキュメントURL
           description: Link to customer-related documents (folder, drive, wiki, etc.)
           maxLength: 200
+        contract_folder_url:
+          type: string
+          format: uri
+          title: 契約フォルダURL
+          description: Link to the customer's contract documents folder (drive, etc.)
+          maxLength: 200
         notes:
           type: string
           title: メモ
-        display_as_active:
-          type: boolean
-          description: If False, hidden from default admin lists
       required:
       - name
       - organization
@@ -7340,7 +8129,7 @@ components:
             * `proposing-mid` - 提案(中)
             * `proposing-high` - 提案(高)
             * `verbal-order` - 口頭受注
-            * `under-contract` - 契約稼働中
+            * `under-contract` - 契約(稼働中)
             * `completed` - 完了
             * `lost` - 失注
         phase_display:
@@ -7453,13 +8242,6 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        billing_date:
-          type: string
-          format: date
-          nullable: true
-          title: 請求日
-          description: Date the project is billed. Defaults to the target date when
-            left blank.
         total_revenue:
           type: string
           format: decimal
@@ -7481,7 +8263,7 @@ components:
           maxLength: 255
         problem_definition:
           type: string
-          title: プロジェクト課題定義
+          title: プロジェクト紹介
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
@@ -7549,6 +8331,275 @@ components:
       - total_revenue
       - updated_datetime
       - weekly_effort_users
+    KippoProjectBillingEntry:
+      type: object
+      description: One entry in a contract's billing ledger (kippo#31). contract is
+        set from the nested route.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contract:
+          type: integer
+          readOnly: true
+          description: Contract this billing entry belongs to.
+        billing_date:
+          type: string
+          format: date
+          title: 請求日
+          description: Date the entry is billed/recognized. Monthly-generated entries
+            use the month-end (月末) date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          title: 金額
+          description: Billed amount (JPY).
+        is_manual:
+          type: boolean
+          title: 手動追加
+          description: True for hand-added entries; False for entries generated from
+            the contract terms.
+        is_received:
+          type: boolean
+          title: 入金済
+          description: True once payment for this billing entry has been received.
+        received_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: 入金日時
+          description: When payment was received. Auto-set when is_received is enabled;
+            cleared when disabled.
+        received_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: 入金確認者
+          description: User who verified/received the payment. Stamped from the acting
+            admin when is_received is set; cleared when disabled.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - billing_date
+      - contract
+      - created_datetime
+      - id
+      - received_by
+      - received_datetime
+      - updated_datetime
+    KippoProjectBillingEntryRequest:
+      type: object
+      description: One entry in a contract's billing ledger (kippo#31). contract is
+        set from the nested route.
+      properties:
+        billing_date:
+          type: string
+          format: date
+          title: 請求日
+          description: Date the entry is billed/recognized. Monthly-generated entries
+            use the month-end (月末) date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          title: 金額
+          description: Billed amount (JPY).
+        is_manual:
+          type: boolean
+          title: 手動追加
+          description: True for hand-added entries; False for entries generated from
+            the contract terms.
+        is_received:
+          type: boolean
+          title: 入金済
+          description: True once payment for this billing entry has been received.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
+      required:
+      - amount
+      - billing_date
+    KippoProjectContract:
+      type: object
+      description: The project's contract (kippo#31) — billing terms. project is set
+        from the nested route.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+          readOnly: true
+        project_name:
+          type: string
+          readOnly: true
+        billing_type:
+          allOf:
+          - $ref: '#/components/schemas/BillingTypeEnum'
+          title: 請求方法
+          description: |-
+            When revenue is billed: 'delivery' (納品, once at the contract end_date) or 'monthly' (月額, each month-end across the contract period).
+
+            * `delivery` - 納品
+            * `monthly` - 月額
+        pricing_basis:
+          allOf:
+          - $ref: '#/components/schemas/PricingBasisEnum'
+          title: 料金体系
+          description: |-
+            How each billed amount is computed: 'fixed' (固定, the contract total_amount) or 'effort' (実績, actual logged effort × role rate — time-&-materials). When 'effort', total_amount is an optional cap (上限) and may be left blank.
+
+            * `fixed` - 固定
+            * `effort` - 実績
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 契約金額
+          description: JPY. Contract total for 'fixed' pricing (required; for 'monthly'
+            it is split evenly across the contract months with the remainder on the
+            final month). For 'effort' pricing it is an optional cap (上限) and may
+            be left blank.
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約開始日
+          description: Contract period start. Auto-populated from the project start_date
+            when left blank.
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約終了日
+          description: Contract period end. Auto-populated from the project target_date
+            when left blank.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - project
+      - project_name
+      - updated_datetime
+    KippoProjectContractRequest:
+      type: object
+      description: The project's contract (kippo#31) — billing terms. project is set
+        from the nested route.
+      properties:
+        billing_type:
+          allOf:
+          - $ref: '#/components/schemas/BillingTypeEnum'
+          title: 請求方法
+          description: |-
+            When revenue is billed: 'delivery' (納品, once at the contract end_date) or 'monthly' (月額, each month-end across the contract period).
+
+            * `delivery` - 納品
+            * `monthly` - 月額
+        pricing_basis:
+          allOf:
+          - $ref: '#/components/schemas/PricingBasisEnum'
+          title: 料金体系
+          description: |-
+            How each billed amount is computed: 'fixed' (固定, the contract total_amount) or 'effort' (実績, actual logged effort × role rate — time-&-materials). When 'effort', total_amount is an optional cap (上限) and may be left blank.
+
+            * `fixed` - 固定
+            * `effort` - 実績
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 契約金額
+          description: JPY. Contract total for 'fixed' pricing (required; for 'monthly'
+            it is split evenly across the contract months with the remainder on the
+            final month). For 'effort' pricing it is an optional cap (上限) and may
+            be left blank.
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約開始日
+          description: Contract period start. Auto-populated from the project start_date
+            when left blank.
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約終了日
+          description: Contract period end. Auto-populated from the project target_date
+            when left blank.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
+    KippoProjectOrganizationCategory:
+      type: object
+      description: Read-only serializer for KippoProjectOrganizationCategory (project
+        category picker).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        key:
+          type: string
+          readOnly: true
+          title: キー
+        label:
+          type: string
+          readOnly: true
+          title: ラベル
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: 組織
+          description: Organization this category belongs to; leave empty for a global
+            default category
+        sort_order:
+          type: integer
+          readOnly: true
+          title: 表示順
+        is_active:
+          type: boolean
+          readOnly: true
+          title: 有効
+      required:
+      - id
+      - is_active
+      - key
+      - label
+      - organization
+      - sort_order
     KippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -7586,7 +8637,7 @@ components:
             * `proposing-mid` - 提案(中)
             * `proposing-high` - 提案(高)
             * `verbal-order` - 口頭受注
-            * `under-contract` - 契約稼働中
+            * `under-contract` - 契約(稼働中)
             * `completed` - 完了
             * `lost` - 失注
         confidence:
@@ -7664,13 +8715,6 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        billing_date:
-          type: string
-          format: date
-          nullable: true
-          title: 請求日
-          description: Date the project is billed. Defaults to the target date when
-            left blank.
         document_folder_url:
           type: string
           format: uri
@@ -7682,7 +8726,7 @@ components:
           maxLength: 255
         problem_definition:
           type: string
-          title: プロジェクト課題定義
+          title: プロジェクト紹介
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
@@ -8031,6 +9075,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KippoCustomer'
+    PaginatedKippoProjectBillingEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectBillingEntry'
+    PaginatedKippoProjectContractList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectContract'
     PaginatedKippoProjectList:
       type: object
       required:
@@ -8054,6 +9144,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KippoProject'
+    PaginatedKippoProjectOrganizationCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectOrganizationCategory'
     PaginatedKippoProjectUserStatisfactionResultList:
       type: object
       required:
@@ -8579,7 +9692,12 @@ components:
           nullable: true
     PatchedKippoCustomerRequest:
       type: object
-      description: Serializer for KippoCustomer model.
+      description: |-
+        Serializer for KippoCustomer model.
+
+        Changelist-parity read-only additions (kippo#45): ``active_project_count`` (annotated scalar
+        Subquery in the viewset), ``active_projects_contract_total`` (Σ active projects' contract totals,
+        from the prefetched active-projects set), and ``compliance_verified``.
       properties:
         organization:
           type: string
@@ -8610,12 +9728,96 @@ components:
           title: ドキュメントURL
           description: Link to customer-related documents (folder, drive, wiki, etc.)
           maxLength: 200
+        contract_folder_url:
+          type: string
+          format: uri
+          title: 契約フォルダURL
+          description: Link to the customer's contract documents folder (drive, etc.)
+          maxLength: 200
         notes:
           type: string
           title: メモ
-        display_as_active:
+    PatchedKippoProjectBillingEntryRequest:
+      type: object
+      description: One entry in a contract's billing ledger (kippo#31). contract is
+        set from the nested route.
+      properties:
+        billing_date:
+          type: string
+          format: date
+          title: 請求日
+          description: Date the entry is billed/recognized. Monthly-generated entries
+            use the month-end (月末) date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          title: 金額
+          description: Billed amount (JPY).
+        is_manual:
           type: boolean
-          description: If False, hidden from default admin lists
+          title: 手動追加
+          description: True for hand-added entries; False for entries generated from
+            the contract terms.
+        is_received:
+          type: boolean
+          title: 入金済
+          description: True once payment for this billing entry has been received.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
+    PatchedKippoProjectContractRequest:
+      type: object
+      description: The project's contract (kippo#31) — billing terms. project is set
+        from the nested route.
+      properties:
+        billing_type:
+          allOf:
+          - $ref: '#/components/schemas/BillingTypeEnum'
+          title: 請求方法
+          description: |-
+            When revenue is billed: 'delivery' (納品, once at the contract end_date) or 'monthly' (月額, each month-end across the contract period).
+
+            * `delivery` - 納品
+            * `monthly` - 月額
+        pricing_basis:
+          allOf:
+          - $ref: '#/components/schemas/PricingBasisEnum'
+          title: 料金体系
+          description: |-
+            How each billed amount is computed: 'fixed' (固定, the contract total_amount) or 'effort' (実績, actual logged effort × role rate — time-&-materials). When 'effort', total_amount is an optional cap (上限) and may be left blank.
+
+            * `fixed` - 固定
+            * `effort` - 実績
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 契約金額
+          description: JPY. Contract total for 'fixed' pricing (required; for 'monthly'
+            it is split evenly across the contract months with the remainder on the
+            final month). For 'effort' pricing it is an optional cap (上限) and may
+            be left blank.
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約開始日
+          description: Contract period start. Auto-populated from the project start_date
+            when left blank.
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: 契約終了日
+          description: Contract period end. Auto-populated from the project target_date
+            when left blank.
+        note:
+          type: string
+          title: 備考
+          maxLength: 255
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -8653,7 +9855,7 @@ components:
             * `proposing-mid` - 提案(中)
             * `proposing-high` - 提案(高)
             * `verbal-order` - 口頭受注
-            * `under-contract` - 契約稼働中
+            * `under-contract` - 契約(稼働中)
             * `completed` - 完了
             * `lost` - 失注
         confidence:
@@ -8731,13 +9933,6 @@ components:
           title: 完了日
           description: The date the project was actually completed on (not the initial
             target)
-        billing_date:
-          type: string
-          format: date
-          nullable: true
-          title: 請求日
-          description: Date the project is billed. Defaults to the target date when
-            left blank.
         document_folder_url:
           type: string
           format: uri
@@ -8749,7 +9944,7 @@ components:
           maxLength: 255
         problem_definition:
           type: string
-          title: プロジェクト課題定義
+          title: プロジェクト紹介
           description: Define the problem that the project is set out to solve.
         survey_issued:
           type: boolean
@@ -8901,6 +10096,16 @@ components:
           minimum: -32768
           description: Workload percentage assigned to project from available workload
             available for project organization
+        role:
+          description: |-
+            Billing-rate role for effort-based billing; selects the project's ProjectAssignmentRate for this user's logged effort. Empty falls back to the developer rate.
+
+            * `developer` - developer
+            * `project_manager` - project_manager
+            * `tester` - tester
+          oneOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
           description: Assignment is confirmed or not
@@ -9107,9 +10312,17 @@ components:
         * `proposing-mid` - 提案(中)
         * `proposing-high` - 提案(高)
         * `verbal-order` - 口頭受注
-        * `under-contract` - 契約稼働中
+        * `under-contract` - 契約(稼働中)
         * `completed` - 完了
         * `lost` - 失注
+    PricingBasisEnum:
+      enum:
+      - fixed
+      - effort
+      type: string
+      description: |-
+        * `fixed` - 固定
+        * `effort` - 実績
     ProblemDefinitionEvaluation:
       type: object
       properties:
@@ -9828,6 +11041,16 @@ components:
           minimum: -32768
           description: Workload percentage assigned to project from available workload
             available for project organization
+        role:
+          description: |-
+            Billing-rate role for effort-based billing; selects the project's ProjectAssignmentRate for this user's logged effort. Empty falls back to the developer rate.
+
+            * `developer` - developer
+            * `project_manager` - project_manager
+            * `tester` - tester
+          oneOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
           description: Assignment is confirmed or not
@@ -9873,6 +11096,16 @@ components:
           minimum: -32768
           description: Workload percentage assigned to project from available workload
             available for project organization
+        role:
+          description: |-
+            Billing-rate role for effort-based billing; selects the project's ProjectAssignmentRate for this user's logged effort. Empty falls back to the developer rate.
+
+            * `developer` - developer
+            * `project_manager` - project_manager
+            * `tester` - tester
+          oneOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
           description: Assignment is confirmed or not

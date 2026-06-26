@@ -10,15 +10,25 @@ import type {
   GithubRepository,
   GithubRepositoryRequest,
   KippoProject,
+  KippoProjectBillingEntry,
+  KippoProjectBillingEntryRequest,
+  KippoProjectContract,
+  KippoProjectContractRequest,
   KippoProjectRequest,
+  PaginatedKippoProjectBillingEntryList,
+  PaginatedKippoProjectContractList,
   PaginatedKippoProjectList,
   PaginatedProjectWeeklyEffortList,
+  PatchedKippoProjectBillingEntryRequest,
+  PatchedKippoProjectContractRequest,
   PatchedKippoProjectRequest,
   PatchedProjectWeeklyEffortRequest,
   ProjectForecastResponse,
   ProjectMembersResponse,
   ProjectWeeklyEffort,
   ProjectWeeklyEffortRequest,
+  ProjectsBillingEntriesListParams,
+  ProjectsContractListParams,
   ProjectsGithubRepositoriesListParams,
   ProjectsListParams,
   ProjectsWeeklyeffortListParams,
@@ -735,6 +745,544 @@ export const projectsMonthlyAssignmentsAutoExtendCreate = async (projectId: stri
   {
     ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesListResponse200 = {
+  data: PaginatedKippoProjectBillingEntryList
+  status: 200
+}
+
+export type projectsBillingEntriesListResponseSuccess = (projectsBillingEntriesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesListResponse = (projectsBillingEntriesListResponseSuccess)
+
+export const getProjectsBillingEntriesListUrl = (projectPk: string,
+    params?: ProjectsBillingEntriesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${projectPk}/billing-entries/?${stringifiedParams}` : `/api/projects/${projectPk}/billing-entries/`
+}
+
+export const projectsBillingEntriesList = async (projectPk: string,
+    params?: ProjectsBillingEntriesListParams, options?: RequestInit): Promise<projectsBillingEntriesListResponse> => {
+
+  return customFetch<projectsBillingEntriesListResponse>(getProjectsBillingEntriesListUrl(projectPk,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesCreateResponse201 = {
+  data: KippoProjectBillingEntry
+  status: 201
+}
+
+export type projectsBillingEntriesCreateResponseSuccess = (projectsBillingEntriesCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesCreateResponse = (projectsBillingEntriesCreateResponseSuccess)
+
+export const getProjectsBillingEntriesCreateUrl = (projectPk: string,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/billing-entries/`
+}
+
+export const projectsBillingEntriesCreate = async (projectPk: string,
+    kippoProjectBillingEntryRequest: KippoProjectBillingEntryRequest, options?: RequestInit): Promise<projectsBillingEntriesCreateResponse> => {
+
+  return customFetch<projectsBillingEntriesCreateResponse>(getProjectsBillingEntriesCreateUrl(projectPk),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectBillingEntryRequest,)
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesRetrieveResponse200 = {
+  data: KippoProjectBillingEntry
+  status: 200
+}
+
+export type projectsBillingEntriesRetrieveResponseSuccess = (projectsBillingEntriesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesRetrieveResponse = (projectsBillingEntriesRetrieveResponseSuccess)
+
+export const getProjectsBillingEntriesRetrieveUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/billing-entries/${id}/`
+}
+
+export const projectsBillingEntriesRetrieve = async (projectPk: string,
+    id: number, options?: RequestInit): Promise<projectsBillingEntriesRetrieveResponse> => {
+
+  return customFetch<projectsBillingEntriesRetrieveResponse>(getProjectsBillingEntriesRetrieveUrl(projectPk,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesUpdateResponse200 = {
+  data: KippoProjectBillingEntry
+  status: 200
+}
+
+export type projectsBillingEntriesUpdateResponseSuccess = (projectsBillingEntriesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesUpdateResponse = (projectsBillingEntriesUpdateResponseSuccess)
+
+export const getProjectsBillingEntriesUpdateUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/billing-entries/${id}/`
+}
+
+export const projectsBillingEntriesUpdate = async (projectPk: string,
+    id: number,
+    kippoProjectBillingEntryRequest: KippoProjectBillingEntryRequest, options?: RequestInit): Promise<projectsBillingEntriesUpdateResponse> => {
+
+  return customFetch<projectsBillingEntriesUpdateResponse>(getProjectsBillingEntriesUpdateUrl(projectPk,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectBillingEntryRequest,)
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesPartialUpdateResponse200 = {
+  data: KippoProjectBillingEntry
+  status: 200
+}
+
+export type projectsBillingEntriesPartialUpdateResponseSuccess = (projectsBillingEntriesPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesPartialUpdateResponse = (projectsBillingEntriesPartialUpdateResponseSuccess)
+
+export const getProjectsBillingEntriesPartialUpdateUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/billing-entries/${id}/`
+}
+
+export const projectsBillingEntriesPartialUpdate = async (projectPk: string,
+    id: number,
+    patchedKippoProjectBillingEntryRequest: PatchedKippoProjectBillingEntryRequest, options?: RequestInit): Promise<projectsBillingEntriesPartialUpdateResponse> => {
+
+  return customFetch<projectsBillingEntriesPartialUpdateResponse>(getProjectsBillingEntriesPartialUpdateUrl(projectPk,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedKippoProjectBillingEntryRequest,)
+  }
+);}
+
+
+/**
+ * A project contract's billing-ledger entries (kippo#31), nested under
+``/projects/{project_pk}/billing-entries/``.
+
+Org-scoped via the contract's project. Read + write. ``contract`` is resolved from the URL's
+project (the project must already have a contract). ``received_by`` is stamped from the acting
+user when ``is_received`` is set (mirrors the admin); ``received_datetime`` is auto-managed by
+the model.
+ */
+export type projectsBillingEntriesDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type projectsBillingEntriesDestroyResponseSuccess = (projectsBillingEntriesDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type projectsBillingEntriesDestroyResponse = (projectsBillingEntriesDestroyResponseSuccess)
+
+export const getProjectsBillingEntriesDestroyUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/billing-entries/${id}/`
+}
+
+export const projectsBillingEntriesDestroy = async (projectPk: string,
+    id: number, options?: RequestInit): Promise<projectsBillingEntriesDestroyResponse> => {
+
+  return customFetch<projectsBillingEntriesDestroyResponse>(getProjectsBillingEntriesDestroyUrl(projectPk,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractListResponse200 = {
+  data: PaginatedKippoProjectContractList
+  status: 200
+}
+
+export type projectsContractListResponseSuccess = (projectsContractListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractListResponse = (projectsContractListResponseSuccess)
+
+export const getProjectsContractListUrl = (projectPk: string,
+    params?: ProjectsContractListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${projectPk}/contract/?${stringifiedParams}` : `/api/projects/${projectPk}/contract/`
+}
+
+export const projectsContractList = async (projectPk: string,
+    params?: ProjectsContractListParams, options?: RequestInit): Promise<projectsContractListResponse> => {
+
+  return customFetch<projectsContractListResponse>(getProjectsContractListUrl(projectPk,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractCreateResponse201 = {
+  data: KippoProjectContract
+  status: 201
+}
+
+export type projectsContractCreateResponseSuccess = (projectsContractCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractCreateResponse = (projectsContractCreateResponseSuccess)
+
+export const getProjectsContractCreateUrl = (projectPk: string,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/contract/`
+}
+
+export const projectsContractCreate = async (projectPk: string,
+    kippoProjectContractRequest: KippoProjectContractRequest, options?: RequestInit): Promise<projectsContractCreateResponse> => {
+
+  return customFetch<projectsContractCreateResponse>(getProjectsContractCreateUrl(projectPk),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectContractRequest,)
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractRetrieveResponse200 = {
+  data: KippoProjectContract
+  status: 200
+}
+
+export type projectsContractRetrieveResponseSuccess = (projectsContractRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractRetrieveResponse = (projectsContractRetrieveResponseSuccess)
+
+export const getProjectsContractRetrieveUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/contract/${id}/`
+}
+
+export const projectsContractRetrieve = async (projectPk: string,
+    id: number, options?: RequestInit): Promise<projectsContractRetrieveResponse> => {
+
+  return customFetch<projectsContractRetrieveResponse>(getProjectsContractRetrieveUrl(projectPk,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractUpdateResponse200 = {
+  data: KippoProjectContract
+  status: 200
+}
+
+export type projectsContractUpdateResponseSuccess = (projectsContractUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractUpdateResponse = (projectsContractUpdateResponseSuccess)
+
+export const getProjectsContractUpdateUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/contract/${id}/`
+}
+
+export const projectsContractUpdate = async (projectPk: string,
+    id: number,
+    kippoProjectContractRequest: KippoProjectContractRequest, options?: RequestInit): Promise<projectsContractUpdateResponse> => {
+
+  return customFetch<projectsContractUpdateResponse>(getProjectsContractUpdateUrl(projectPk,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectContractRequest,)
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractPartialUpdateResponse200 = {
+  data: KippoProjectContract
+  status: 200
+}
+
+export type projectsContractPartialUpdateResponseSuccess = (projectsContractPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractPartialUpdateResponse = (projectsContractPartialUpdateResponseSuccess)
+
+export const getProjectsContractPartialUpdateUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/contract/${id}/`
+}
+
+export const projectsContractPartialUpdate = async (projectPk: string,
+    id: number,
+    patchedKippoProjectContractRequest: PatchedKippoProjectContractRequest, options?: RequestInit): Promise<projectsContractPartialUpdateResponse> => {
+
+  return customFetch<projectsContractPartialUpdateResponse>(getProjectsContractPartialUpdateUrl(projectPk,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedKippoProjectContractRequest,)
+  }
+);}
+
+
+/**
+ * Contract (kippo#31) for a project, nested under ``/projects/{project_pk}/contract/``.
+
+OneToOne — a project has at most one contract. ``GET`` / ``POST`` use the collection URL
+(the list returns the single contract; POST creates it, rejecting a second). ``PUT`` / ``PATCH``
+/ ``DELETE`` address the contract by its id at ``/projects/{project_pk}/contract/{id}/`` (the id
+comes from the GET response). Org-scoped: a user sees only contracts for projects in their
+organizations; superusers see all. ``project`` is taken from the URL, not the payload.
+ */
+export type projectsContractDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type projectsContractDestroyResponseSuccess = (projectsContractDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type projectsContractDestroyResponse = (projectsContractDestroyResponseSuccess)
+
+export const getProjectsContractDestroyUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/contract/${id}/`
+}
+
+export const projectsContractDestroy = async (projectPk: string,
+    id: number, options?: RequestInit): Promise<projectsContractDestroyResponse> => {
+
+  return customFetch<projectsContractDestroyResponse>(getProjectsContractDestroyUrl(projectPk,id),
+  {
+    ...options,
+    method: 'DELETE'
 
 
   }
