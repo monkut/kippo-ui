@@ -486,6 +486,12 @@ function ActiveProjectsDetail({
   if (detail.length === 0) {
     return <div className="text-sm text-gray-500">アクティブなプロジェクトがありません</div>;
   }
+  // Order by 契約終了日 earliest → latest; projects without an end date sort last.
+  const sorted = [...detail].sort((a, b) => {
+    if (!a.contract_end_date) return 1;
+    if (!b.contract_end_date) return -1;
+    return a.contract_end_date.localeCompare(b.contract_end_date);
+  });
   return (
     <table className="min-w-full text-sm">
       <thead>
@@ -498,7 +504,7 @@ function ActiveProjectsDetail({
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100">
-        {detail.map((project) => (
+        {sorted.map((project) => (
           <tr key={project.id} className="text-gray-700">
             <td className="px-2 py-1">
               {/* KippoProject record edit in the SPA (not /projects/:id, which is the requirements view). */}
