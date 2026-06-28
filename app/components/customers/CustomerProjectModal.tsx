@@ -4,27 +4,17 @@ import type {
   KippoProjectOrganizationCategory,
   KippoProjectRequest,
   OrganizationMember,
-  PatchedKippoProjectRequest,
   PhaseEnum,
 } from "~/lib/api/generated/models";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
-import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 
-// Create a project for a customer, or edit an existing one, from the Customers list (kippo#42).
-// Organization + customer are fixed (from the customer / project) and shown read-only. Create collects
-// the required KippoProject /add/ fields (KIPPO_PROJECT_FIELDS.md / kippo#41): プロジェクト名 / ステータス /
-// カテゴリ / 担当PM / 開始日 / 完了予定日 / 必要工数 / 課題定義. (The contract / 請求方法 is created separately
-// after the project — same as the existing CreateProjectModal.)
-export type ProjectFormTarget =
-  | { mode: "create"; customer: KippoCustomer }
-  | {
-      mode: "edit";
-      projectId: string;
-      organizationId: string;
-      organizationName: string;
-      customerName: string | null;
-    };
+// Create a project for a customer from the Customers list (kippo#42). Organization + customer are
+// fixed (from the customer) and shown read-only. Collects the required KippoProject /add/ fields
+// (KIPPO_PROJECT_FIELDS.md / kippo#41): プロジェクト名 / ステータス / カテゴリ / 担当PM / 開始日 / 完了予定日 /
+// 必要工数 / 課題定義. (The contract / 請求方法 is created separately after the project — same as the
+// existing CreateProjectModal.) Editing an existing project is the dedicated /projects/:id/edit page.
+export type ProjectFormTarget = { customer: KippoCustomer };
 
 // phase key -> Japanese label (mirrors VALID_PROJECT_PHASES in kippo projects/models.py).
 export const PHASE_OPTIONS: { value: PhaseEnum; label: string }[] = [
@@ -45,7 +35,6 @@ type CustomerProjectModalProps = {
   isSaving: boolean;
   onClose: () => void;
   onCreate: (payload: KippoProjectRequest) => Promise<boolean>;
-  onUpdate: (id: string, patch: PatchedKippoProjectRequest) => Promise<boolean>;
 };
 
 /** Org members for the 担当PM picker (mirrors CreateProjectModal). */
@@ -102,7 +91,7 @@ function useCategories(open: boolean, organizationId: string) {
   return categories;
 }
 
-function useProjectForm(open: boolean, target: ProjectFormTarget | null) {
+function useProjectForm(open: boolean) {
   const [name, setName] = useState("");
   const [phase, setPhase] = useState<PhaseEnum>(DEFAULT_PHASE);
   const [category, setCategory] = useState("");
@@ -111,8 +100,6 @@ function useProjectForm(open: boolean, target: ProjectFormTarget | null) {
   const [targetDate, setTargetDate] = useState("");
   const [allocatedStaffDays, setAllocatedStaffDays] = useState("");
   const [problemDefinition, setProblemDefinition] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -124,36 +111,7 @@ function useProjectForm(open: boolean, target: ProjectFormTarget | null) {
     setTargetDate("");
     setAllocatedStaffDays("");
     setProblemDefinition("");
-    setLoadError("");
-    // Edit mode: hydrate from the full project (the active-projects row lacks most fields).
-    if (target?.mode !== "edit") return;
-    setIsLoading(true);
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await projectsRetrieve(target.projectId);
-        if (cancelled) return;
-        const project = response.data;
-        setName(project.name ?? "");
-        if (project.phase) setPhase(project.phase);
-        setCategory(project.category ?? "");
-        setProjectManagerId(project.project_manager ?? "");
-        setStartDate(project.start_date ?? "");
-        setTargetDate(project.target_date ?? "");
-        setAllocatedStaffDays(
-          project.allocated_staff_days == null ? "" : String(project.allocated_staff_days),
-        );
-        setProblemDefinition(project.problem_definition ?? "");
-      } catch {
-        if (!cancelled) setLoadError("プロジェクトの読み込みに失敗しました");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, target]);
+  }, [open]);
 
   return {
     name,
@@ -172,8 +130,6 @@ function useProjectForm(open: boolean, target: ProjectFormTarget | null) {
     setAllocatedStaffDays,
     problemDefinition,
     setProblemDefinition,
-    isLoading,
-    loadError,
   };
 }
 
@@ -183,36 +139,30 @@ export function CustomerProjectModal({
   isSaving,
   onClose,
   onCreate,
-  onUpdate,
 }: CustomerProjectModalProps) {
-  const organizationId =
-    target?.mode === "create" ? target.customer.organization : (target?.organizationId ?? "");
-  const organizationName =
-    target?.mode === "create"
-      ? target.customer.organization_name
-      : (target?.organizationName ?? "");
-  const customerName =
-    target?.mode === "create" ? target.customer.name : (target?.customerName ?? "");
+  const organizationId = target?.customer.organization ?? "";
+  const organizationName = target?.customer.organization_name ?? "";
+  const customerName = target?.customer.name ?? "";
 
-  const form = useProjectForm(open, target);
+  const form = useProjectForm(open);
   const members = useOrgMembers(open, organizationId);
   const categories = useCategories(open, organizationId);
 
   if (!open || !target) return null;
 
-  const isEdit = target.mode === "edit";
   const trimmedName = form.name.trim();
   const allocatedDays = form.allocatedStaffDays.trim();
-  // Create: enforce the full required /add/ set (kippo#41). Edit: only the core fields must stay set.
-  const coreComplete =
-    trimmedName.length > 0 && !!form.projectManagerId && !!form.startDate && !!form.targetDate;
+  // Enforce the full required /add/ set (kippo#41).
   const createComplete =
-    coreComplete &&
+    trimmedName.length > 0 &&
+    !!form.projectManagerId &&
+    !!form.startDate &&
+    !!form.targetDate &&
     !!form.phase &&
     !!form.category &&
     allocatedDays !== "" &&
     form.problemDefinition.trim().length > 0;
-  const submitDisabled = isSaving || form.isLoading || (isEdit ? !coreComplete : !createComplete);
+  const submitDisabled = isSaving || !createComplete;
 
   const handleSubmit = async () => {
     if (submitDisabled) return;
@@ -220,40 +170,25 @@ export function CustomerProjectModal({
     // Send category only when it's a writable (global) key; otherwise omit (undefined → omitted) so an
     // org-specific prefill is left unchanged rather than 400-ing on the globals-only serializer queryset.
     const category = categories.some((c) => c.key === form.category) ? form.category : undefined;
-    let ok = false;
-    if (target.mode === "create") {
-      ok = await onCreate({
-        organization: target.customer.organization,
-        customer: target.customer.id,
-        name: trimmedName,
-        phase: form.phase,
-        category,
-        project_manager: form.projectManagerId,
-        start_date: form.startDate,
-        target_date: form.targetDate,
-        allocated_staff_days: allocated,
-        problem_definition: form.problemDefinition,
-      });
-    } else {
-      ok = await onUpdate(target.projectId, {
-        name: trimmedName,
-        phase: form.phase,
-        category,
-        project_manager: form.projectManagerId,
-        start_date: form.startDate,
-        target_date: form.targetDate,
-        allocated_staff_days: allocated,
-        problem_definition: form.problemDefinition,
-      });
-    }
+    const ok = await onCreate({
+      organization: target.customer.organization,
+      customer: target.customer.id,
+      name: trimmedName,
+      phase: form.phase,
+      category,
+      project_manager: form.projectManagerId,
+      start_date: form.startDate,
+      target_date: form.targetDate,
+      allocated_staff_days: allocated,
+      problem_definition: form.problemDefinition,
+    });
     if (ok) onClose();
   };
 
-  const disabled = isSaving || form.isLoading;
+  const disabled = isSaving;
 
   return (
-    <ModalShell title={isEdit ? "プロジェクトを編集" : "新規プロジェクト作成"} onClose={onClose}>
-      {form.loadError && <ErrorBanner message={form.loadError} />}
+    <ModalShell title="新規プロジェクト作成" onClose={onClose}>
       <div className="space-y-4">
         <div className="text-sm text-gray-600">
           <span className="font-medium">組織:</span> {organizationName}
@@ -319,7 +254,7 @@ export function CustomerProjectModal({
         onSubmit={handleSubmit}
         isSaving={isSaving}
         submitDisabled={submitDisabled}
-        submitLabel={isEdit ? "保存" : "作成"}
+        submitLabel="作成"
       />
     </ModalShell>
   );
@@ -583,10 +518,6 @@ function ModalShell({
       </div>
     </div>
   );
-}
-
-function ErrorBanner({ message }: { message: string }) {
-  return <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>;
 }
 
 function ModalActions({

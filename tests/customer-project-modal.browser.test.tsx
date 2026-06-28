@@ -7,17 +7,14 @@ import {
 import type { KippoCustomer } from "../app/lib/api/generated/models";
 
 // CustomerProjectModal creates a project for a customer (collecting the required KippoProject /add/
-// fields — kippo#41), or edits an active project, from the Customers list (kippo#42).
+// fields — kippo#41) from the Customers list (kippo#42). Editing a project is the dedicated
+// /projects/:id/edit page, not this modal.
 
 const organizationsMembersRetrieve = vi.fn();
-const projectsRetrieve = vi.fn();
 const projectCategoriesList = vi.fn();
 
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsMembersRetrieve: (...args: unknown[]) => organizationsMembersRetrieve(...args),
-}));
-vi.mock("~/lib/api/generated/projects/projects", () => ({
-  projectsRetrieve: (...args: unknown[]) => projectsRetrieve(...args),
 }));
 vi.mock("~/lib/api/generated/project-categories/project-categories", () => ({
   projectCategoriesList: (...args: unknown[]) => projectCategoriesList(...args),
@@ -87,7 +84,6 @@ describe("CustomerProjectModal", () => {
 
   beforeEach(() => {
     organizationsMembersRetrieve.mockReset();
-    projectsRetrieve.mockReset();
     projectCategoriesList.mockReset();
     organizationsMembersRetrieve.mockResolvedValue(
       membersResponse([{ user_id: "user-1", username: "pm", display_name: "PM User" }]),
@@ -111,7 +107,7 @@ describe("CustomerProjectModal", () => {
   test("create: 作成 stays disabled until all required /add/ fields are filled, then submits them", async () => {
     const onCreate = vi.fn().mockResolvedValue(true);
     const onClose = vi.fn();
-    const target: ProjectFormTarget = { mode: "create", customer: makeCustomer() };
+    const target: ProjectFormTarget = { customer: makeCustomer() };
 
     root.render(
       <CustomerProjectModal
@@ -120,7 +116,6 @@ describe("CustomerProjectModal", () => {
         isSaving={false}
         onClose={onClose}
         onCreate={onCreate}
-        onUpdate={vi.fn()}
       />,
     );
 
@@ -169,73 +164,5 @@ describe("CustomerProjectModal", () => {
     });
     await waitFor(() => (onClose.mock.calls.length > 0 ? true : null));
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  test("edit: hydrates all fields from projectsRetrieve and PATCHes them", async () => {
-    projectsRetrieve.mockResolvedValue({
-      status: 200,
-      data: {
-        id: "proj-1",
-        name: "Existing Project",
-        phase: "under-contract",
-        category: "ai-development",
-        project_manager: "user-1",
-        start_date: "2026-03-01",
-        target_date: "2026-09-30",
-        allocated_staff_days: 20,
-        problem_definition: "既存の課題",
-      },
-    });
-    const onUpdate = vi.fn().mockResolvedValue(true);
-    const target: ProjectFormTarget = {
-      mode: "edit",
-      projectId: "proj-1",
-      organizationId: "org-1",
-      organizationName: "Acme",
-      customerName: "Beta Co",
-    };
-
-    root.render(
-      <CustomerProjectModal
-        open={true}
-        target={target}
-        isSaving={false}
-        onClose={vi.fn()}
-        onCreate={vi.fn()}
-        onUpdate={onUpdate}
-      />,
-    );
-
-    await waitFor(() =>
-      container.querySelector<HTMLInputElement>("#customer-project-name")?.value ===
-      "Existing Project"
-        ? true
-        : null,
-    );
-    expect(projectsRetrieve).toHaveBeenCalledWith("proj-1");
-    expect(container.querySelector<HTMLInputElement>("#customer-project-allocated")?.value).toBe(
-      "20",
-    );
-    // wait for categories to load so the writable-category guard includes the prefilled key
-    await waitFor(() => {
-      const s = container.querySelector<HTMLSelectElement>("#customer-project-category");
-      return s && s.querySelectorAll("option").length > 1 ? true : null;
-    });
-
-    const submit = await waitFor(() =>
-      findButton(container, "保存")?.disabled === false ? findButton(container, "保存") : null,
-    );
-    submit?.click();
-    await waitFor(() => (onUpdate.mock.calls.length > 0 ? true : null));
-    expect(onUpdate).toHaveBeenCalledWith("proj-1", {
-      name: "Existing Project",
-      phase: "under-contract",
-      category: "ai-development",
-      project_manager: "user-1",
-      start_date: "2026-03-01",
-      target_date: "2026-09-30",
-      allocated_staff_days: 20,
-      problem_definition: "既存の課題",
-    });
   });
 });

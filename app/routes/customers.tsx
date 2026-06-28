@@ -67,7 +67,8 @@ export default function Customers() {
   const [recentEndingOnly, setRecentEndingOnly] = useState(false);
   // Modal state: null = closed; { customer: null } = create; { customer } = edit.
   const [editing, setEditing] = useState<{ customer: KippoCustomer | null } | null>(null);
-  // Project create/edit modal (add project for a customer, or edit an active project).
+  // Add-project modal (create a project for a customer). Editing an active project is the
+  // dedicated /projects/:id/edit page, reached from the project row link / 編集.
   const [projectModal, setProjectModal] = useState<ProjectFormTarget | null>(null);
   // Expand/collapse of the per-customer active-project detail (lazily fetched).
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -126,11 +127,10 @@ export default function Customers() {
   }, [user, loadData]);
 
   const { isSaving, createCustomer, updateCustomer } = useCustomerMutations(loadData, setError);
-  const {
-    isSaving: isSavingProject,
-    createProject,
-    updateProject,
-  } = useCustomerProjectMutations(loadData, setError);
+  const { isSaving: isSavingProject, createProject } = useCustomerProjectMutations(
+    loadData,
+    setError,
+  );
 
   const handleToggleExpand = useCallback(
     async (customer: KippoCustomer) => {
@@ -285,16 +285,7 @@ export default function Customers() {
                     detail={activeProjects[customer.id]}
                     onToggle={() => handleToggleExpand(customer)}
                     onEdit={() => setEditing({ customer })}
-                    onAddProject={() => setProjectModal({ mode: "create", customer })}
-                    onEditProject={(project) =>
-                      setProjectModal({
-                        mode: "edit",
-                        projectId: project.id,
-                        organizationId: customer.organization,
-                        organizationName: customer.organization_name,
-                        customerName: customer.name,
-                      })
-                    }
+                    onAddProject={() => setProjectModal({ customer })}
                   />
                 ))}
               </tbody>
@@ -317,7 +308,6 @@ export default function Customers() {
         isSaving={isSavingProject}
         onClose={() => setProjectModal(null)}
         onCreate={createProject}
-        onUpdate={updateProject}
       />
     </Layout>
   );
@@ -382,7 +372,6 @@ function CustomerRow({
   onToggle,
   onEdit,
   onAddProject,
-  onEditProject,
 }: {
   customer: KippoCustomer;
   expanded: boolean;
@@ -390,7 +379,6 @@ function CustomerRow({
   onToggle: () => void;
   onEdit: () => void;
   onAddProject: () => void;
-  onEditProject: (project: CustomerActiveProject) => void;
 }) {
   const count = customer.active_project_count;
   return (
@@ -465,7 +453,7 @@ function CustomerRow({
       {expanded && (
         <tr className="bg-gray-50">
           <td colSpan={5} className="px-4 py-3">
-            <ActiveProjectsDetail detail={detail} onEditProject={onEditProject} />
+            <ActiveProjectsDetail detail={detail} />
           </td>
         </tr>
       )}
@@ -475,10 +463,8 @@ function CustomerRow({
 
 function ActiveProjectsDetail({
   detail,
-  onEditProject,
 }: {
   detail: CustomerActiveProject[] | "loading" | undefined;
-  onEditProject: (project: CustomerActiveProject) => void;
 }) {
   if (detail === "loading" || detail === undefined) {
     return <div className="text-sm text-gray-500">読み込み中...</div>;
@@ -516,13 +502,13 @@ function ActiveProjectsDetail({
             <td className="px-2 py-1 text-right">{formatJpy(project.contract_amount)}</td>
             <td className="px-2 py-1">{formatDate(project.contract_end_date)}</td>
             <td className="px-2 py-1 text-right">
-              <button
-                type="button"
-                onClick={() => onEditProject(project)}
-                className="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              {/* Same KippoProject record edit page as the project-name link (one edit interface). */}
+              <Link
+                to={`/projects/${project.id}/edit`}
+                className="inline-block rounded border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
               >
                 編集
-              </button>
+              </Link>
             </td>
           </tr>
         ))}

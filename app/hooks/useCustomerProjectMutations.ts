@@ -1,13 +1,13 @@
 import { useCallback, useState } from "react";
-import { projectsCreate, projectsPartialUpdate } from "~/lib/api/generated/projects/projects";
-import type { KippoProjectRequest, PatchedKippoProjectRequest } from "~/lib/api/generated/models";
+import { projectsCreate } from "~/lib/api/generated/projects/projects";
+import type { KippoProjectRequest } from "~/lib/api/generated/models";
 
-// Create/update projects from the Customers list (kippo#42 — "add project for this customer" and
-// editing an active project). Each call refreshes the customer list and reports a Japanese error.
+// Create a project from the Customers list (kippo#42 — "add project for this customer"). The call
+// refreshes the customer list and reports a Japanese error. (Editing a project is the dedicated
+// /projects/:id/edit page.)
 export type CustomerProjectMutations = {
   isSaving: boolean;
   createProject: (payload: KippoProjectRequest) => Promise<boolean>;
-  updateProject: (id: string, patch: PatchedKippoProjectRequest) => Promise<boolean>;
 };
 
 function useWrap(refresh: () => Promise<void>, setHookError: (err: string) => void) {
@@ -44,11 +44,5 @@ export function useCustomerProjectMutations(
     [wrap],
   );
 
-  const updateProject = useCallback(
-    (id: string, patch: PatchedKippoProjectRequest) =>
-      wrap(() => projectsPartialUpdate(id, patch), "プロジェクトの更新に失敗しました"),
-    [wrap],
-  );
-
-  return { isSaving, createProject, updateProject };
+  return { isSaving, createProject };
 }
