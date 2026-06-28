@@ -5,7 +5,11 @@ import { Layout } from "~/components/layout";
 import { PHASE_OPTIONS } from "~/components/customers/CustomerProjectModal";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
-import { projectsPartialUpdate, projectsRetrieve } from "~/lib/api/generated/projects/projects";
+import {
+  projectsForecastRetrieve,
+  projectsPartialUpdate,
+  projectsRetrieve,
+} from "~/lib/api/generated/projects/projects";
 import type {
   KippoProjectOrganizationCategory,
   OrganizationMember,
@@ -49,11 +53,13 @@ export default function ProjectEdit() {
   const [slackChannelName, setSlackChannelName] = useState("");
   const [slackNotificationChannelName, setSlackNotificationChannelName] = useState("");
   const [githubProjectHtmlUrl, setGithubProjectHtmlUrl] = useState("");
-  const [displayAsActive, setDisplayAsActive] = useState(true);
   // is_closed is read-only here: per KIPPO_PROJECT_FIELDS.md it (and display_in_project_report) are
   // managed by the admin "Close Project" action, not edited directly (that would skip actual_date /
   // closed_datetime / status-comment side effects).
   const [isClosed, setIsClosed] = useState(false);
+  // 完了予測日 — read-only forecast from GET /projects/:id/forecast/ (null when no future
+  // assignments to project from). Mirrors the admin's estimated_completion_date display.
+  const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -84,8 +90,15 @@ export default function ProjectEdit() {
         setSlackChannelName(p.slack_channel_name ?? "");
         setSlackNotificationChannelName(p.slack_notification_channel_name ?? "");
         setGithubProjectHtmlUrl(p.github_project_html_url ?? "");
-        setDisplayAsActive(p.display_as_active ?? true);
         setIsClosed(p.is_closed ?? false);
+        // Best-effort forecast; a failure (or no future assignments) just leaves it blank.
+        try {
+          const forecast = await projectsForecastRetrieve(id);
+          if (!cancelled)
+            setEstimatedCompletionDate(forecast.data?.estimated_completion_date ?? null);
+        } catch {
+          if (!cancelled) setEstimatedCompletionDate(null);
+        }
       } catch {
         if (!cancelled) setError("プロジェクトの読み込みに失敗しました");
       } finally {
@@ -141,7 +154,6 @@ export default function ProjectEdit() {
       slack_channel_name: slackChannelName.trim(),
       slack_notification_channel_name: slackNotificationChannelName.trim(),
       github_project_html_url: githubProjectHtmlUrl.trim(),
-      display_as_active: displayAsActive,
     };
     try {
       await projectsPartialUpdate(id, patch);
@@ -167,7 +179,6 @@ export default function ProjectEdit() {
     slackChannelName,
     slackNotificationChannelName,
     githubProjectHtmlUrl,
-    displayAsActive,
     navigate,
   ]);
 
@@ -277,6 +288,13 @@ export default function ProjectEdit() {
             value={allocatedStaffDays}
             onChange={setAllocatedStaffDays}
           />
+          {/* Read-only forecast (admin's estimated_completion_date); blank when not forecastable. */}
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">完了予測日:</span>{" "}
+            {estimatedCompletionDate
+              ? new Date(estimatedCompletionDate).toLocaleDateString("ja-JP")
+              : "—"}
+          </div>
         </Section>
 
         <Section title="詳細">
@@ -293,7 +311,7 @@ export default function ProjectEdit() {
           </div>
         </Section>
 
-        <Section title="その他">
+        <CollapsibleSection title="その他">
           <Input
             id="p-slack"
             label="Slackチャンネル名"
@@ -314,13 +332,7 @@ export default function ProjectEdit() {
             onChange={setGithubProjectHtmlUrl}
           />
           <Input id="p-docbase" label="DocBaseタグ" value={docbaseTag} onChange={setDocbaseTag} />
-          <Checkbox
-            id="p-active"
-            label="アクティブ表示"
-            checked={displayAsActive}
-            onChange={setDisplayAsActive}
-          />
-        </Section>
+        </CollapsibleSection>
 
         <div className="flex justify-end gap-3">
           <button
@@ -351,6 +363,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="text-lg font-medium text-gray-900">{title}</h2>
       {children}
     </div>
+  );
+}
+
+// Collapsible section (native <details>) — starts collapsed (no `open` attr) so secondary
+// "その他" config is tucked away after creation (kippo#42 / KIPPO_PROJECT_FIELDS.md).
+function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="bg-white shadow rounded-lg p-6">
+      <summary className="flex cursor-pointer select-none items-center gap-2 text-lg font-medium text-gray-900">
+        <span className="text-gray-400">▸</span>
+        {title}
+      </summary>
+      <div className="mt-4 space-y-4">{children}</div>
+    </details>
   );
 }
 
@@ -444,30 +470,5 @@ function TextArea({
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
-  );
-}
-
-function Checkbox({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label htmlFor={id} className="flex items-center gap-2 text-sm text-gray-700">
-      <input
-        id={id}
-        type="checkbox"
-        className="h-4 w-4"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      {label}
-    </label>
   );
 }

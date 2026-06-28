@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 const navigateSpy = vi.hoisted(() => vi.fn());
 const projectsRetrieve = vi.hoisted(() => vi.fn());
 const projectsPartialUpdate = vi.hoisted(() => vi.fn());
+const projectsForecastRetrieve = vi.hoisted(() => vi.fn());
 const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
 const projectCategoriesList = vi.hoisted(() => vi.fn());
 
@@ -21,6 +22,7 @@ vi.mock("~/lib/auth-context", () => ({
 vi.mock("~/lib/api/generated/projects/projects", () => ({
   projectsRetrieve: (...a: unknown[]) => projectsRetrieve(...a),
   projectsPartialUpdate: (...a: unknown[]) => projectsPartialUpdate(...a),
+  projectsForecastRetrieve: (...a: unknown[]) => projectsForecastRetrieve(...a),
 }));
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsMembersRetrieve: (...a: unknown[]) => organizationsMembersRetrieve(...a),
@@ -63,6 +65,7 @@ describe("ProjectEdit route", () => {
     navigateSpy.mockReset();
     projectsRetrieve.mockReset();
     projectsPartialUpdate.mockReset();
+    projectsForecastRetrieve.mockReset();
     organizationsMembersRetrieve.mockReset();
     projectCategoriesList.mockReset();
     projectsRetrieve.mockResolvedValue({
@@ -108,6 +111,14 @@ describe("ProjectEdit route", () => {
       },
     });
     projectsPartialUpdate.mockResolvedValue({ status: 200, data: {} });
+    projectsForecastRetrieve.mockResolvedValue({
+      status: 200,
+      data: {
+        estimated_completion_date: "2026-09-15",
+        delta_from_target_date_days: 15,
+        target_date: "2026-08-31",
+      },
+    });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -127,6 +138,11 @@ describe("ProjectEdit route", () => {
     expect(projectsRetrieve).toHaveBeenCalledWith("proj-1");
     expect(container.textContent).toContain("Acme"); // org read-only
     expect(container.querySelector<HTMLInputElement>("#p-allocated")?.value).toBe("5");
+    // 完了予測日 (read-only forecast) is fetched and rendered; アクティブ表示 was removed.
+    await waitFor(() => (container.textContent?.includes("完了予測日") ? true : null));
+    expect(projectsForecastRetrieve).toHaveBeenCalledWith("proj-1");
+    expect(container.textContent).toContain("2026/9/15");
+    expect(container.textContent).not.toContain("アクティブ表示");
 
     setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
     // wait for categories to load so the writable-category guard includes the selected key
@@ -137,7 +153,8 @@ describe("ProjectEdit route", () => {
 
     findButton(container, "保存")?.click();
     await waitFor(() => (projectsPartialUpdate.mock.calls.length > 0 ? true : null));
-    // Exact payload: is_closed / display_in_project_report are NOT sent (admin-managed per #41).
+    // Exact payload: is_closed / display_in_project_report / display_as_active are NOT sent
+    // (admin-managed / removed from this form per #41).
     expect(projectsPartialUpdate).toHaveBeenCalledWith("proj-1", {
       name: "New Name",
       phase: "proposing-low",
@@ -152,7 +169,6 @@ describe("ProjectEdit route", () => {
       slack_channel_name: "",
       slack_notification_channel_name: "",
       github_project_html_url: "",
-      display_as_active: true,
     });
     await waitFor(() => (navigateSpy.mock.calls.length > 0 ? true : null));
     expect(navigateSpy).toHaveBeenCalledWith(-1);
