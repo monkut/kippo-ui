@@ -32,7 +32,7 @@ export interface PatchedKippoProjectRequest {
   * `proposing-mid` - 提案(中)
   * `proposing-high` - 提案(高)
   * `verbal-order` - 口頭受注
-  * `under-contract` - 契約稼働中
+  * `under-contract` - 契約(稼働中)
   * `completed` - 完了
   * `lost` - 失注 */
   phase?: PhaseEnum;
@@ -56,11 +56,18 @@ export interface PatchedKippoProjectRequest {
      * @maxLength 80
      */
   slack_notification_channel_name?: string;
+  /** Set to True if you want to enable cost reporting to the configured slack channel */
+  enable_cost_report?: boolean;
   /**
      * Project Manager assigned to the project
      * @nullable
      */
   project_manager?: string | null;
+  /**
+     * Original (parent) project for upsell projects.
+     * @nullable
+     */
+  parent_project?: string | null;
   /** Manually set when project is complete */
   is_closed?: boolean;
   /** If True, project will be included in the ActiveKippoProject List */
@@ -93,11 +100,6 @@ export interface PatchedKippoProjectRequest {
      * @nullable
      */
   actual_date?: string | null;
-  /**
-     * Date the project is billed. Defaults to the target date when left blank.
-     * @nullable
-     */
-  billing_date?: string | null;
   /**
      * URL of where documents for the projects are maintained
      * @maxLength 200

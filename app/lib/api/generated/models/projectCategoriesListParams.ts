@@ -6,9 +6,9 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type CustomersListParams = {
+export type ProjectCategoriesListParams = {
 /**
- * Filter by organization UUID
+ * Filter by organization UUID (globals always included)
  */
 organization?: string;
 /**
@@ -19,12 +19,4 @@ page?: number;
  * Number of results to return per page.
  */
 page_size?: number;
-/**
- * When true, only customers with 1+ project ending in the previous or current fiscal year.
- */
-recent_ending?: boolean;
-/**
- * Search on name, email
- */
-search?: string;
 };

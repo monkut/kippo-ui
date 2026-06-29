@@ -148,7 +148,6 @@ function useCustomerSearch(open: boolean, organizationId: string, query: string)
         const response = await customersList({
           organization: organizationId,
           search: query.trim(),
-          is_active: true,
         });
         if (!cancelled) setResults(response.data?.results ?? []);
       } catch {

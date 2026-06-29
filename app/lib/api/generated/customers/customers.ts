@@ -6,7 +6,11 @@
  * OpenAPI spec version: 1.1.0
  */
 import type {
+  CustomerActiveProject,
+  CustomersActiveProjectsListParams,
+  CustomersFiscalYearSummaryListParams,
   CustomersListParams,
+  FiscalYearSummary,
   KippoCustomer,
   KippoCustomerRequest,
   PaginatedKippoCustomerList,
@@ -23,8 +27,9 @@ import { customFetch } from '../../custom-fetch';
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -80,8 +85,9 @@ export const customersList = async (params?: CustomersListParams, options?: Requ
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -131,8 +137,9 @@ export const customersCreate = async (kippoCustomerRequest: KippoCustomerRequest
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -181,8 +188,9 @@ export const customersRetrieve = async (id: string, options?: RequestInit): Prom
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -233,8 +241,9 @@ export const customersUpdate = async (id: string,
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -285,8 +294,9 @@ export const customersPartialUpdate = async (id: string,
 - Superusers see all customers.
 
 **Filtering:**
-- is_active: Filter by display_as_active (true/false).
 - organization: UUID filter (still intersected with user's memberships).
+- recent_ending: when ``true``, only customers with 1+ project whose ``target_date`` falls in the
+  last two fiscal years (previous + current FY) of the customer's organization.
 - search: SearchFilter on `name`, `email`.
 
 **Permissions:**
@@ -321,6 +331,94 @@ export const customersDestroy = async (id: string, options?: RequestInit): Promi
   {
     ...options,
     method: 'DELETE'
+
+
+  }
+);}
+
+
+/**
+ * List the customer's active (open + display_as_active) projects with contract amount, end
+date, and current-FY received-billing total (mirrors the admin's active-project detail rows).
+ */
+export type customersActiveProjectsListResponse200 = {
+  data: CustomerActiveProject[]
+  status: 200
+}
+
+export type customersActiveProjectsListResponseSuccess = (customersActiveProjectsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersActiveProjectsListResponse = (customersActiveProjectsListResponseSuccess)
+
+export const getCustomersActiveProjectsListUrl = (id: string,
+    params?: CustomersActiveProjectsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/customers/${id}/active-projects/?${stringifiedParams}` : `/api/customers/${id}/active-projects/`
+}
+
+export const customersActiveProjectsList = async (id: string,
+    params?: CustomersActiveProjectsListParams, options?: RequestInit): Promise<customersActiveProjectsListResponse> => {
+
+  return customFetch<customersActiveProjectsListResponse>(getCustomersActiveProjectsListUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Per-organization current-fiscal-year summary over the filtered in-scope customers (same
+org-scope + organization + recent_ending filters as list).
+ */
+export type customersFiscalYearSummaryListResponse200 = {
+  data: FiscalYearSummary[]
+  status: 200
+}
+
+export type customersFiscalYearSummaryListResponseSuccess = (customersFiscalYearSummaryListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersFiscalYearSummaryListResponse = (customersFiscalYearSummaryListResponseSuccess)
+
+export const getCustomersFiscalYearSummaryListUrl = (params?: CustomersFiscalYearSummaryListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/customers/fiscal-year-summary/?${stringifiedParams}` : `/api/customers/fiscal-year-summary/`
+}
+
+export const customersFiscalYearSummaryList = async (params?: CustomersFiscalYearSummaryListParams, options?: RequestInit): Promise<customersFiscalYearSummaryListResponse> => {
+
+  return customFetch<customersFiscalYearSummaryListResponse>(getCustomersFiscalYearSummaryListUrl(params),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

@@ -1,9 +1,12 @@
 import type {
+  CustomersListParams,
+  KippoCustomer,
   KippoProject,
   MonthlyAssignmentsListParams,
   ProjectMonthlyAssignment,
   ProjectsListParams,
 } from "./generated/models";
+import { customersList } from "./generated/customers/customers";
 import { monthlyAssignmentsList } from "./generated/monthly-assignments/monthly-assignments";
 import { projectsList } from "./generated/projects/projects";
 
@@ -55,4 +58,10 @@ export function fetchAllMonthlyAssignments(
   params: Omit<MonthlyAssignmentsListParams, "page">,
 ): Promise<ProjectMonthlyAssignment[]> {
   return fetchAllPaginated(monthlyAssignmentsList, { ...params } as MonthlyAssignmentsListParams);
+}
+
+export function fetchAllCustomers(
+  params?: Omit<CustomersListParams, "page">,
+): Promise<KippoCustomer[]> {
+  return fetchAllPaginated(customersList, { ...params } as CustomersListParams);
 }

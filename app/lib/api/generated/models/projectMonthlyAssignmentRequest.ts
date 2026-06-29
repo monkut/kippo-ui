@@ -5,6 +5,7 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
+import type { ProjectMonthlyAssignmentRequestRole } from './projectMonthlyAssignmentRequestRole';
 
 /**
  * Serializer for ProjectMonthlyAssignment model.
@@ -23,6 +24,12 @@ export interface ProjectMonthlyAssignmentRequest {
      * @maximum 32767
      */
   percentage: number;
+  /** Billing-rate role for effort-based billing; selects the project's ProjectAssignmentRate for this user's logged effort. Empty falls back to the developer rate.
+
+  * `developer` - developer
+  * `project_manager` - project_manager
+  * `tester` - tester */
+  role?: typeof ProjectMonthlyAssignmentRequestRole[keyof typeof ProjectMonthlyAssignmentRequestRole];
   /** Assignment is confirmed or not */
   is_confirmed?: boolean;
 }

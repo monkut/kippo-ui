@@ -6,25 +6,17 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type CustomersListParams = {
+export type CustomersFiscalYearSummaryListParams = {
 /**
  * Filter by organization UUID
  */
 organization?: string;
 /**
- * A page number within the paginated result set.
- */
-page?: number;
-/**
- * Number of results to return per page.
- */
-page_size?: number;
-/**
- * When true, only customers with 1+ project ending in the previous or current fiscal year.
+ * Restrict to customers with projects ending this/prev FY.
  */
 recent_ending?: boolean;
 /**
- * Search on name, email
+ * A search term.
  */
 search?: string;
 };
