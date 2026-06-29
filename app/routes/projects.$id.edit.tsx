@@ -317,7 +317,7 @@ export default function ProjectEdit() {
           </div>
         </Section>
 
-        <Section title="詳細">
+        <CollapsibleSection title="詳細">
           <ParentProjectField
             organizationId={organizationId}
             customerId={customerId}
@@ -340,7 +340,7 @@ export default function ProjectEdit() {
           <div className="text-sm text-gray-600">
             <span className="font-medium">状態:</span> {isClosed ? "クローズ済み" : "進行中"}
           </div>
-        </Section>
+        </CollapsibleSection>
 
         <CollapsibleSection title="その他">
           <Input
