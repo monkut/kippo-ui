@@ -36,6 +36,7 @@ export default function ProjectEdit() {
 
   const [organizationId, setOrganizationId] = useState("");
   const [organizationName, setOrganizationName] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [categories, setCategories] = useState<KippoProjectOrganizationCategory[]>([]);
@@ -85,6 +86,7 @@ export default function ProjectEdit() {
         const p = response.data;
         setOrganizationId(p.organization);
         setOrganizationName(p.organization_name);
+        setCustomerId(p.customer ?? "");
         setCustomerName(p.customer_name);
         setName(p.name ?? "");
         if (p.phase) setPhase(p.phase);
@@ -318,6 +320,7 @@ export default function ProjectEdit() {
         <Section title="詳細">
           <ParentProjectField
             organizationId={organizationId}
+            customerId={customerId}
             currentProjectId={id}
             selectedId={parentProjectId}
             selectedName={parentProjectName}
@@ -419,16 +422,19 @@ export default function ProjectEdit() {
 }
 
 // Optional parent_project picker with project-name search. Queries the org-scoped project list
-// (projectsList?search=), filters to the same organization and excludes the project itself, since
-// the backend rejects a cross-org or self-referencing parent.
+// (projectsList?search=) and limits candidates to the SAME KippoCustomer as the project being
+// edited (upsell parents share a customer), excluding the project itself. Falls back to the same
+// organization when the project has no customer. The backend rejects a cross-org / self parent.
 function ParentProjectField({
   organizationId,
+  customerId,
   currentProjectId,
   selectedId,
   selectedName,
   onSelect,
 }: {
   organizationId: string;
+  customerId: string;
   currentProjectId: string;
   selectedId: string;
   selectedName: string | null;
@@ -447,10 +453,14 @@ function ParentProjectField({
     let cancelled = false;
     const handle = setTimeout(async () => {
       try {
-        const response = await projectsList({ search: q, page_size: 20 });
+        const response = await projectsList({ search: q, page_size: 50 });
         if (cancelled) return;
         const items = (response.data?.results ?? [])
-          .filter((p) => p.organization === organizationId && p.id !== currentProjectId)
+          .filter((p) => {
+            if (p.id === currentProjectId) return false;
+            // Restrict to the project's customer; without one, fall back to the organization.
+            return customerId ? p.customer === customerId : p.organization === organizationId;
+          })
           .map((p) => ({ id: p.id, name: p.name }));
         setResults(items);
       } catch {
@@ -461,7 +471,7 @@ function ParentProjectField({
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, organizationId, currentProjectId]);
+  }, [query, organizationId, customerId, currentProjectId]);
 
   return (
     <div>
