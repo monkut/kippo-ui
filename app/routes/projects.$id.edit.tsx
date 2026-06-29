@@ -446,23 +446,21 @@ function ParentProjectField({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Fetch whenever the field is open (focused) — even with an empty query — so focusing shows the
+    // full candidate list; typing then narrows it. Scope to the project's customer server-side
+    // (?customer=); without a customer, fall back to a client-side org filter (the list is already
+    // org-scoped to the user's memberships).
+    if (!open) return;
     const q = query.trim();
-    if (q.length === 0) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
     setLoading(true);
     const handle = setTimeout(async () => {
       try {
-        // Scope to the project's customer server-side (?customer=). Without a customer, fall back to
-        // an org filter applied client-side (the list is already org-scoped to the user's memberships).
-        const response = await projectsList(
-          customerId
-            ? { search: q, customer: customerId, page_size: 50 }
-            : { search: q, page_size: 50 },
-        );
+        const response = await projectsList({
+          page_size: 50,
+          ...(q ? { search: q } : {}),
+          ...(customerId ? { customer: customerId } : {}),
+        });
         if (cancelled) return;
         const items = (response.data?.results ?? [])
           .filter(
@@ -480,7 +478,7 @@ function ParentProjectField({
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, organizationId, customerId, currentProjectId]);
+  }, [open, query, organizationId, customerId, currentProjectId]);
 
   return (
     <div>
@@ -506,10 +504,12 @@ function ParentProjectField({
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
+            // Delay close so a click on a result (which blurs the input) still registers.
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder="プロジェクト名で検索..."
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          {open && query.trim().length > 0 && (
+          {open && (
             <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
               {loading ? (
                 <p className="px-3 py-2 text-sm text-gray-500">検索中...</p>
