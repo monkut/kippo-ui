@@ -2285,6 +2285,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Case-insensitive substring match on the project name (for name-search
+          pickers).
       tags:
       - projects
       security:
@@ -8169,6 +8175,11 @@ components:
           description: Notification Channel for crawler / batch / development notifications
             (separate from the conversation channel)
           maxLength: 80
+        enable_cost_report:
+          type: boolean
+          title: コストレポート有効化
+          description: Set to True if you want to enable cost reporting to the configured
+            slack channel
         project_manager:
           type: string
           format: uuid
@@ -8176,6 +8187,15 @@ components:
           title: プロジェクトマネージャー
           description: Project Manager assigned to the project
         project_manager_username:
+          type: string
+          readOnly: true
+          nullable: true
+        parent_project:
+          type: string
+          format: uuid
+          nullable: true
+          description: Original (parent) project for upsell projects.
+        parent_project_name:
           type: string
           readOnly: true
           nullable: true
@@ -8265,6 +8285,12 @@ components:
           type: string
           title: プロジェクト紹介
           description: Define the problem that the project is set out to solve.
+        meeting_calendar_url:
+          type: string
+          readOnly: true
+        meeting_description_tag:
+          type: string
+          readOnly: true
         survey_issued:
           type: boolean
           title: アンケート発行済み
@@ -8319,10 +8345,13 @@ components:
       - has_requirements
       - id
       - latest_comment
+      - meeting_calendar_url
+      - meeting_description_tag
       - monthly_billing_schedule
       - name
       - organization
       - organization_name
+      - parent_project_name
       - phase_display
       - project_manager_username
       - projectstatus_display
@@ -8661,12 +8690,22 @@ components:
           description: Notification Channel for crawler / batch / development notifications
             (separate from the conversation channel)
           maxLength: 80
+        enable_cost_report:
+          type: boolean
+          title: コストレポート有効化
+          description: Set to True if you want to enable cost reporting to the configured
+            slack channel
         project_manager:
           type: string
           format: uuid
           nullable: true
           title: プロジェクトマネージャー
           description: Project Manager assigned to the project
+        parent_project:
+          type: string
+          format: uuid
+          nullable: true
+          description: Original (parent) project for upsell projects.
         is_closed:
           type: boolean
           title: プロジェクト終了済み
@@ -9879,12 +9918,22 @@ components:
           description: Notification Channel for crawler / batch / development notifications
             (separate from the conversation channel)
           maxLength: 80
+        enable_cost_report:
+          type: boolean
+          title: コストレポート有効化
+          description: Set to True if you want to enable cost reporting to the configured
+            slack channel
         project_manager:
           type: string
           format: uuid
           nullable: true
           title: プロジェクトマネージャー
           description: Project Manager assigned to the project
+        parent_project:
+          type: string
+          format: uuid
+          nullable: true
+          description: Original (parent) project for upsell projects.
         is_closed:
           type: boolean
           title: プロジェクト終了済み

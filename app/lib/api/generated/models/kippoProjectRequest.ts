@@ -56,11 +56,18 @@ export interface KippoProjectRequest {
      * @maxLength 80
      */
   slack_notification_channel_name?: string;
+  /** Set to True if you want to enable cost reporting to the configured slack channel */
+  enable_cost_report?: boolean;
   /**
      * Project Manager assigned to the project
      * @nullable
      */
   project_manager?: string | null;
+  /**
+     * Original (parent) project for upsell projects.
+     * @nullable
+     */
+  parent_project?: string | null;
   /** Manually set when project is complete */
   is_closed?: boolean;
   /** If True, project will be included in the ActiveKippoProject List */

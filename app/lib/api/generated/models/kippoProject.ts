@@ -71,6 +71,8 @@ export interface KippoProject {
      * @maxLength 80
      */
   slack_notification_channel_name?: string;
+  /** Set to True if you want to enable cost reporting to the configured slack channel */
+  enable_cost_report?: boolean;
   /**
      * Project Manager assigned to the project
      * @nullable
@@ -78,6 +80,13 @@ export interface KippoProject {
   project_manager?: string | null;
   /** @nullable */
   readonly project_manager_username: string | null;
+  /**
+     * Original (parent) project for upsell projects.
+     * @nullable
+     */
+  parent_project?: string | null;
+  /** @nullable */
+  readonly parent_project_name: string | null;
   /** Manually set when project is complete */
   is_closed?: boolean;
   /** @nullable */
@@ -128,6 +137,8 @@ export interface KippoProject {
   docbase_tag?: string;
   /** Define the problem that the project is set out to solve. */
   problem_definition?: string;
+  readonly meeting_calendar_url: string;
+  readonly meeting_description_tag: string;
   /** Update when survey is issued! */
   survey_issued?: boolean;
   readonly assignment_rates: readonly ProjectAssignmentRateInline[];

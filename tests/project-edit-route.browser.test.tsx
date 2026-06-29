@@ -7,6 +7,7 @@ const navigateSpy = vi.hoisted(() => vi.fn());
 const projectsRetrieve = vi.hoisted(() => vi.fn());
 const projectsPartialUpdate = vi.hoisted(() => vi.fn());
 const projectsForecastRetrieve = vi.hoisted(() => vi.fn());
+const projectsList = vi.hoisted(() => vi.fn());
 const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
 const projectCategoriesList = vi.hoisted(() => vi.fn());
 
@@ -23,6 +24,7 @@ vi.mock("~/lib/api/generated/projects/projects", () => ({
   projectsRetrieve: (...a: unknown[]) => projectsRetrieve(...a),
   projectsPartialUpdate: (...a: unknown[]) => projectsPartialUpdate(...a),
   projectsForecastRetrieve: (...a: unknown[]) => projectsForecastRetrieve(...a),
+  projectsList: (...a: unknown[]) => projectsList(...a),
 }));
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsMembersRetrieve: (...a: unknown[]) => organizationsMembersRetrieve(...a),
@@ -33,7 +35,10 @@ vi.mock("~/lib/api/generated/project-categories/project-categories", () => ({
 
 import ProjectEdit from "../app/routes/projects.$id.edit";
 
-async function waitFor<T>(probe: () => T | null | undefined, timeout = 2000): Promise<T | null> {
+// Default 8s (not 2s): all 24 browser test files share one chromium pool, so under full parallel
+// load a React re-render / async resolve can take several seconds. A tight timeout makes the
+// load-gated waits return null early and the test proceed on stale state (flaky).
+async function waitFor<T>(probe: () => T | null | undefined, timeout = 8000): Promise<T | null> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const value = probe();
@@ -66,6 +71,7 @@ describe("ProjectEdit route", () => {
     projectsRetrieve.mockReset();
     projectsPartialUpdate.mockReset();
     projectsForecastRetrieve.mockReset();
+    projectsList.mockReset();
     organizationsMembersRetrieve.mockReset();
     projectCategoriesList.mockReset();
     projectsRetrieve.mockResolvedValue({
@@ -119,6 +125,7 @@ describe("ProjectEdit route", () => {
         target_date: "2026-08-31",
       },
     });
+    projectsList.mockResolvedValue({ status: 200, data: { results: [] } });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -144,15 +151,20 @@ describe("ProjectEdit route", () => {
     expect(container.textContent).toContain("2026/9/15");
     expect(container.textContent).not.toContain("アクティブ表示");
 
-    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
     // wait for categories to load so the writable-category guard includes the selected key
     await waitFor(() => {
       const s = container.querySelector<HTMLSelectElement>("#p-category");
       return s && s.querySelectorAll("option").length > 1 ? true : null;
     });
 
-    findButton(container, "保存")?.click();
-    await waitFor(() => (projectsPartialUpdate.mock.calls.length > 0 ? true : null));
+    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
+    // `setInputValue` sets the DOM value directly, so the input reads "New Name" before React's
+    // onChange has updated state — meaning a single click can fire handleSave with the stale name
+    // under load. Re-click until a PATCH carries the new name (React will have flushed by then).
+    await waitFor(() => {
+      findButton(container, "保存")?.click();
+      return projectsPartialUpdate.mock.calls.some((c) => c[1]?.name === "New Name") ? true : null;
+    });
     // Exact payload: is_closed / display_in_project_report / display_as_active are NOT sent
     // (admin-managed / removed from this form per #41).
     expect(projectsPartialUpdate).toHaveBeenCalledWith("proj-1", {
@@ -169,6 +181,8 @@ describe("ProjectEdit route", () => {
       slack_channel_name: "",
       slack_notification_channel_name: "",
       github_project_html_url: "",
+      enable_cost_report: false,
+      parent_project: null,
     });
     await waitFor(() => (navigateSpy.mock.calls.length > 0 ? true : null));
     expect(navigateSpy).toHaveBeenCalledWith(-1);

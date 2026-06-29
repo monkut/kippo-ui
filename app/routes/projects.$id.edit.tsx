@@ -7,6 +7,7 @@ import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
 import {
   projectsForecastRetrieve,
+  projectsList,
   projectsPartialUpdate,
   projectsRetrieve,
 } from "~/lib/api/generated/projects/projects";
@@ -53,6 +54,11 @@ export default function ProjectEdit() {
   const [slackChannelName, setSlackChannelName] = useState("");
   const [slackNotificationChannelName, setSlackNotificationChannelName] = useState("");
   const [githubProjectHtmlUrl, setGithubProjectHtmlUrl] = useState("");
+  const [enableCostReport, setEnableCostReport] = useState(false);
+  // parent_project (親プロジェクト) — optional upsell parent; name-searched picker. Backend rejects a
+  // cross-org or self-referencing parent. parentProjectName is the read-only label for the selection.
+  const [parentProjectId, setParentProjectId] = useState("");
+  const [parentProjectName, setParentProjectName] = useState<string | null>(null);
   // is_closed is read-only here: per KIPPO_PROJECT_FIELDS.md it (and display_in_project_report) are
   // managed by the admin "Close Project" action, not edited directly (that would skip actual_date /
   // closed_datetime / status-comment side effects).
@@ -60,6 +66,9 @@ export default function ProjectEdit() {
   // 完了予測日 — read-only forecast from GET /projects/:id/forecast/ (null when no future
   // assignments to project from). Mirrors the admin's estimated_completion_date display.
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<string | null>(null);
+  // MTG カレンダー作成 URL + dsearch tag — read-only (admin parity).
+  const [meetingCalendarUrl, setMeetingCalendarUrl] = useState("");
+  const [meetingDescriptionTag, setMeetingDescriptionTag] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -90,6 +99,11 @@ export default function ProjectEdit() {
         setSlackChannelName(p.slack_channel_name ?? "");
         setSlackNotificationChannelName(p.slack_notification_channel_name ?? "");
         setGithubProjectHtmlUrl(p.github_project_html_url ?? "");
+        setEnableCostReport(p.enable_cost_report ?? false);
+        setParentProjectId(p.parent_project ?? "");
+        setParentProjectName(p.parent_project_name ?? null);
+        setMeetingCalendarUrl(p.meeting_calendar_url ?? "");
+        setMeetingDescriptionTag(p.meeting_description_tag ?? "");
         setIsClosed(p.is_closed ?? false);
         // Best-effort forecast; a failure (or no future assignments) just leaves it blank.
         try {
@@ -154,6 +168,8 @@ export default function ProjectEdit() {
       slack_channel_name: slackChannelName.trim(),
       slack_notification_channel_name: slackNotificationChannelName.trim(),
       github_project_html_url: githubProjectHtmlUrl.trim(),
+      enable_cost_report: enableCostReport,
+      parent_project: parentProjectId || null,
     };
     try {
       await projectsPartialUpdate(id, patch);
@@ -179,6 +195,8 @@ export default function ProjectEdit() {
     slackChannelName,
     slackNotificationChannelName,
     githubProjectHtmlUrl,
+    enableCostReport,
+    parentProjectId,
     navigate,
   ]);
 
@@ -298,6 +316,16 @@ export default function ProjectEdit() {
         </Section>
 
         <Section title="詳細">
+          <ParentProjectField
+            organizationId={organizationId}
+            currentProjectId={id}
+            selectedId={parentProjectId}
+            selectedName={parentProjectName}
+            onSelect={(pid, pname) => {
+              setParentProjectId(pid ?? "");
+              setParentProjectName(pname);
+            }}
+          />
           <Input
             id="p-document-folder"
             label="ドキュメントフォルダURL"
@@ -332,6 +360,39 @@ export default function ProjectEdit() {
             onChange={setGithubProjectHtmlUrl}
           />
           <Input id="p-docbase" label="DocBaseタグ" value={docbaseTag} onChange={setDocbaseTag} />
+          <div>
+            <Checkbox
+              id="p-cost-report"
+              label="コストレポート有効化"
+              checked={enableCostReport}
+              onChange={setEnableCostReport}
+            />
+            {enableCostReport && slackChannelName.trim().length === 0 && (
+              <p className="mt-1 text-xs text-red-600">※ Slackチャンネル名が必要です</p>
+            )}
+          </div>
+          {/* Read-only MTG calendar URL + dsearch tag (admin parity). */}
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">MTG カレンダー作成 URL:</span>{" "}
+            {meetingCalendarUrl ? (
+              <a
+                href={meetingCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:underline"
+              >
+                カレンダー作成
+              </a>
+            ) : (
+              "—"
+            )}
+          </div>
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">カレンダーの説明欄:</span>{" "}
+            <code className="break-all rounded bg-gray-100 px-1 py-0.5 text-xs text-gray-800">
+              {meetingDescriptionTag || "—"}
+            </code>
+          </div>
         </CollapsibleSection>
 
         <div className="flex justify-end gap-3">
@@ -354,6 +415,103 @@ export default function ProjectEdit() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+// Optional parent_project picker with project-name search. Queries the org-scoped project list
+// (projectsList?search=), filters to the same organization and excludes the project itself, since
+// the backend rejects a cross-org or self-referencing parent.
+function ParentProjectField({
+  organizationId,
+  currentProjectId,
+  selectedId,
+  selectedName,
+  onSelect,
+}: {
+  organizationId: string;
+  currentProjectId: string;
+  selectedId: string;
+  selectedName: string | null;
+  onSelect: (id: string | null, name: string | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length === 0) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      try {
+        const response = await projectsList({ search: q, page_size: 20 });
+        if (cancelled) return;
+        const items = (response.data?.results ?? [])
+          .filter((p) => p.organization === organizationId && p.id !== currentProjectId)
+          .map((p) => ({ id: p.id, name: p.name }));
+        setResults(items);
+      } catch {
+        if (!cancelled) setResults([]);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [query, organizationId, currentProjectId]);
+
+  return (
+    <div>
+      <span className="block text-sm font-medium text-gray-700 mb-1">親プロジェクト</span>
+      {selectedId ? (
+        <div className="flex items-center gap-2 text-sm text-gray-800">
+          <span>{selectedName || selectedId}</span>
+          <button
+            type="button"
+            onClick={() => onSelect(null, null)}
+            className="text-xs text-indigo-600 hover:underline"
+          >
+            クリア
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            placeholder="プロジェクト名で検索..."
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          {open && results.length > 0 && (
+            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+              {results.map((r) => (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(r.id, r.name);
+                      setQuery("");
+                      setOpen(false);
+                    }}
+                    className="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                  >
+                    {r.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -470,5 +628,30 @@ function TextArea({
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
+  );
+}
+
+function Checkbox({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label htmlFor={id} className="flex items-center gap-2 text-sm text-gray-700">
+      <input
+        id={id}
+        type="checkbox"
+        className="h-4 w-4"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
+    </label>
   );
 }
