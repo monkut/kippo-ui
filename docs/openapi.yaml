@@ -2263,6 +2263,11 @@ paths:
         description: Filter by category (exact match on the KippoProject.category
           value, e.g. 'PAO')
       - in: query
+        name: customer
+        schema:
+          type: string
+        description: Filter by customer UUID (exact match on KippoProject.customer).
+      - in: query
         name: exclude_category
         schema:
           type: string

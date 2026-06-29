@@ -12,6 +12,10 @@ export type ProjectsListParams = {
  */
 category?: string;
 /**
+ * Filter by customer UUID (exact match on KippoProject.customer).
+ */
+customer?: string;
+/**
  * Exclude projects whose category key matches this value (e.g. 'non-project').
  */
 exclude_category?: string;

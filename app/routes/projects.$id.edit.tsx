@@ -453,14 +453,18 @@ function ParentProjectField({
     let cancelled = false;
     const handle = setTimeout(async () => {
       try {
-        const response = await projectsList({ search: q, page_size: 50 });
+        // Scope to the project's customer server-side (?customer=). Without a customer, fall back to
+        // an org filter applied client-side (the list is already org-scoped to the user's memberships).
+        const response = await projectsList(
+          customerId
+            ? { search: q, customer: customerId, page_size: 50 }
+            : { search: q, page_size: 50 },
+        );
         if (cancelled) return;
         const items = (response.data?.results ?? [])
-          .filter((p) => {
-            if (p.id === currentProjectId) return false;
-            // Restrict to the project's customer; without one, fall back to the organization.
-            return customerId ? p.customer === customerId : p.organization === organizationId;
-          })
+          .filter(
+            (p) => p.id !== currentProjectId && (customerId || p.organization === organizationId),
+          )
           .map((p) => ({ id: p.id, name: p.name }));
         setResults(items);
       } catch {
