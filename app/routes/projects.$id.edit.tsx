@@ -442,15 +442,18 @@ function ParentProjectField({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const q = query.trim();
     if (q.length === 0) {
       setResults([]);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
     const handle = setTimeout(async () => {
       try {
         // Scope to the project's customer server-side (?customer=). Without a customer, fall back to
@@ -469,6 +472,8 @@ function ParentProjectField({
         setResults(items);
       } catch {
         if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }, 250);
     return () => {
@@ -504,24 +509,34 @@ function ParentProjectField({
             placeholder="プロジェクト名で検索..."
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          {open && results.length > 0 && (
-            <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
-              {results.map((r) => (
-                <li key={r.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelect(r.id, r.name);
-                      setQuery("");
-                      setOpen(false);
-                    }}
-                    className="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
-                  >
-                    {r.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {open && query.trim().length > 0 && (
+            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+              {loading ? (
+                <p className="px-3 py-2 text-sm text-gray-500">検索中...</p>
+              ) : results.length > 0 ? (
+                <ul>
+                  {results.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelect(r.id, r.name);
+                          setQuery("");
+                          setOpen(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
+                      >
+                        {r.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-3 py-2 text-sm text-gray-500">
+                  この顧客に関連するプロジェクトがありません
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -538,13 +553,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// Collapsible section (native <details>) — starts collapsed (no `open` attr) so secondary
-// "その他" config is tucked away after creation (kippo#42 / KIPPO_PROJECT_FIELDS.md).
+// Collapsible section (native <details>) — starts collapsed so secondary config is tucked away
+// after creation (kippo#42 / KIPPO_PROJECT_FIELDS.md). The disclosure arrow rotates with the
+// open state (tracked in React so the icon reflects expand/collapse).
 function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <details className="bg-white shadow rounded-lg p-6">
-      <summary className="flex cursor-pointer select-none items-center gap-2 text-lg font-medium text-gray-900">
-        <span className="text-gray-400">▸</span>
+    <details
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+      className="bg-white shadow rounded-lg p-6"
+    >
+      <summary className="flex cursor-pointer select-none items-center gap-2 text-lg font-medium text-gray-900 [&::-webkit-details-marker]:hidden">
+        <span className={`text-gray-400 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
         {title}
       </summary>
       <div className="mt-4 space-y-4">{children}</div>
