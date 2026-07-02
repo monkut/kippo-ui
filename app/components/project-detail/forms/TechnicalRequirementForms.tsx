@@ -8,6 +8,7 @@ import {
   requirementsTechnicalRequirementsEstimatesPartialUpdate,
 } from "~/lib/api/generated/requirements/requirements";
 import type { ProjectTechnicalRequirementCategory } from "~/lib/api/generated/models";
+import { useEntryList } from "~/hooks/useEntryList";
 import type { BusinessRequirementType, TechnicalRequirementType } from "../types";
 
 interface TechnicalRequirementInlineFormProps {
@@ -43,7 +44,7 @@ export function TechnicalRequirementInlineForm({
   const fixedMode = businessRequirementId != null;
   const businessReqs = businessRequirements ?? [];
   const defaultCategoryId = categories.length > 0 ? categories[0].id : "new";
-  const [entries, setEntries] = useState<TechnicalRequirementEntry[]>([
+  const { entries, setEntries, add, remove, update } = useEntryList<TechnicalRequirementEntry>([
     {
       id: 1,
       title: "",
@@ -58,35 +59,25 @@ export function TechnicalRequirementInlineForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const addEntry = () => {
-    setEntries([
-      ...entries,
-      {
-        id: Date.now(),
-        title: "",
-        details: "",
-        businessReqIds: [],
-        categoryId: defaultCategoryId,
-        newCategoryName: "",
-        estimateDays: "",
-        confidence: "80",
-      },
-    ]);
-  };
+  const addEntry = () =>
+    add({
+      id: Date.now(),
+      title: "",
+      details: "",
+      businessReqIds: [],
+      categoryId: defaultCategoryId,
+      newCategoryName: "",
+      estimateDays: "",
+      confidence: "80",
+    });
 
-  const removeEntry = (id: number) => {
-    if (entries.length > 1) {
-      setEntries(entries.filter((e) => e.id !== id));
-    }
-  };
+  const removeEntry = remove;
 
   const updateEntry = (
     id: number,
     field: keyof TechnicalRequirementEntry,
     value: string | number | "new",
-  ) => {
-    setEntries(entries.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
-  };
+  ) => update(id, { [field]: value } as Partial<TechnicalRequirementEntry>);
 
   const isEntryValid = (e: TechnicalRequirementEntry) =>
     fixedMode

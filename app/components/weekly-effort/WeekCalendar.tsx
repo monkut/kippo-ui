@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
+import { formatDateKey } from "~/lib/dates";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
-import { formatDateStr } from "./utils";
 
 type WeekCalendarProps = {
   weekStart: string;
@@ -80,11 +80,11 @@ function WeekCalendarImpl({
   );
 
   const isInSelectedWeek = (date: Date): boolean => {
-    const dateStr = formatDateStr(date);
+    const dateStr = formatDateKey(date);
     const weekStartDate = new Date(`${weekStart}T00:00:00`);
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekEndDate.getDate() + 6);
-    return dateStr >= formatDateStr(weekStartDate) && dateStr <= formatDateStr(weekEndDate);
+    return dateStr >= formatDateKey(weekStartDate) && dateStr <= formatDateKey(weekEndDate);
   };
 
   const getMondayOfWeek = (date: Date): string => {
@@ -92,7 +92,7 @@ function WeekCalendarImpl({
     const day = d.getDay();
     const diff = day === 0 ? 1 : day === 1 ? 0 : 1 - day;
     d.setDate(d.getDate() + diff);
-    return formatDateStr(d);
+    return formatDateKey(d);
   };
 
   return (
@@ -131,7 +131,7 @@ function WeekCalendarImpl({
               {week.map((date, dayIdx) => {
                 const isCurrentMonth = date.getMonth() === month;
                 const isToday = date.toDateString() === new Date().toDateString();
-                const dateStr = formatDateStr(date);
+                const dateStr = formatDateKey(date);
                 const isPublicHoliday = publicHolidayDates.has(dateStr);
                 const isPersonalHoliday = personalHolidayDates.has(dateStr);
                 const holidayName = publicHolidayNames.get(dateStr);

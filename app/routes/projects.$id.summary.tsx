@@ -17,6 +17,7 @@ import {
   assignmentRatesPartialUpdate,
 } from "~/lib/api/generated/assignment-rates/assignment-rates";
 import { RoleEnum } from "~/lib/api/generated/models";
+import { formatDateKey } from "~/lib/dates";
 import type {
   KippoProject,
   ProjectTechnicalRequirement,
@@ -53,12 +54,6 @@ function addWorkingDays(startDate: Date, workingDays: number): Date {
   }
 
   return result;
-}
-
-// Format date as YYYY-MM-DD using local-time components (see formatDateStr in
-// components/weekly-effort/utils.ts for why we don't use toISOString — issue #52).
-function formatDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function ProjectSummary() {
@@ -482,7 +477,7 @@ export default function ProjectSummary() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">完了予定日</span>
                           <span className="font-medium text-gray-900">
-                            {formatDate(completionDate)}
+                            {formatDateKey(completionDate)}
                           </span>
                         </div>
                       </div>

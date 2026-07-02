@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
-import type {
-  KippoCustomer,
-  KippoProjectRequest,
-  Organization,
-  OrganizationMember,
-} from "~/lib/api/generated/models";
+import type { KippoCustomer, KippoProjectRequest, Organization } from "~/lib/api/generated/models";
 import { customersList } from "~/lib/api/generated/customers/customers";
-import {
-  organizationsList,
-  organizationsMembersRetrieve,
-} from "~/lib/api/generated/organizations/organizations";
+import { organizationsList } from "~/lib/api/generated/organizations/organizations";
+import { DateField, SelectField, TextField } from "~/components/project-form/LabeledField";
+import { ProjectManagerField } from "~/components/project-form/fields";
+import { ErrorBanner, ModalActions, ModalShell } from "~/components/project-form/ModalShell";
+import { useOrgMembers } from "~/components/project-form/useProjectFormData";
 
 type CreateProjectModalProps = {
   open: boolean;
@@ -107,32 +103,6 @@ function useCreateProjectForm(open: boolean) {
   };
 }
 
-/** Org members for the project-manager picker (kippo#40 / T19). */
-function useOrgMembers(open: boolean, organizationId: string) {
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-
-  useEffect(() => {
-    if (!open || !organizationId) {
-      setMembers([]);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await organizationsMembersRetrieve(organizationId);
-        if (!cancelled) setMembers(response.status === 200 ? (response.data.members ?? []) : []);
-      } catch {
-        if (!cancelled) setMembers([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, organizationId]);
-
-  return members;
-}
-
 /** Debounced customer search within the selected org for the 企業 autocomplete (kippo#34 / T04). */
 function useCustomerSearch(open: boolean, organizationId: string, query: string) {
   const [results, setResults] = useState<KippoCustomer[]>([]);
@@ -216,7 +186,14 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
           disabled={isSaving || isLoadingOrgs}
           isLoading={isLoadingOrgs}
         />
-        <NameField value={form.name} onChange={form.setName} disabled={isSaving} />
+        <TextField
+          id="create-project-name"
+          label="プロジェクト名"
+          value={form.name}
+          onChange={form.setName}
+          disabled={isSaving}
+          maxLength={256}
+        />
         <CustomerAutocompleteField
           open={open}
           organizationId={form.organizationId}
@@ -225,6 +202,7 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
           disabled={isSaving || !form.organizationId}
         />
         <ProjectManagerField
+          id="create-project-pm"
           value={form.projectManagerId}
           onChange={form.setProjectManagerId}
           members={members}
@@ -347,72 +325,6 @@ function CustomerAutocompleteField({
   );
 }
 
-function ProjectManagerField({
-  value,
-  onChange,
-  members,
-  disabled,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  members: OrganizationMember[];
-  disabled: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor="create-project-pm" className="block text-sm font-medium text-gray-700 mb-1">
-        担当PM
-      </label>
-      <select
-        id="create-project-pm"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled || members.length === 0}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-      >
-        <option value="">
-          {members.length === 0 ? "(メンバーがいません)" : "選択してください"}
-        </option>
-        {members.map((member) => (
-          <option key={member.user_id} value={member.user_id}>
-            {member.display_name || member.username}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function DateField({
-  id,
-  label,
-  value,
-  onChange,
-  disabled,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
-      <input
-        id={id}
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-      />
-    </div>
-  );
-}
-
 function OrganizationSelectField({
   value,
   onChange,
@@ -435,118 +347,20 @@ function OrganizationSelectField({
     );
   }
   return (
-    <div>
-      <label htmlFor="create-project-org" className="block text-sm font-medium text-gray-700 mb-1">
-        組織
-      </label>
-      <select
-        id="create-project-org"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled || organizations.length === 0}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-      >
-        {isLoading && <option value="">読み込み中...</option>}
-        {!isLoading && organizations.length === 0 && <option value="">(組織がありません)</option>}
-        {organizations.map((org) => (
-          <option key={org.id} value={org.id}>
-            {org.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function NameField({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor="create-project-name" className="block text-sm font-medium text-gray-700 mb-1">
-        プロジェクト名
-      </label>
-      <input
-        id="create-project-name"
-        type="text"
-        maxLength={256}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-      />
-    </div>
-  );
-}
-
-function ModalShell({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <button
-        type="button"
-        aria-label="閉じる"
-        onClick={onClose}
-        className="fixed inset-0 bg-black bg-opacity-25 cursor-default"
-      />
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorBanner({ message }: { message: string }) {
-  return <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>;
-}
-
-function ModalActions({
-  onCancel,
-  onSubmit,
-  isSaving,
-  submitDisabled,
-  submitLabel,
-}: {
-  onCancel: () => void;
-  onSubmit: () => void;
-  isSaving: boolean;
-  submitDisabled?: boolean;
-  submitLabel: string;
-}) {
-  return (
-    <div className="mt-6 flex gap-3 justify-end">
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={isSaving}
-        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-      >
-        キャンセル
-      </button>
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isSaving || submitDisabled}
-        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isSaving ? "保存中..." : submitLabel}
-      </button>
-    </div>
+    <SelectField
+      id="create-project-org"
+      label="組織"
+      value={value}
+      onChange={onChange}
+      disabled={disabled || organizations.length === 0}
+    >
+      {isLoading && <option value="">読み込み中...</option>}
+      {!isLoading && organizations.length === 0 && <option value="">(組織がありません)</option>}
+      {organizations.map((org) => (
+        <option key={org.id} value={org.id}>
+          {org.name}
+        </option>
+      ))}
+    </SelectField>
   );
 }

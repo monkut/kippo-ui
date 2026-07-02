@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
-import { PHASE_OPTIONS } from "~/components/customers/CustomerProjectModal";
+import { PHASE_OPTIONS } from "~/components/project-form/fields";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
 import {

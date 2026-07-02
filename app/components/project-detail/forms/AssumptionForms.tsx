@@ -4,6 +4,7 @@ import {
   requirementsAssumptionsPartialUpdate,
 } from "~/lib/api/generated/requirements/requirements";
 import type { ProjectAssumptionCategoryEnum } from "~/lib/api/generated/models";
+import { useEntryList } from "~/hooks/useEntryList";
 import type { AssumptionCategoryChoice, AssumptionType } from "../types";
 
 interface AssumptionInlineFormProps {
@@ -28,38 +29,28 @@ export function AssumptionInlineForm({
   onCreated,
 }: AssumptionInlineFormProps) {
   const defaultCategoryValue = categories.length > 0 ? categories[0].value : "";
-  const [entries, setEntries] = useState<AssumptionEntry[]>([
+  const { entries, add, remove, update } = useEntryList<AssumptionEntry>([
     { id: 1, title: "", details: "", categoryValue: defaultCategoryValue, isInternal: false },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const addEntry = () => {
-    setEntries([
-      ...entries,
-      {
-        id: Date.now(),
-        title: "",
-        details: "",
-        categoryValue: defaultCategoryValue,
-        isInternal: false,
-      },
-    ]);
-  };
+  const addEntry = () =>
+    add({
+      id: Date.now(),
+      title: "",
+      details: "",
+      categoryValue: defaultCategoryValue,
+      isInternal: false,
+    });
 
-  const removeEntry = (id: number) => {
-    if (entries.length > 1) {
-      setEntries(entries.filter((e) => e.id !== id));
-    }
-  };
+  const removeEntry = remove;
 
   const updateEntry = (
     id: number,
     field: keyof AssumptionEntry,
     value: string | number | boolean,
-  ) => {
-    setEntries(entries.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
-  };
+  ) => update(id, { [field]: value } as Partial<AssumptionEntry>);
 
   const hasValidEntry = entries.some((e) => e.title.trim() && e.categoryValue);
 

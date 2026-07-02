@@ -1,3 +1,4 @@
+import { formatDateKey } from "~/lib/dates";
 import type { KippoProject } from "~/lib/api/generated/models";
 import type { FormEntry } from "./types";
 
@@ -17,14 +18,7 @@ export function getPreviousWeekStartDate(): string {
   while (lastWeek.getDay() !== 1) {
     lastWeek.setDate(lastWeek.getDate() - 1);
   }
-  return formatDateStr(lastWeek);
-}
-
-// Format a Date as YYYY-MM-DD using local-time components.
-// `toISOString()` would return the UTC date, which is one day earlier than
-// the local date for any time before 09:00 in JST (UTC+9) — see issue #52.
-export function formatDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return formatDateKey(lastWeek);
 }
 
 /** First day (YYYY-MM-DD) of the month containing `dateStr`. */
@@ -37,7 +31,7 @@ export function monthDateRange(dateStr: string): { dayGte: string; dayLte: strin
   const d = new Date(`${dateStr}T00:00:00`);
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  return { dayGte: formatDateStr(firstDay), dayLte: formatDateStr(lastDay) };
+  return { dayGte: formatDateKey(firstDay), dayLte: formatDateKey(lastDay) };
 }
 
 /**
@@ -50,7 +44,7 @@ export function twoWeekWindow(weekStart: string): { gte: string; lte: string } {
   gte.setDate(gte.getDate() - 7);
   const lte = new Date(d);
   lte.setDate(lte.getDate() + 6);
-  return { gte: formatDateStr(gte), lte: formatDateStr(lte) };
+  return { gte: formatDateKey(gte), lte: formatDateKey(lte) };
 }
 
 /**

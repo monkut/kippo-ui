@@ -3,6 +3,7 @@ import {
   requirementsProblemDefinitionsCreate,
   requirementsProblemDefinitionsPartialUpdate,
 } from "~/lib/api/generated/requirements/requirements";
+import { useEntryList } from "~/hooks/useEntryList";
 import type { ProblemType } from "../types";
 
 interface ProblemInlineFormProps {
@@ -18,23 +19,13 @@ type ProblemEntry = {
 };
 
 export function ProblemInlineForm({ projectId, onCancel, onCreated }: ProblemInlineFormProps) {
-  const [entries, setEntries] = useState<ProblemEntry[]>([{ id: 1, title: "", details: "" }]);
+  const { entries, add, remove, update } = useEntryList<ProblemEntry>([
+    { id: 1, title: "", details: "" },
+  ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const addEntry = () => {
-    setEntries([...entries, { id: Date.now(), title: "", details: "" }]);
-  };
-
-  const removeEntry = (id: number) => {
-    if (entries.length > 1) {
-      setEntries(entries.filter((e) => e.id !== id));
-    }
-  };
-
-  const updateEntry = (id: number, field: "title" | "details", value: string) => {
-    setEntries(entries.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
-  };
+  const addEntry = () => add({ id: Date.now(), title: "", details: "" });
 
   const hasValidEntry = entries.some((e) => e.title.trim());
 
@@ -87,7 +78,7 @@ export function ProblemInlineForm({ projectId, onCancel, onCreated }: ProblemInl
                 type="text"
                 id={`problem-title-${entry.id}`}
                 value={entry.title}
-                onChange={(e) => updateEntry(entry.id, "title", e.target.value)}
+                onChange={(e) => update(entry.id, { title: e.target.value })}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
                 placeholder="課題のタイトル"
                 disabled={isSubmitting}
@@ -104,7 +95,7 @@ export function ProblemInlineForm({ projectId, onCancel, onCreated }: ProblemInl
               <textarea
                 id={`problem-details-${entry.id}`}
                 value={entry.details}
-                onChange={(e) => updateEntry(entry.id, "details", e.target.value)}
+                onChange={(e) => update(entry.id, { details: e.target.value })}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2 resize-y"
                 placeholder="詳細"
                 disabled={isSubmitting}
@@ -114,7 +105,7 @@ export function ProblemInlineForm({ projectId, onCancel, onCreated }: ProblemInl
             {entries.length > 1 && (
               <button
                 type="button"
-                onClick={() => removeEntry(entry.id)}
+                onClick={() => remove(entry.id)}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
                 title="削除"
                 disabled={isSubmitting}

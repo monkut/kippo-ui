@@ -11,6 +11,7 @@ import type {
   SurveyUserInline,
 } from "~/lib/api/generated";
 import { projectsList } from "~/lib/api/generated";
+import { formatDisplayDate } from "~/lib/dates";
 import { useAuthGate } from "~/hooks/useAuthGate";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
@@ -299,11 +300,6 @@ interface ProjectSlideProps {
 }
 
 function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
-  const formatDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("ja-JP");
-  };
-
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
@@ -324,7 +320,7 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
 
         {/* Dates */}
         <div className="text-lg text-gray-600">
-          {formatDate(project.start_date)} - {formatDate(project.target_date)}
+          {formatDisplayDate(project.start_date)} - {formatDisplayDate(project.target_date)}
         </div>
 
         {/* Project Status Display */}
@@ -542,7 +538,7 @@ function LatestCommentDisplay({ comment }: LatestCommentDisplayProps) {
           {comment.created_by_display_name || comment.created_by_username || "不明"}
         </span>
         <span>•</span>
-        <span>{new Date(comment.created_datetime).toLocaleDateString("ja-JP")}</span>
+        <span>{formatDisplayDate(comment.created_datetime)}</span>
       </div>
       <div className="text-gray-700 whitespace-pre-wrap">{comment.comment}</div>
     </div>
