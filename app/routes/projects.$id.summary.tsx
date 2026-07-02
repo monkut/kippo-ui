@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth-context";
 import { Layout } from "~/components/layout";
+import { ChevronIcon } from "~/components/icons";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
   requirementsTechnicalRequirementsList,
@@ -26,28 +27,6 @@ import type {
 
 export function meta() {
   return [{ title: "プロジェクトサマリー - Kippo要件管理" }];
-}
-
-// Chevron icon for expand/collapse
-function ChevronIcon({
-  isExpanded,
-  className = "w-4 h-4",
-}: {
-  isExpanded: boolean;
-  className?: string;
-}) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className={`${className} transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-    </svg>
-  );
 }
 
 // Category summary type
@@ -665,7 +644,7 @@ export default function ProjectSummary() {
               onClick={() => setListExpanded(!listExpanded)}
               className="flex items-center gap-2 text-lg font-medium text-gray-900 hover:text-gray-700"
             >
-              <ChevronIcon isExpanded={listExpanded} />
+              <ChevronIcon isExpanded={listExpanded} className="w-4 h-4" />
               <span>技術要件一覧</span>
               {!listExpanded && (
                 <span className="ml-2 text-sm font-normal text-gray-500">
