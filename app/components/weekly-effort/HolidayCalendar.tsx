@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
+import { formatDateKey } from "~/lib/dates";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
-import { formatDateStr } from "./utils";
 
 type HolidayCalendarProps = {
   selectedDate: string;
@@ -80,7 +80,7 @@ function HolidayCalendarImpl({
 
   const navigateMonth = (delta: number) => {
     const newDate = new Date(year, month + delta, 1);
-    onDateSelect(formatDateStr(newDate));
+    onDateSelect(formatDateKey(newDate));
   };
 
   return (
@@ -145,7 +145,7 @@ function HolidayCalendarImpl({
         {weeks.map((week, weekIdx) => (
           <div key={weekIdx} className="grid grid-cols-7 gap-1">
             {week.map((day) => {
-              const dateStr = formatDateStr(day);
+              const dateStr = formatDateKey(day);
               const isCurrentMonth = day.getMonth() === month;
               const isSelected = dateStr === selectedDate;
               const isPersonalHoliday = personalHolidayDates.has(dateStr);

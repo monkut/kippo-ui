@@ -11,6 +11,8 @@ import type {
   SurveyUserInline,
 } from "~/lib/api/generated";
 import { projectsList } from "~/lib/api/generated";
+import { readList } from "~/lib/api/read-list";
+import { formatDisplayDate } from "~/lib/dates";
 import { useAuthGate } from "~/hooks/useAuthGate";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
@@ -48,33 +50,31 @@ export default function ProjectStatus() {
         is_active: true,
         exclude_category: NON_PROJECT_CATEGORY,
       });
-      if (response.data?.results) {
-        // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
-        const filteredProjects = response.data.results
-          .filter((project) => project.display_as_active === true && project.is_closed === false)
-          // Sort by: -confidence (large to small), target_date (earliest to latest), name
-          .sort((a, b) => {
-            // First: confidence descending (large to small)
-            const confA = a.confidence ?? 0;
-            const confB = b.confidence ?? 0;
-            if (confB !== confA) return confB - confA;
+      // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
+      const filteredProjects = readList<KippoProject>(response.data)
+        .filter((project) => project.display_as_active === true && project.is_closed === false)
+        // Sort by: -confidence (large to small), target_date (earliest to latest), name
+        .sort((a, b) => {
+          // First: confidence descending (large to small)
+          const confA = a.confidence ?? 0;
+          const confB = b.confidence ?? 0;
+          if (confB !== confA) return confB - confA;
 
-            // Second: target_date ascending (earliest to latest)
-            if (a.target_date && b.target_date) {
-              const dateCompare = a.target_date.localeCompare(b.target_date);
-              if (dateCompare !== 0) return dateCompare;
-            } else if (a.target_date) {
-              return -1;
-            } else if (b.target_date) {
-              return 1;
-            }
+          // Second: target_date ascending (earliest to latest)
+          if (a.target_date && b.target_date) {
+            const dateCompare = a.target_date.localeCompare(b.target_date);
+            if (dateCompare !== 0) return dateCompare;
+          } else if (a.target_date) {
+            return -1;
+          } else if (b.target_date) {
+            return 1;
+          }
 
-            // Third: name ascending
-            return a.name.localeCompare(b.name);
-          });
-        setProjects(filteredProjects);
-        loadMonthlyCosts(filteredProjects);
-      }
+          // Third: name ascending
+          return a.name.localeCompare(b.name);
+        });
+      setProjects(filteredProjects);
+      loadMonthlyCosts(filteredProjects);
     } catch (err) {
       console.error("Failed to load projects:", err);
       setError("プロジェクトの読み込みに失敗しました");
@@ -299,11 +299,6 @@ interface ProjectSlideProps {
 }
 
 function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
-  const formatDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("ja-JP");
-  };
-
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl w-full text-center space-y-6">
@@ -324,7 +319,7 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
 
         {/* Dates */}
         <div className="text-lg text-gray-600">
-          {formatDate(project.start_date)} - {formatDate(project.target_date)}
+          {formatDisplayDate(project.start_date)} - {formatDisplayDate(project.target_date)}
         </div>
 
         {/* Project Status Display */}
@@ -542,7 +537,7 @@ function LatestCommentDisplay({ comment }: LatestCommentDisplayProps) {
           {comment.created_by_display_name || comment.created_by_username || "不明"}
         </span>
         <span>•</span>
-        <span>{new Date(comment.created_datetime).toLocaleDateString("ja-JP")}</span>
+        <span>{formatDisplayDate(comment.created_datetime)}</span>
       </div>
       <div className="text-gray-700 whitespace-pre-wrap">{comment.comment}</div>
     </div>

@@ -1,12 +1,11 @@
 import { describe, expect, test } from "vitest";
+import { firstOfNextMonth, formatMonth } from "~/lib/dates";
 import {
   buildGrid,
   buildProjectConfirmation,
   countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
-  firstOfNextMonth,
   flattenPatternToAssignmentRequests,
-  formatMonth,
   isProjectRowConfirmed,
 } from "~/components/project-assignments/utils";
 import type {

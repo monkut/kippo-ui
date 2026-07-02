@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { personalHolidaysList } from "~/lib/api/generated/personal-holidays/personal-holidays";
 import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
-import { formatDateStr, monthDateRange } from "~/components/weekly-effort/utils";
+import { readList } from "~/lib/api/read-list";
+import { formatDateKey } from "~/lib/dates";
+import { monthDateRange } from "~/components/weekly-effort/utils";
 
 export type UseMonthHolidaysReturn = {
   monthPersonalHolidays: PersonalHoliday[];
@@ -34,8 +36,8 @@ export function useMonthHolidays(weekStart: string, enabled: boolean): UseMonthH
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      setMonthPersonalHolidays(personalRes.data?.results || []);
-      setMonthPublicHolidays(publicRes.data?.results || []);
+      setMonthPersonalHolidays(readList<PersonalHoliday>(personalRes.data));
+      setMonthPublicHolidays(readList<PublicHoliday>(publicRes.data));
       lastFetchedMonthRef.current = dateStr.substring(0, 7);
     } catch {
       setMonthPersonalHolidays([]);
@@ -57,7 +59,7 @@ export function useMonthHolidays(weekStart: string, enabled: boolean): UseMonthH
     const startDate = new Date(`${weekStart}T00:00:00`);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6);
-    const endStr = formatDateStr(endDate);
+    const endStr = formatDateKey(endDate);
     return {
       weekPersonalHolidays: monthPersonalHolidays.filter(
         (h) => h.day >= weekStart && h.day <= endStr,

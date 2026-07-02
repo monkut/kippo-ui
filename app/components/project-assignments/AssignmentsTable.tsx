@@ -1,9 +1,9 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import { formatMonth } from "~/lib/dates";
 import {
   assignmentDisplayName,
   CONFIRMED_CELL,
-  formatMonth,
   MAX_PERCENTAGE_PER_MONTH,
   UNCONFIRMED_CELL,
 } from "./utils";

@@ -1,16 +1,14 @@
 import { describe, expect, test } from "vitest";
+import { addMonths, firstOfMonth, lastOfMonth } from "~/lib/dates";
 import {
-  addMonths,
   buildCellTooltip,
   buildMonthlyMatrix,
   compareActiveKippoProjects,
-  firstOfMonth,
   formatPersonDays,
   formatRowMonthlyTotal,
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
   isProjectInMonthWindow,
-  lastOfMonth,
   type MonthlyMatrixRow,
   percentageToPersonDays,
   sortMatrixRows,

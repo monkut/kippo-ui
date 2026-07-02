@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { addMonths, firstOfMonth, formatMonth } from "./utils";
+import { addMonths, firstOfMonth, formatMonth } from "~/lib/dates";
 
 type MonthPickerProps = {
   month: string; // first-of-month ISO date "YYYY-MM-01"

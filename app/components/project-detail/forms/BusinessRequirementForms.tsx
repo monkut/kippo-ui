@@ -9,6 +9,7 @@ import type {
   ProjectBusinessRequirementCategory,
   ProjectProblemDefinition,
 } from "~/lib/api/generated/models";
+import { useEntryList } from "~/hooks/useEntryList";
 import type { BusinessRequirementType } from "../types";
 
 interface BusinessRequirementInlineFormProps {
@@ -36,7 +37,7 @@ export function BusinessRequirementInlineForm({
   onCreated,
 }: BusinessRequirementInlineFormProps) {
   const defaultCategoryId = categories.length > 0 ? categories[0].id : "new";
-  const [entries, setEntries] = useState<BusinessRequirementEntry[]>([
+  const { entries, setEntries, add, remove, update } = useEntryList<BusinessRequirementEntry>([
     {
       id: 1,
       title: "",
@@ -49,33 +50,23 @@ export function BusinessRequirementInlineForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const addEntry = () => {
-    setEntries([
-      ...entries,
-      {
-        id: Date.now(),
-        title: "",
-        details: "",
-        problemIds: [],
-        categoryId: defaultCategoryId,
-        newCategoryName: "",
-      },
-    ]);
-  };
+  const addEntry = () =>
+    add({
+      id: Date.now(),
+      title: "",
+      details: "",
+      problemIds: [],
+      categoryId: defaultCategoryId,
+      newCategoryName: "",
+    });
 
-  const removeEntry = (id: number) => {
-    if (entries.length > 1) {
-      setEntries(entries.filter((e) => e.id !== id));
-    }
-  };
+  const removeEntry = remove;
 
   const updateEntry = (
     id: number,
     field: keyof BusinessRequirementEntry,
     value: string | number | "new",
-  ) => {
-    setEntries(entries.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
-  };
+  ) => update(id, { [field]: value } as Partial<BusinessRequirementEntry>);
 
   const hasValidEntry = entries.some((e) => e.title.trim() && e.problemIds.length > 0);
 

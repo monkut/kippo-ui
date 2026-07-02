@@ -13,6 +13,7 @@ import {
   requirementsTechnicalRequirementCategoriesList,
   requirementsBusinessRequirementsCommentsPartialUpdate,
 } from "~/lib/api/generated/requirements/requirements";
+import { readList } from "~/lib/api/read-list";
 import type {
   KippoProject,
   ProjectBusinessRequirementDetail,
@@ -74,9 +75,7 @@ export default function BusinessRequirementDetails() {
     if (!projectId) return;
     try {
       const response = await requirementsTechnicalRequirementCategoriesList({ project: projectId });
-      if (response.data?.results) {
-        setTechCategories(response.data.results);
-      }
+      setTechCategories(readList<ProjectTechnicalRequirementCategory>(response.data));
     } catch (err) {
       console.error("Failed to load categories:", err);
     }

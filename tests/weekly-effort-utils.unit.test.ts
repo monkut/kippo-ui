@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { formatDateKey } from "~/lib/dates";
 import {
   computeMonthEffortPercents,
-  formatDateStr,
   getMonthStart,
   getPreviousWeekStartDate,
 } from "~/components/weekly-effort/utils";
@@ -16,10 +16,10 @@ describe("weekly-effort utils — JST date handling", () => {
     expect(new Date().getTimezoneOffset()).toBe(-540);
   });
 
-  describe("formatDateStr", () => {
+  describe("formatDateKey", () => {
     test("returns local-date components, not the UTC date", () => {
       const mondayMidnightJst = new Date(2026, 3, 20, 0, 0, 0);
-      expect(formatDateStr(mondayMidnightJst)).toBe("2026-04-20");
+      expect(formatDateKey(mondayMidnightJst)).toBe("2026-04-20");
     });
   });
 

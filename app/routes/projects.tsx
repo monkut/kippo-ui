@@ -4,6 +4,7 @@ import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated/projects/projects";
 import type { KippoProject } from "~/lib/api/generated/models";
+import { readList } from "~/lib/api/read-list";
 import { useHiddenProjectCategories } from "~/hooks/useHiddenProjectCategories";
 
 const UNCATEGORIZED_LABEL = "未分類";
@@ -60,9 +61,7 @@ export default function Projects() {
     setError("");
     try {
       const response = await projectsList({ is_active: true });
-      if (response.data?.results) {
-        setProjects(response.data.results);
-      }
+      setProjects(readList<KippoProject>(response.data));
     } catch (err) {
       console.error("Failed to load projects:", err);
       setError("プロジェクトの読み込みに失敗しました");

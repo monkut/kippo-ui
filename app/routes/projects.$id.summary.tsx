@@ -17,8 +17,11 @@ import {
   assignmentRatesPartialUpdate,
 } from "~/lib/api/generated/assignment-rates/assignment-rates";
 import { RoleEnum } from "~/lib/api/generated/models";
+import { readList } from "~/lib/api/read-list";
+import { formatDateKey } from "~/lib/dates";
 import type {
   KippoProject,
+  ProjectAssignmentRate,
   ProjectTechnicalRequirement,
   ProjectTechnicalRequirementCategory,
   ProjectBusinessRequirement,
@@ -53,12 +56,6 @@ function addWorkingDays(startDate: Date, workingDays: number): Date {
   }
 
   return result;
-}
-
-// Format date as YYYY-MM-DD using local-time components (see formatDateStr in
-// components/weekly-effort/utils.ts for why we don't use toISOString — issue #52).
-function formatDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function ProjectSummary() {
@@ -109,26 +106,14 @@ export default function ProjectSummary() {
         setProject(projectResponse.data);
       }
 
-      if (techReqsResponse.data?.results) {
-        const reqs = techReqsResponse.data.results;
-        setTechnicalRequirements(reqs);
-        // Initialize selected based on include_in_estimate from API (default to true if undefined)
-        setSelectedIds(
-          new Set(reqs.filter((r) => r.include_in_estimate !== false).map((r) => r.id)),
-        );
-      }
+      const reqs = readList<ProjectTechnicalRequirement>(techReqsResponse.data);
+      setTechnicalRequirements(reqs);
+      // Initialize selected based on include_in_estimate from API (default to true if undefined)
+      setSelectedIds(new Set(reqs.filter((r) => r.include_in_estimate !== false).map((r) => r.id)));
 
-      if (categoriesResponse.data?.results) {
-        setCategories(categoriesResponse.data.results);
-      }
-
-      if (businessReqsResponse.data?.results) {
-        setBusinessRequirements(businessReqsResponse.data.results);
-      }
-
-      if (problemsResponse.data?.results) {
-        setProblemDefinitions(problemsResponse.data.results);
-      }
+      setCategories(readList<ProjectTechnicalRequirementCategory>(categoriesResponse.data));
+      setBusinessRequirements(readList<ProjectBusinessRequirement>(businessReqsResponse.data));
+      setProblemDefinitions(readList<ProjectProblemDefinition>(problemsResponse.data));
     } catch (err) {
       console.error("Failed to load project summary:", err);
       setError("プロジェクトサマリーの読み込みに失敗しました");
@@ -227,7 +212,7 @@ export default function ProjectSummary() {
     try {
       // Get existing assignment rates for this project
       const ratesResponse = await assignmentRatesList({ project: projectId });
-      const existingRates = ratesResponse.data?.results || [];
+      const existingRates = readList<ProjectAssignmentRate>(ratesResponse.data);
       const developerRateRecord = existingRates.find((r) => r.role === RoleEnum.developer);
 
       if (developerRateRecord) {
@@ -482,7 +467,7 @@ export default function ProjectSummary() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">完了予定日</span>
                           <span className="font-medium text-gray-900">
-                            {formatDate(completionDate)}
+                            {formatDateKey(completionDate)}
                           </span>
                         </div>
                       </div>

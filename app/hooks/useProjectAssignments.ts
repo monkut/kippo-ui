@@ -8,6 +8,7 @@ import type {
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
 import { projectsForecastRetrieve, projectsRetrieve } from "~/lib/api/generated/projects/projects";
+import { readList } from "~/lib/api/read-list";
 import { useProjectAssignmentMutations } from "./useProjectAssignmentMutations";
 
 export type UseProjectAssignmentsState = {
@@ -62,7 +63,7 @@ async function fetchAllForProject(projectId: string): Promise<FetchData> {
   ]);
   return {
     project: projectRes.status === 200 ? projectRes.data : null,
-    assignments: assignmentsRes.data?.results ?? [],
+    assignments: readList<ProjectMonthlyAssignment>(assignmentsRes.data),
     forecast: forecastRes.status === 200 ? (forecastRes.data as ProjectForecastResponse) : null,
     forecastError: forecastRes.status === 400 ? FORECAST_400_MESSAGE : "",
   };
