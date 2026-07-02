@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { WeekCalendar } from "~/components/weekly-effort/WeekCalendar";
 import { MissingWeeksPanel } from "~/components/weekly-effort/MissingWeeksPanel";
@@ -17,8 +16,7 @@ export function meta() {
 }
 
 export default function WeeklyEffort() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
 
   const [weekStart, setWeekStart] = useState(getPreviousWeekStartDate());
   const [entries, setEntries] = useState<FormEntry[]>([]);
@@ -47,13 +45,6 @@ export default function WeeklyEffort() {
     deleteEntry,
     refreshAfterHolidayChange,
   } = useWeeklyEffort(user, weekStart);
-
-  // Auth guard
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   // Sync template entries from hook into local form state whenever week / data changes
   useEffect(() => {

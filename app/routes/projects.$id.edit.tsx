@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { PHASE_OPTIONS } from "~/components/customers/CustomerProjectModal";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
@@ -27,7 +27,7 @@ export function meta() {
 
 export default function ProjectEdit() {
   const { id = "" } = useParams();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, authLoading } = useAuthGate();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -70,10 +70,6 @@ export default function ProjectEdit() {
   // MTG カレンダー作成 URL + dsearch tag — read-only (admin parity).
   const [meetingCalendarUrl, setMeetingCalendarUrl] = useState("");
   const [meetingDescriptionTag, setMeetingDescriptionTag] = useState("");
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/login");
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (!user || !id) return;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { Link } from "react-router";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { CustomerFormModal } from "~/components/customers/CustomerFormModal";
 import {
@@ -55,8 +55,7 @@ function extractOrganizations(data: unknown): Organization[] {
 }
 
 export default function Customers() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [customers, setCustomers] = useState<KippoCustomer[]>([]);
   const [summaries, setSummaries] = useState<FiscalYearSummary[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -75,12 +74,6 @@ export default function Customers() {
   const [activeProjects, setActiveProjects] = useState<
     Record<string, CustomerActiveProject[] | "loading">
   >({});
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   // Organizations for the filter (loaded once); the filter only matters with >1 org.
   useEffect(() => {
