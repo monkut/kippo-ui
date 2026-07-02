@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
 import {
   fetchAllMonthlyCostsForProject,
   InfraCostDisplay,
@@ -12,7 +11,7 @@ import type {
   SurveyUserInline,
 } from "~/lib/api/generated";
 import { projectsList } from "~/lib/api/generated";
-import { useAuth } from "~/lib/auth-context";
+import { useAuthGate } from "~/hooks/useAuthGate";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
@@ -25,8 +24,7 @@ export function meta() {
 const NON_PROJECT_CATEGORY = "non-project";
 
 export default function ProjectStatus() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +32,6 @@ export default function ProjectStatus() {
   const [monthlyCostsByProject, setMonthlyCostsByProject] = useState<
     Record<string, ProjectMonthlyCost[]>
   >({});
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { Link } from "react-router";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated/projects/projects";
 import type { KippoProject } from "~/lib/api/generated/models";
@@ -40,20 +40,13 @@ export function meta() {
 }
 
 export default function Projects() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [projects, setProjects] = useState<KippoProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [hiddenCategories, setHiddenCategories] = useHiddenProjectCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("start_date");
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {

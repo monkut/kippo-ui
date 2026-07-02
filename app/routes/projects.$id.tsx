@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link, useParams, useNavigate, useSearchParams } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { Link, useParams, useSearchParams } from "react-router";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { ChevronIcon, CommentIcon, DeleteIcon, EditIcon } from "~/components/icons";
 import { CommentInlineForm } from "~/components/project-detail/CommentInlineForm";
@@ -114,8 +114,7 @@ function getProblemDisplayIds(
 
 export default function ProjectDetails() {
   const { id: projectId } = useParams();
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [project, setProject] = useState<KippoProject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -226,12 +225,6 @@ export default function ProjectDetails() {
 
   const [hoveredBusinessReqId, setHoveredBusinessReqId] = useState<number | null>(null);
   const [hoveredTechReqId, setHoveredTechReqId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;

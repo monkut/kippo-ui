@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
 import { Layout } from "~/components/layout";
 import {
   AddAssignmentModal,
@@ -15,7 +14,7 @@ import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
 import { useProjectAssignmentMutations } from "~/hooks/useProjectAssignmentMutations";
 import type { KippoProjectRequest, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { useAuth } from "~/lib/auth-context";
+import { useAuthGate } from "~/hooks/useAuthGate";
 
 export function meta() {
   return [{ title: "月別プロジェクト割当 - Kippo" }];
@@ -31,8 +30,7 @@ export function isEditableMonth(displayedMonth: string, today: Date): boolean {
 }
 
 export default function ProjectAssignmentsMonthly() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
   const [hideUnassigned, setHideUnassigned] = useHideUnassignedToggle();
   const { isLoading, error, projects, assignments, members, refresh } =
@@ -86,10 +84,6 @@ export default function ProjectAssignmentsMonthly() {
     if (ok) setCreatedProjectName(payload.name);
     return ok;
   };
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/login");
-  }, [user, authLoading, navigate]);
 
   // Drop a stale "created" confirmation when the displayed month changes.
   useEffect(() => {

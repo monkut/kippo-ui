@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useMemo, useState } from "react";
+import { useParams } from "react-router";
 import { Layout } from "~/components/layout";
 import {
   AddAssignmentModal,
@@ -12,21 +12,16 @@ import {
 } from "~/components/project-assignments";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { useAuth } from "~/lib/auth-context";
+import { useAuthGate } from "~/hooks/useAuthGate";
 
 export function meta() {
   return [{ title: "プロジェクト割当 - Kippo" }];
 }
 
 export default function ProjectAssignments() {
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const { id } = useParams();
   const state = useProjectAssignments(id);
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/login");
-  }, [user, authLoading, navigate]);
 
   if (authLoading) {
     return (

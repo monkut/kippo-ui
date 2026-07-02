@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { Link, useParams } from "react-router";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { ChevronIcon } from "~/components/icons";
 import { CommentInlineForm } from "~/components/project-detail/CommentInlineForm";
@@ -26,8 +26,7 @@ export function meta() {
 
 export default function BusinessRequirementDetails() {
   const { id: projectId, reqId } = useParams();
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [project, setProject] = useState<KippoProject | null>(null);
   const [requirement, setRequirement] = useState<ProjectBusinessRequirementDetail | null>(null);
   const [techCategories, setTechCategories] = useState<ProjectTechnicalRequirementCategory[]>([]);
@@ -41,12 +40,6 @@ export default function BusinessRequirementDetails() {
   const [commentsExpanded, setCommentsExpanded] = useState(true);
 
   const requirementId = reqId ? Number.parseInt(reqId, 10) : 0;
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { Link, useParams } from "react-router";
+import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { ChevronIcon } from "~/components/icons";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
@@ -63,8 +63,7 @@ function formatDate(date: Date): string {
 
 export default function ProjectSummary() {
   const { id: projectId } = useParams();
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, authLoading } = useAuthGate();
   const [project, setProject] = useState<KippoProject | null>(null);
   const [technicalRequirements, setTechnicalRequirements] = useState<ProjectTechnicalRequirement[]>(
     [],
@@ -86,12 +85,6 @@ export default function ProjectSummary() {
   const [workPercentage, setWorkPercentage] = useState(60); // Default 60% of available days
   const [showWorkPercentageModal, setShowWorkPercentageModal] = useState(false);
   const [workPercentageInputValue, setWorkPercentageInputValue] = useState("");
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
