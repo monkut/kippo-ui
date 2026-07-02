@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { monthlyCostsList, type ProjectMonthlyCost } from "~/lib/api/generated";
+import { readList } from "~/lib/api/read-list";
 
 export type { ProjectMonthlyCost };
 
@@ -11,7 +12,7 @@ export async function fetchAllMonthlyCostsForProject(
   while (true) {
     try {
       const resp = await monthlyCostsList({ project: projectId, page });
-      if (resp.data?.results) rows.push(...resp.data.results);
+      rows.push(...readList<ProjectMonthlyCost>(resp.data));
       if (!resp.data?.next) break;
       page += 1;
     } catch {

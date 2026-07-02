@@ -8,17 +8,14 @@ export { MonthlyAssignmentMatrix } from "./MonthlyAssignmentMatrix";
 export type { MatrixCellClickArgs } from "./MonthlyAssignmentMatrix";
 export { PatternCard } from "./PatternCard";
 export { PatternPickerModal } from "./PatternPickerModal";
+export { addMonths, firstOfMonth, firstOfNextMonth, formatMonth } from "~/lib/dates";
 export {
-  addMonths,
   buildGrid,
   buildMonthlyMatrix,
   buildProjectConfirmation,
   countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
-  firstOfMonth,
-  firstOfNextMonth,
   flattenPatternToAssignmentRequests,
-  formatMonth,
   isProjectRowConfirmed,
   unassignedMemberNames,
 } from "./utils";

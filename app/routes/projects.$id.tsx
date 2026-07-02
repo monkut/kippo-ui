@@ -27,6 +27,7 @@ import type {
   TechnicalRequirementType,
 } from "~/components/project-detail/types";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
+import { readList } from "~/lib/api/read-list";
 import {
   requirementsAssumptionsDestroy,
   requirementsAssumptionsCategoriesRetrieve,
@@ -243,18 +244,10 @@ export default function ProjectDetails() {
       if (projectRes.data) {
         setProject(projectRes.data);
       }
-      if (assumptionsRes.data?.results) {
-        setAssumptions(assumptionsRes.data.results);
-      }
-      if (problemsRes.data?.results) {
-        setProblems(problemsRes.data.results);
-      }
-      if (businessReqsRes.data?.results) {
-        setBusinessRequirements(businessReqsRes.data.results);
-      }
-      if (techReqsRes.data?.results) {
-        setTechnicalRequirements(techReqsRes.data.results);
-      }
+      setAssumptions(readList<ProjectAssumption>(assumptionsRes.data));
+      setProblems(readList<ProjectProblemDefinition>(problemsRes.data));
+      setBusinessRequirements(readList<ProjectBusinessRequirement>(businessReqsRes.data));
+      setTechnicalRequirements(readList<ProjectTechnicalRequirement>(techReqsRes.data));
     } catch (err) {
       console.error("Failed to load project:", err);
       setError("プロジェクトの読み込みに失敗しました");
@@ -276,15 +269,13 @@ export default function ProjectDetails() {
       if (assumptionCats.data) {
         setAssumptionCategories(assumptionCats.data as unknown as AssumptionCategoryChoice[]);
       }
-      if (businessReqCats.data?.results) {
-        setBusinessRequirementCategories(businessReqCats.data.results);
-      }
-      if (techReqCats.data?.results) {
-        setTechnicalRequirementCategories(techReqCats.data.results);
-      }
-      if (problemsRes.data?.results) {
-        setProblemDefinitions(problemsRes.data.results);
-      }
+      setBusinessRequirementCategories(
+        readList<ProjectBusinessRequirementCategory>(businessReqCats.data),
+      );
+      setTechnicalRequirementCategories(
+        readList<ProjectTechnicalRequirementCategory>(techReqCats.data),
+      );
+      setProblemDefinitions(readList<ProjectProblemDefinition>(problemsRes.data));
     } catch (err) {
       console.error("Failed to load categories:", err);
     }

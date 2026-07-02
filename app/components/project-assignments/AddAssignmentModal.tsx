@@ -5,7 +5,8 @@ import type {
 } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
-import { EXCLUDED_USERNAMES, formatMonth, memberDisplayName } from "./utils";
+import { formatMonth } from "~/lib/dates";
+import { EXCLUDED_USERNAMES, memberDisplayName } from "./utils";
 
 type AddAssignmentModalProps = {
   open: boolean;

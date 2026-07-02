@@ -11,7 +11,9 @@ import {
   projectsPartialUpdate,
   projectsRetrieve,
 } from "~/lib/api/generated/projects/projects";
+import { readList } from "~/lib/api/read-list";
 import type {
+  KippoProject,
   KippoProjectOrganizationCategory,
   OrganizationMember,
   PatchedKippoProjectRequest,
@@ -135,7 +137,11 @@ export default function ProjectEdit() {
         setMembers(memberRes.status === 200 ? (memberRes.data.members ?? []) : []);
         // Only global categories are writable (serializer category queryset is organization__isnull);
         // org-specific keys would 400 on save, so don't offer them in the picker.
-        setCategories((categoryRes.data?.results ?? []).filter((c) => c.organization == null));
+        setCategories(
+          readList<KippoProjectOrganizationCategory>(categoryRes.data).filter(
+            (c) => c.organization == null,
+          ),
+        );
       } catch {
         // pickers just stay empty
       }
@@ -458,7 +464,7 @@ function ParentProjectField({
           ...(customerId ? { customer: customerId } : {}),
         });
         if (cancelled) return;
-        const items = (response.data?.results ?? [])
+        const items = readList<KippoProject>(response.data)
           .filter(
             (p) => p.id !== currentProjectId && (customerId || p.organization === organizationId),
           )

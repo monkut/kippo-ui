@@ -11,6 +11,7 @@ import type {
   SurveyUserInline,
 } from "~/lib/api/generated";
 import { projectsList } from "~/lib/api/generated";
+import { readList } from "~/lib/api/read-list";
 import { formatDisplayDate } from "~/lib/dates";
 import { useAuthGate } from "~/hooks/useAuthGate";
 
@@ -49,33 +50,31 @@ export default function ProjectStatus() {
         is_active: true,
         exclude_category: NON_PROJECT_CATEGORY,
       });
-      if (response.data?.results) {
-        // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
-        const filteredProjects = response.data.results
-          .filter((project) => project.display_as_active === true && project.is_closed === false)
-          // Sort by: -confidence (large to small), target_date (earliest to latest), name
-          .sort((a, b) => {
-            // First: confidence descending (large to small)
-            const confA = a.confidence ?? 0;
-            const confB = b.confidence ?? 0;
-            if (confB !== confA) return confB - confA;
+      // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
+      const filteredProjects = readList<KippoProject>(response.data)
+        .filter((project) => project.display_as_active === true && project.is_closed === false)
+        // Sort by: -confidence (large to small), target_date (earliest to latest), name
+        .sort((a, b) => {
+          // First: confidence descending (large to small)
+          const confA = a.confidence ?? 0;
+          const confB = b.confidence ?? 0;
+          if (confB !== confA) return confB - confA;
 
-            // Second: target_date ascending (earliest to latest)
-            if (a.target_date && b.target_date) {
-              const dateCompare = a.target_date.localeCompare(b.target_date);
-              if (dateCompare !== 0) return dateCompare;
-            } else if (a.target_date) {
-              return -1;
-            } else if (b.target_date) {
-              return 1;
-            }
+          // Second: target_date ascending (earliest to latest)
+          if (a.target_date && b.target_date) {
+            const dateCompare = a.target_date.localeCompare(b.target_date);
+            if (dateCompare !== 0) return dateCompare;
+          } else if (a.target_date) {
+            return -1;
+          } else if (b.target_date) {
+            return 1;
+          }
 
-            // Third: name ascending
-            return a.name.localeCompare(b.name);
-          });
-        setProjects(filteredProjects);
-        loadMonthlyCosts(filteredProjects);
-      }
+          // Third: name ascending
+          return a.name.localeCompare(b.name);
+        });
+      setProjects(filteredProjects);
+      loadMonthlyCosts(filteredProjects);
     } catch (err) {
       console.error("Failed to load projects:", err);
       setError("プロジェクトの読み込みに失敗しました");

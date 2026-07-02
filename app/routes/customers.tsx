@@ -15,6 +15,8 @@ import {
   customersFiscalYearSummaryList,
 } from "~/lib/api/generated/customers/customers";
 import { organizationsList } from "~/lib/api/generated/organizations/organizations";
+import { readList } from "~/lib/api/read-list";
+import { formatDisplayDate } from "~/lib/dates";
 import type {
   CustomerActiveProject,
   FiscalYearSummary,
@@ -31,17 +33,6 @@ const formatJpy = (value: string | number | null | undefined): string => {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isNaN(n) ? "-" : `¥${n.toLocaleString("ja-JP")}`;
 };
-
-const formatDate = (value: string | null | undefined): string =>
-  value ? new Date(value).toLocaleDateString("ja-JP") : "-";
-
-/** Read a list payload defensively: the backend list-actions return a bare array, but
- * drf-spectacular types them as paginated ({results}). Handle both shapes. */
-function readList<T>(data: unknown): T[] {
-  if (Array.isArray(data)) return data as T[];
-  const results = (data as { results?: T[] } | null)?.results;
-  return Array.isArray(results) ? results : [];
-}
 
 /** Org list defensively (endpoint returns {organizations} at runtime, typed as {results}). */
 function extractOrganizations(data: unknown): Organization[] {
@@ -424,7 +415,7 @@ function CustomerRow({
           )}
         </td>
         <td className="px-4 py-3 whitespace-nowrap text-gray-500">
-          {formatDate(customer.updated_datetime)}
+          {formatDisplayDate(customer.updated_datetime)}
         </td>
         <td className="px-4 py-3 text-right whitespace-nowrap">
           <button
@@ -493,7 +484,7 @@ function ActiveProjectsDetail({
             </td>
             <td className="px-2 py-1 text-right">{formatJpy(project.received_total_current_fy)}</td>
             <td className="px-2 py-1 text-right">{formatJpy(project.contract_amount)}</td>
-            <td className="px-2 py-1">{formatDate(project.contract_end_date)}</td>
+            <td className="px-2 py-1">{formatDisplayDate(project.contract_end_date)}</td>
             <td className="px-2 py-1 text-right">
               {/* Same KippoProject record edit page as the project-name link (one edit interface). */}
               <Link

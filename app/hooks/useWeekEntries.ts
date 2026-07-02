@@ -10,6 +10,7 @@ import {
   weeklyEffortMissingWeeksRetrieve,
 } from "~/lib/api/generated/weekly-effort/weekly-effort";
 import { fetchAllProjects } from "~/lib/api/pagination";
+import { readList } from "~/lib/api/read-list";
 import type { KippoProject, ProjectWeeklyEffort } from "~/lib/api/generated/models";
 import type { FormEntry } from "~/components/weekly-effort/types";
 import {
@@ -131,23 +132,21 @@ export function useWeekEntries(
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
         }
 
-        if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results;
-          setRecentUserEntries(userEntries);
+        const userEntries = readList<ProjectWeeklyEffort>(weeklyEffortRes.data);
+        setRecentUserEntries(userEntries);
 
-          const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
-          setSelectedWeekEntries(entriesForSelectedWeek);
+        const entriesForSelectedWeek = userEntries.filter((e) => e.week_start === weekStart);
+        setSelectedWeekEntries(entriesForSelectedWeek);
 
-          if (entriesForSelectedWeek.length > 0) {
-            setTemplateEntries([]);
-          } else {
-            const previousWeekEntries = userEntries.filter((e) => e.week_start !== weekStart);
-            setTemplateEntries(
-              previousWeekEntries.length > 0
-                ? buildTemplateEntries(previousWeekEntries, allProjects, false, weekStart)
-                : [createEmptyEntry()],
-            );
-          }
+        if (entriesForSelectedWeek.length > 0) {
+          setTemplateEntries([]);
+        } else {
+          const previousWeekEntries = userEntries.filter((e) => e.week_start !== weekStart);
+          setTemplateEntries(
+            previousWeekEntries.length > 0
+              ? buildTemplateEntries(previousWeekEntries, allProjects, false, weekStart)
+              : [createEmptyEntry()],
+          );
         }
       } catch {
         setError("データの取得に失敗しました");
@@ -175,7 +174,7 @@ export function useWeekEntries(
           week_start_lte: window.lte,
         });
 
-        const windowEntries = weeklyEffortRes.data?.results || [];
+        const windowEntries = readList<ProjectWeeklyEffort>(weeklyEffortRes.data);
         setRecentUserEntries(windowEntries);
 
         const entriesForSelectedWeek = windowEntries.filter((e) => e.week_start === weekStart);
@@ -251,11 +250,9 @@ export function useWeekEntries(
           weeklyEffortMissingWeeksRetrieve(),
         ]);
 
-        if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results;
-          setRecentUserEntries(userEntries);
-          setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
-        }
+        const userEntries = readList<ProjectWeeklyEffort>(weeklyEffortRes.data);
+        setRecentUserEntries(userEntries);
+        setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
 
         if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
           setMissingWeeks(missingWeeksRes.data.missing_weeks);
@@ -287,11 +284,9 @@ export function useWeekEntries(
           week_start_gte: window.gte,
           week_start_lte: window.lte,
         });
-        if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results;
-          setRecentUserEntries(userEntries);
-          setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
-        }
+        const userEntries = readList<ProjectWeeklyEffort>(weeklyEffortRes.data);
+        setRecentUserEntries(userEntries);
+        setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
         void refreshMonth(currentWeekStart);
         return true;
       } catch {
@@ -321,11 +316,9 @@ export function useWeekEntries(
           weeklyEffortMissingWeeksRetrieve(),
         ]);
 
-        if (weeklyEffortRes.data?.results) {
-          const userEntries = weeklyEffortRes.data.results;
-          setRecentUserEntries(userEntries);
-          setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
-        }
+        const userEntries = readList<ProjectWeeklyEffort>(weeklyEffortRes.data);
+        setRecentUserEntries(userEntries);
+        setSelectedWeekEntries(userEntries.filter((e) => e.week_start === currentWeekStart));
 
         if (missingWeeksRes.status === 200 && missingWeeksRes.data.missing_weeks) {
           setMissingWeeks(missingWeeksRes.data.missing_weeks);

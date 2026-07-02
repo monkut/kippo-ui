@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { personalHolidaysList } from "~/lib/api/generated/personal-holidays/personal-holidays";
 import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
+import { readList } from "~/lib/api/read-list";
 import { formatDateKey } from "~/lib/dates";
 import { monthDateRange } from "~/components/weekly-effort/utils";
 
@@ -35,8 +36,8 @@ export function useMonthHolidays(weekStart: string, enabled: boolean): UseMonthH
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      setMonthPersonalHolidays(personalRes.data?.results || []);
-      setMonthPublicHolidays(publicRes.data?.results || []);
+      setMonthPersonalHolidays(readList<PersonalHoliday>(personalRes.data));
+      setMonthPublicHolidays(readList<PublicHoliday>(publicRes.data));
       lastFetchedMonthRef.current = dateStr.substring(0, 7);
     } catch {
       setMonthPersonalHolidays([]);

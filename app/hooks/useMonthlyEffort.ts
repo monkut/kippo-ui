@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import { projectsWeeklyeffortList } from "~/lib/api/generated/projects/projects";
 import type { ProjectMonthlyAssignment, ProjectWeeklyEffort } from "~/lib/api/generated/models";
+import { readList } from "~/lib/api/read-list";
 import { getMonthStart, monthDateRange } from "~/components/weekly-effort/utils";
 
 export type UseMonthlyEffortReturn = {
@@ -52,13 +53,11 @@ export function useMonthlyEffort(
       // A newer request superseded this one (e.g. fast month navigation) — drop the
       // stale result so it cannot clobber the current month's data.
       if (requestId !== monthlyRequestSeqRef.current) return;
-      if (assignmentsRes.data?.results) {
-        const userAssignments = assignmentsRes.data.results
-          .filter((a) => a.user_username === user)
-          .sort((a, b) => b.percentage - a.percentage);
-        setMonthlyAssignments(userAssignments);
-      }
-      setMonthUserEntries(monthEffortRes.data?.results || []);
+      const userAssignments = readList<ProjectMonthlyAssignment>(assignmentsRes.data)
+        .filter((a) => a.user_username === user)
+        .sort((a, b) => b.percentage - a.percentage);
+      setMonthlyAssignments(userAssignments);
+      setMonthUserEntries(readList<ProjectWeeklyEffort>(monthEffortRes.data));
       lastFetchedAssignmentMonthRef.current = weekStartDate.substring(0, 7);
     } catch {
       // Keep previously loaded monthly data on failure

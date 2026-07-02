@@ -5,6 +5,7 @@ import {
 } from "~/lib/api/generated/personal-holidays/personal-holidays";
 import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
+import { readList } from "~/lib/api/read-list";
 import { HolidayCalendar } from "./HolidayCalendar";
 import { monthDateRange } from "./utils";
 
@@ -34,12 +35,8 @@ export function HolidayModal({ open, initialDate, onClose, onHolidayCreated }: H
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      if (personalRes.data?.results) {
-        setExistingPersonalHolidays(personalRes.data.results);
-      }
-      if (publicRes.data?.results) {
-        setPublicHolidays(publicRes.data.results);
-      }
+      setExistingPersonalHolidays(readList<PersonalHoliday>(personalRes.data));
+      setPublicHolidays(readList<PublicHoliday>(publicRes.data));
     } catch {
       // Failed to fetch holidays, continue without them
     } finally {

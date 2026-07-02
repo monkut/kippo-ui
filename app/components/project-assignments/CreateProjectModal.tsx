@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { KippoCustomer, KippoProjectRequest, Organization } from "~/lib/api/generated/models";
 import { customersList } from "~/lib/api/generated/customers/customers";
 import { organizationsList } from "~/lib/api/generated/organizations/organizations";
+import { readList } from "~/lib/api/read-list";
 import { DateField, SelectField, TextField } from "~/components/project-form/LabeledField";
 import { ProjectManagerField } from "~/components/project-form/fields";
 import { ErrorBanner, ModalActions, ModalShell } from "~/components/project-form/ModalShell";
@@ -119,7 +120,7 @@ function useCustomerSearch(open: boolean, organizationId: string, query: string)
           organization: organizationId,
           search: query.trim(),
         });
-        if (!cancelled) setResults(response.data?.results ?? []);
+        if (!cancelled) setResults(readList<KippoCustomer>(response.data));
       } catch {
         if (!cancelled) setResults([]);
       }

@@ -5,6 +5,7 @@ import type {
 } from "~/lib/api/generated/models";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
+import { readList } from "~/lib/api/read-list";
 
 /** Org members for the 担当PM picker (kippo#40 / T19). */
 export function useOrgMembers(open: boolean, organizationId: string) {
@@ -47,7 +48,11 @@ export function useProjectCategories(open: boolean, organizationId: string) {
       try {
         const response = await projectCategoriesList({ organization: organizationId });
         if (!cancelled)
-          setCategories((response.data?.results ?? []).filter((c) => c.organization == null));
+          setCategories(
+            readList<KippoProjectOrganizationCategory>(response.data).filter(
+              (c) => c.organization == null,
+            ),
+          );
       } catch {
         if (!cancelled) setCategories([]);
       }

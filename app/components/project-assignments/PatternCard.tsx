@@ -4,7 +4,7 @@ import type {
   ProjectAssignmentPatternConflict,
   ProjectAssignmentPatternMember,
 } from "~/lib/api/generated/models";
-import { formatMonth } from "./utils";
+import { formatMonth } from "~/lib/dates";
 
 type PatternCardProps = {
   pattern: ProjectAssignmentPattern;
