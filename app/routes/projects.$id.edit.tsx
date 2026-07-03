@@ -66,6 +66,10 @@ export default function ProjectEdit() {
   // managed by the admin "Close Project" action, not edited directly (that would skip actual_date /
   // closed_datetime / status-comment side effects).
   const [isClosed, setIsClosed] = useState(false);
+  // Once a contract exists its period is the single source of the project dates (synced server-side);
+  // the backend rejects a changed start_date/target_date. billing_types is contract-derived, so a
+  // non-empty list means the project has a contract.
+  const [hasContract, setHasContract] = useState(false);
   // 完了予測日 — read-only forecast from GET /projects/:id/forecast/ (null when no future
   // assignments to project from). Mirrors the admin's estimated_completion_date display.
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<string | null>(null);
@@ -105,6 +109,7 @@ export default function ProjectEdit() {
         setMeetingCalendarUrl(p.meeting_calendar_url ?? "");
         setMeetingDescriptionTag(p.meeting_description_tag ?? "");
         setIsClosed(p.is_closed ?? false);
+        setHasContract((p.billing_types ?? []).length > 0);
         // Best-effort forecast; a failure (or no future assignments) just leaves it blank.
         try {
           const forecast = await projectsForecastRetrieve(id);
@@ -164,8 +169,8 @@ export default function ProjectEdit() {
       category: writableCategory,
       project_manager: projectManagerId || null,
       problem_definition: problemDefinition,
-      start_date: startDate || null,
-      target_date: targetDate || null,
+      // contract-managed dates are omitted (not just echoed) — the contract period is the write path
+      ...(hasContract ? {} : { start_date: startDate || null, target_date: targetDate || null }),
       allocated_staff_days: allocated === "" ? null : Number.parseInt(allocated, 10),
       document_folder_url: documentFolderUrl.trim(),
       docbase_tag: docbaseTag.trim(),
@@ -191,6 +196,7 @@ export default function ProjectEdit() {
     categories,
     projectManagerId,
     problemDefinition,
+    hasContract,
     startDate,
     targetDate,
     allocatedStaffDays,
@@ -294,6 +300,7 @@ export default function ProjectEdit() {
             type="date"
             value={startDate}
             onChange={setStartDate}
+            disabled={hasContract}
           />
           <Input
             id="p-target"
@@ -301,7 +308,13 @@ export default function ProjectEdit() {
             type="date"
             value={targetDate}
             onChange={setTargetDate}
+            disabled={hasContract}
           />
+          {hasContract && (
+            <p className="text-xs text-gray-500">
+              ※ 契約が登録済みのため、開始日・完了予定日は契約期間から自動設定されます
+            </p>
+          )}
           <Input
             id="p-allocated"
             label="必要工数(人日)"
@@ -583,6 +596,7 @@ function Input({
   type = "text",
   maxLength,
   step,
+  disabled,
 }: {
   id: string;
   label: string;
@@ -591,6 +605,7 @@ function Input({
   type?: "text" | "date" | "url" | "number";
   maxLength?: number;
   step?: number;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -605,7 +620,8 @@ function Input({
         maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        disabled={disabled}
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
       />
     </div>
   );
