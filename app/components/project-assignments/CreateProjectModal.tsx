@@ -1,21 +1,31 @@
 import { useEffect, useState } from "react";
-import type { KippoCustomer, KippoProjectRequest, Organization } from "~/lib/api/generated/models";
+import type {
+  KippoCustomer,
+  KippoProjectRequest,
+  Organization,
+  PhaseEnum,
+} from "~/lib/api/generated/models";
 import { customersList } from "~/lib/api/generated/customers/customers";
 import { organizationsList } from "~/lib/api/generated/organizations/organizations";
 import { readList } from "~/lib/api/read-list";
 import { DateField, SelectField, TextField } from "~/components/project-form/LabeledField";
-import { ProjectManagerField } from "~/components/project-form/fields";
+import {
+  CategorySelectField,
+  DEFAULT_PHASE,
+  PhaseSelectField,
+} from "~/components/project-form/fields";
 import { ErrorBanner, ModalActions, ModalShell } from "~/components/project-form/ModalShell";
-import { useOrgMembers } from "~/components/project-form/useProjectFormData";
+import { useProjectCategories } from "~/components/project-form/useProjectFormData";
 
 type CreateProjectModalProps = {
   open: boolean;
   isSaving: boolean;
   onClose: () => void;
   /** Persist the new project. Returns true on success so the modal can close.
-   * Registration requires customer / project_manager / start_date / target_date
-   * (kippo#40 / T19); `columnset` resolves from the organization's default on the
-   * backend. The contract / 請求方法 is added separately after creation. */
+   * Slim registration: customer / name / start_date / phase / category (kippo#40 /
+   * T19, slimmed); `columnset` resolves from the organization's default on the
+   * backend. Everything else — 担当PM, 完了予定日, the contract / 請求方法 — is
+   * added on a later edit as needed. */
   onSubmit: (payload: KippoProjectRequest) => Promise<boolean>;
 };
 
@@ -67,25 +77,25 @@ function useCreateProjectForm(open: boolean) {
   const [organizationId, setOrganizationId] = useState("");
   const [name, setName] = useState("");
   const [customer, setCustomer] = useState<KippoCustomer | null>(null);
-  const [projectManagerId, setProjectManagerId] = useState("");
+  const [phase, setPhase] = useState<PhaseEnum>(DEFAULT_PHASE);
+  const [category, setCategory] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [targetDate, setTargetDate] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setOrganizationId("");
     setName("");
     setCustomer(null);
-    setProjectManagerId("");
+    setPhase(DEFAULT_PHASE);
+    setCategory("");
     setStartDate("");
-    setTargetDate("");
   }, [open]);
 
   // Clear org-scoped selections when the organization changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setCustomer(null);
-    setProjectManagerId("");
+    setCategory("");
   }, [organizationId]);
 
   return {
@@ -95,12 +105,12 @@ function useCreateProjectForm(open: boolean) {
     setName,
     customer,
     setCustomer,
-    projectManagerId,
-    setProjectManagerId,
+    phase,
+    setPhase,
+    category,
+    setCategory,
     startDate,
     setStartDate,
-    targetDate,
-    setTargetDate,
   };
 }
 
@@ -137,7 +147,7 @@ function useCustomerSearch(open: boolean, organizationId: string, query: string)
 export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: CreateProjectModalProps) {
   const { organizations, isLoading: isLoadingOrgs, error: orgError } = useOrganizations(open);
   const form = useCreateProjectForm(open);
-  const members = useOrgMembers(open, form.organizationId);
+  const categories = useProjectCategories(open, form.organizationId);
 
   // Default to the sole/first organization once loaded — most users belong to one org.
   useEffect(() => {
@@ -156,19 +166,24 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
     !form.organizationId ||
     trimmedName.length === 0 ||
     !form.customer ||
-    !form.projectManagerId ||
-    !form.startDate ||
-    !form.targetDate;
+    !form.phase ||
+    !form.category ||
+    !form.startDate;
 
   const handleSubmit = async () => {
     if (submitDisabled) return;
+    // Send category only when it's a writable (global) key; otherwise omit (undefined → omitted)
+    // rather than 400-ing on the globals-only serializer queryset.
+    const categoryValue = categories.some((c) => c.key === form.category)
+      ? form.category
+      : undefined;
     const ok = await onSubmit({
       organization: form.organizationId,
       name: trimmedName,
       customer: form.customer?.id ?? null,
-      project_manager: form.projectManagerId,
+      phase: form.phase,
+      category: categoryValue,
       start_date: form.startDate,
-      target_date: form.targetDate,
     });
     if (ok) onClose();
   };
@@ -177,7 +192,7 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
     <ModalShell title="新規プロジェクト作成" onClose={onClose}>
       {orgError && <ErrorBanner message={orgError} />}
       <p className="mb-4 text-sm text-gray-500">
-        登録には企業・担当PM・開始日・完了予定日が必須です。カラムセットは組織の既定値が適用されます。請求方法（契約）は作成後に登録します。
+        登録には企業・開始日が必須です。カラムセットは組織の既定値が適用されます。担当PM・完了予定日・請求方法（契約）などは作成後の編集で登録します。
       </p>
       <div className="space-y-4">
         <OrganizationSelectField
@@ -202,13 +217,6 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
           onSelect={form.setCustomer}
           disabled={isSaving || !form.organizationId}
         />
-        <ProjectManagerField
-          id="create-project-pm"
-          value={form.projectManagerId}
-          onChange={form.setProjectManagerId}
-          members={members}
-          disabled={isSaving || !form.organizationId}
-        />
         <DateField
           id="create-project-start"
           label="開始日"
@@ -216,12 +224,18 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
           onChange={form.setStartDate}
           disabled={isSaving}
         />
-        <DateField
-          id="create-project-target"
-          label="完了予定日"
-          value={form.targetDate}
-          onChange={form.setTargetDate}
+        <PhaseSelectField
+          id="create-project-phase"
+          value={form.phase}
+          onChange={form.setPhase}
           disabled={isSaving}
+        />
+        <CategorySelectField
+          id="create-project-category"
+          value={form.category}
+          onChange={form.setCategory}
+          categories={categories}
+          disabled={isSaving || !form.organizationId}
         />
       </div>
       <ModalActions

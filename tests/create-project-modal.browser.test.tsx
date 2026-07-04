@@ -2,21 +2,27 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createRoot } from "react-dom/client";
 import { CreateProjectModal } from "../app/components/project-assignments/CreateProjectModal";
 
-// CreateProjectModal registers a new KippoProject. Since kippo#40 (T19) registration requires
-// customer / project_manager / start_date / target_date in addition to organization + name;
-// the 企業 field is a search autocomplete (kippo#34 / T04) that also surfaces the customer's
-// contract-folder URL. `columnset` is resolved from the org default on the backend.
+// CreateProjectModal registers a new KippoProject with the slim registration set:
+// customer / name / start_date / phase / category (kippo#40 / T19, slimmed). Everything else
+// (担当PM, 完了予定日, the contract) is added on a later edit. The 企業 field is a search
+// autocomplete (kippo#34 / T04) that also surfaces the customer's contract-folder URL.
+// `columnset` is resolved from the org default on the backend.
 
 const organizationsList = vi.fn();
 const organizationsMembersRetrieve = vi.fn();
 const customersList = vi.fn();
+const projectCategoriesList = vi.fn();
 
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsList: (...args: unknown[]) => organizationsList(...args),
+  // still imported by useProjectFormData (useOrgMembers) — unused by this modal since the slim form
   organizationsMembersRetrieve: (...args: unknown[]) => organizationsMembersRetrieve(...args),
 }));
 vi.mock("~/lib/api/generated/customers/customers", () => ({
   customersList: (...args: unknown[]) => customersList(...args),
+}));
+vi.mock("~/lib/api/generated/project-categories/project-categories", () => ({
+  projectCategoriesList: (...args: unknown[]) => projectCategoriesList(...args),
 }));
 
 function makeOrg(id: string, name: string) {
@@ -65,7 +71,7 @@ function setSelectValue(select: HTMLSelectElement, value: string) {
   select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-/** Fill every required registration field except organization (single-org auto-selected). */
+/** Fill every required slim-registration field except organization (single-org auto-selected). */
 async function fillRequiredFields(container: HTMLElement) {
   setInputValue(
     container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
@@ -78,21 +84,17 @@ async function fillRequiredFields(container: HTMLElement) {
   const customerOption = await waitFor(() => findButton(container, "Beta Co"));
   customerOption?.click();
 
-  // 担当PM: select the loaded member
-  const pmSelect = await waitFor(() => {
-    const select = container.querySelector<HTMLSelectElement>("#create-project-pm");
-    return select && select.querySelectorAll("option").length > 1 ? select : null;
-  });
-  setSelectValue(pmSelect as HTMLSelectElement, "user-1");
-
   setInputValue(
     container.querySelector<HTMLInputElement>("#create-project-start") as HTMLInputElement,
     "2026-02-01",
   );
-  setInputValue(
-    container.querySelector<HTMLInputElement>("#create-project-target") as HTMLInputElement,
-    "2026-08-31",
-  );
+
+  // カテゴリ: select the loaded writable (global) category (phase keeps its default)
+  const categorySelect = await waitFor(() => {
+    const select = container.querySelector<HTMLSelectElement>("#create-project-category");
+    return select && select.querySelectorAll("option").length > 1 ? select : null;
+  });
+  setSelectValue(categorySelect as HTMLSelectElement, "other");
 }
 
 describe("CreateProjectModal — registration with required fields", () => {
@@ -103,6 +105,7 @@ describe("CreateProjectModal — registration with required fields", () => {
     organizationsList.mockReset();
     organizationsMembersRetrieve.mockReset();
     customersList.mockReset();
+    projectCategoriesList.mockReset();
     organizationsList.mockResolvedValue(orgResponse([makeOrg("org-1", "Acme")]));
     organizationsMembersRetrieve.mockResolvedValue(
       membersResponse([{ user_id: "user-1", username: "pm", display_name: "PM User" }]),
@@ -112,6 +115,14 @@ describe("CreateProjectModal — registration with required fields", () => {
         { id: "cust-1", name: "Beta Co", document_url: "https://drive.example.com/beta" },
       ]),
     );
+    projectCategoriesList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          { key: "other", label: "その他", organization: null, sort_order: 0, is_active: true },
+        ],
+      },
+    });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -145,9 +156,9 @@ describe("CreateProjectModal — registration with required fields", () => {
       organization: "org-1",
       name: "Apollo",
       customer: "cust-1",
-      project_manager: "user-1",
+      phase: "proposing-low",
+      category: "other",
       start_date: "2026-02-01",
-      target_date: "2026-08-31",
     });
     await waitFor(() => (onClose.mock.calls.length > 0 ? true : null));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -176,7 +187,7 @@ describe("CreateProjectModal — registration with required fields", () => {
       <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
     );
     await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
-    // name only → still disabled (customer / PM / dates missing)
+    // name only → still disabled (customer / start_date / category missing)
     setInputValue(
       container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
       "X",
