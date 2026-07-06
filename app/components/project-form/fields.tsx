@@ -19,6 +19,13 @@ export const PHASE_OPTIONS: { value: PhaseEnum; label: string }[] = [
 
 export const DEFAULT_PHASE: PhaseEnum = "proposing-low";
 
+// Phases selectable at project CREATE: 契約(稼働中) is excluded because the API cannot attach a
+// contract at create time, so it always rejects a create directly in that phase. The move to
+// 契約(稼働中) happens on a later edit, once the contract (with its period) has been added.
+export const CREATE_PHASE_OPTIONS = PHASE_OPTIONS.filter(
+  (option) => option.value !== "under-contract",
+);
+
 export function ProjectManagerField({
   id,
   value,
@@ -55,11 +62,13 @@ export function PhaseSelectField({
   value,
   onChange,
   disabled,
+  options = PHASE_OPTIONS,
 }: {
   id: string;
   value: PhaseEnum;
   onChange: (v: PhaseEnum) => void;
   disabled: boolean;
+  options?: { value: PhaseEnum; label: string }[];
 }) {
   return (
     <SelectField
@@ -69,7 +78,7 @@ export function PhaseSelectField({
       onChange={(v) => onChange(v as PhaseEnum)}
       disabled={disabled}
     >
-      {PHASE_OPTIONS.map((option) => (
+      {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>

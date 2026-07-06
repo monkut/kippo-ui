@@ -10,6 +10,7 @@ import { organizationsList } from "~/lib/api/generated/organizations/organizatio
 import { readList } from "~/lib/api/read-list";
 import { DateField, SelectField, TextField } from "~/components/project-form/LabeledField";
 import {
+  CREATE_PHASE_OPTIONS,
   CategorySelectField,
   DEFAULT_PHASE,
   PhaseSelectField,
@@ -160,6 +161,8 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
   if (!open) return null;
 
   const trimmedName = form.name.trim();
+  // category is optional (model default; may be unsubmittable when the org has no writable global
+  // category — handleSubmit omits it) so it must NOT gate submit, or 作成 would deadlock for such orgs.
   const submitDisabled =
     isSaving ||
     isLoadingOrgs ||
@@ -167,7 +170,6 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
     trimmedName.length === 0 ||
     !form.customer ||
     !form.phase ||
-    !form.category ||
     !form.startDate;
 
   const handleSubmit = async () => {
@@ -229,6 +231,7 @@ export function CreateProjectModal({ open, isSaving, onClose, onSubmit }: Create
           value={form.phase}
           onChange={form.setPhase}
           disabled={isSaving}
+          options={CREATE_PHASE_OPTIONS}
         />
         <CategorySelectField
           id="create-project-category"

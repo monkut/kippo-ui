@@ -1,7 +1,12 @@
 import { type ReactNode, useState } from "react";
 import type { KippoProjectOrganizationCategory, PhaseEnum } from "~/lib/api/generated/models";
 import { DateField, TextField } from "./LabeledField";
-import { CategorySelectField, DEFAULT_PHASE, PhaseSelectField } from "./fields";
+import {
+  CREATE_PHASE_OPTIONS,
+  CategorySelectField,
+  DEFAULT_PHASE,
+  PhaseSelectField,
+} from "./fields";
 import { ModalActions } from "./ModalShell";
 
 /** Shared project-create field values (slim registration).
@@ -37,8 +42,10 @@ export function ProjectForm({
   const [startDate, setStartDate] = useState("");
 
   const trimmedName = name.trim();
-  // Enforce the slim required /add/ set.
-  const createComplete = trimmedName.length > 0 && !!startDate && !!phase && !!category;
+  // Enforce the slim required /add/ set. category is optional (the model defaults it, and it may be
+  // unsubmittable when the org has no writable global category — handleSubmit omits it in that case),
+  // so it must NOT gate submit or the 作成 button would deadlock for such orgs.
+  const createComplete = trimmedName.length > 0 && !!startDate && !!phase;
   const submitDisabled = isSaving || !createComplete;
 
   const handleSubmit = () => {
@@ -73,6 +80,7 @@ export function ProjectForm({
           value={phase}
           onChange={setPhase}
           disabled={disabled}
+          options={CREATE_PHASE_OPTIONS}
         />
         <CategorySelectField
           id="customer-project-category"

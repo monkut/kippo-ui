@@ -200,6 +200,54 @@ describe("CreateProjectModal — registration with required fields", () => {
     expect(findButton(container, "作成")?.disabled).toBe(false);
   });
 
+  test("category is optional: 作成 enables and submits without a category", async () => {
+    // category carries a model default and may be unsubmittable when the org has no writable global
+    // category, so it must not gate 作成 (regression: the button previously deadlocked).
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    root.render(
+      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={onSubmit} />,
+    );
+    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
+
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
+      "Apollo",
+    );
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-customer") as HTMLInputElement,
+      "Beta",
+    );
+    (await waitFor(() => findButton(container, "Beta Co")))?.click();
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-start") as HTMLInputElement,
+      "2026-02-01",
+    );
+    // deliberately leave カテゴリ unselected
+
+    const submitBtn = await waitFor(() =>
+      findButton(container, "作成")?.disabled === false ? findButton(container, "作成") : null,
+    );
+    expect(submitBtn).toBeTruthy(); // enabled without a category
+    submitBtn?.click();
+    await waitFor(() => (onSubmit.mock.calls.length > 0 ? true : null));
+    // no writable category selected → omitted from the payload
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Apollo", category: undefined }),
+    );
+  });
+
+  test("does not offer 契約(稼働中) as a create phase", async () => {
+    // the API cannot attach a contract at create, so it always rejects a create in under-contract
+    root.render(
+      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,
+    );
+    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
+    const phaseSelect = container.querySelector<HTMLSelectElement>("#create-project-phase");
+    const values = Array.from(phaseSelect?.querySelectorAll("option") ?? []).map((o) => o.value);
+    expect(values).not.toContain("under-contract");
+    expect(values).toContain("proposing-low");
+  });
+
   test("explains that columnset uses the org default", async () => {
     root.render(
       <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={vi.fn()} />,

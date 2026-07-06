@@ -225,6 +225,38 @@ describe("ProjectEdit route", () => {
     expect(payload).not.toHaveProperty("target_date");
   });
 
+  test("a 400 surfaces the field error and does not navigate away", async () => {
+    // custom-fetch resolves (not throws) on 4xx; the route must surface the DRF field error and stay
+    // on the page instead of navigating away as if the save succeeded.
+    projectsPartialUpdate.mockResolvedValue({
+      status: 400,
+      data: {
+        phase: [
+          "A contract (契約) with start/end dates must be saved before setting the phase to 契約(稼働中).",
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    await waitFor(() => {
+      const s = container.querySelector<HTMLSelectElement>("#p-category");
+      return s && s.querySelectorAll("option").length > 1 ? true : null;
+    });
+
+    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
+    await waitFor(() => {
+      findButton(container, "保存")?.click();
+      return projectsPartialUpdate.mock.calls.some((c) => c[1]?.name === "New Name") ? true : null;
+    });
+
+    await waitFor(() => (container.textContent?.includes("phase:") ? true : null));
+    expect(container.textContent).toContain("A contract"); // field error surfaced, not a generic banner
+    expect(navigateSpy).not.toHaveBeenCalled(); // stayed on the page
+  });
+
   test("without a contract the dates stay editable and are sent", async () => {
     // default mock has no billing_types (older payload shape) — dates remain directly editable
     root.render(<ProjectEdit />);

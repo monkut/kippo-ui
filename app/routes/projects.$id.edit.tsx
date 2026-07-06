@@ -11,6 +11,7 @@ import {
   projectsPartialUpdate,
   projectsRetrieve,
 } from "~/lib/api/generated/projects/projects";
+import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 import { readList } from "~/lib/api/read-list";
 import type {
   KippoProject,
@@ -181,10 +182,13 @@ export default function ProjectEdit() {
       parent_project: parentProjectId || null,
     };
     try {
-      await projectsPartialUpdate(id, patch);
+      // custom-fetch resolves (does not throw) on 4xx, so a 400 would otherwise navigate away as if
+      // saved — throwOnError turns it into a catch, and apiErrorMessage surfaces the field detail
+      // (e.g. the contract-period phase gate) instead of a generic banner.
+      throwOnError(await projectsPartialUpdate(id, patch));
       navigate(-1);
-    } catch {
-      setError("プロジェクトの更新に失敗しました");
+    } catch (error) {
+      setError(apiErrorMessage(error) ?? "プロジェクトの更新に失敗しました");
     } finally {
       setIsSaving(false);
     }
