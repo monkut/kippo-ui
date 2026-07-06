@@ -7,6 +7,8 @@ type ExistingEntriesListProps = {
   selectedWeekEntries: ProjectWeeklyEffort[];
   /** Projects with effort elsewhere this month but no entry in the displayed week; shown with a "-" effort. */
   monthOnlyProjects?: { project: string; project_name: string }[];
+  /** Customer name per project id, shown alongside the project name. */
+  customerNamesByProject?: Record<string, string | null>;
   /** Cumulative saved effort hours for the target month, keyed by project id. */
   monthHoursByProject?: Record<string, number>;
   weekStart: string;
@@ -21,6 +23,7 @@ type ExistingEntriesListProps = {
 function ExistingEntriesListImpl({
   selectedWeekEntries,
   monthOnlyProjects = [],
+  customerNamesByProject = {},
   monthHoursByProject = {},
   weekStart,
   isSubmitting,
@@ -198,7 +201,14 @@ function ExistingEntriesListImpl({
             className="grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 opacity-60"
             title={effortTooltip(p.project, null)}
           >
-            <span className="text-gray-400 min-w-0 truncate">{p.project_name}</span>
+            <span className="text-gray-400 min-w-0 truncate">
+              {p.project_name}
+              {customerNamesByProject[p.project] && (
+                <span className="ml-2 text-xs text-gray-300">
+                  {customerNamesByProject[p.project]}
+                </span>
+              )}
+            </span>
             <span className="text-right text-gray-400 font-medium tabular-nums pr-2">-</span>
             <span className="text-gray-400 text-sm">時間</span>
             <span className="text-right text-gray-400 text-sm tabular-nums">
@@ -218,7 +228,14 @@ function ExistingEntriesListImpl({
               title={effortTooltip(entry.project, entry.hours)}
               onClick={() => !isEditing && !isSubmitting && startEditEntry(entry)}
             >
-              <span className="text-gray-700 min-w-0 truncate">{entry.project_name}</span>
+              <span className="text-gray-700 min-w-0 truncate">
+                {entry.project_name}
+                {customerNamesByProject[entry.project] && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    {customerNamesByProject[entry.project]}
+                  </span>
+                )}
+              </span>
               {isEditing ? (
                 <>
                   <input
