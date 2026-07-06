@@ -30,11 +30,9 @@ export function apiErrorMessage(error: unknown): string | null {
   if (typeof record.detail === "string") return record.detail;
   const parts: string[] = [];
   for (const [field, value] of Object.entries(record)) {
-    const text = Array.isArray(value)
-      ? value.filter((v): v is string => typeof v === "string").join(" ")
-      : typeof value === "string"
-        ? value
-        : "";
+    const text = (Array.isArray(value) ? value : [value])
+      .filter((v): v is string => typeof v === "string")
+      .join(" ");
     if (text) parts.push(field === "non_field_errors" ? text : `${field}: ${text}`);
   }
   return parts.length > 0 ? parts.join(" / ") : null;
