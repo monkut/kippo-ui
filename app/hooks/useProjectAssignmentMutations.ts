@@ -10,6 +10,7 @@ import type {
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
 import { projectsCreate } from "~/lib/api/generated/projects/projects";
+import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 
 export type ProjectAssignmentMutations = {
   isSaving: boolean;
@@ -34,8 +35,10 @@ function useWrap(refresh: () => Promise<void>, setHookError: (err: string) => vo
         await operation();
         await refresh();
         return true;
-      } catch {
-        setHookError(errorMessage);
+      } catch (error) {
+        // Surface DRF field errors when the operation throwOnError'd a non-2xx response; otherwise
+        // fall back to the generic message (apiErrorMessage returns null for non-ApiError throws).
+        setHookError(apiErrorMessage(error) ?? errorMessage);
         return false;
       } finally {
         setIsSaving(false);
@@ -95,7 +98,10 @@ export function useProjectAssignmentMutations(
 
   const createProject = useCallback(
     (payload: KippoProjectRequest) =>
-      wrap(() => projectsCreate(payload), "プロジェクトの作成に失敗しました"),
+      wrap(
+        async () => throwOnError(await projectsCreate(payload)),
+        "プロジェクトの作成に失敗しました",
+      ),
     [wrap],
   );
 

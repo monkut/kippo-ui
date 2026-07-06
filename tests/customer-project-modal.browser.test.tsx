@@ -6,9 +6,10 @@ import {
 } from "../app/components/customers/CustomerProjectModal";
 import type { KippoCustomer } from "../app/lib/api/generated/models";
 
-// CustomerProjectModal creates a project for a customer (collecting the required KippoProject /add/
-// fields — kippo#41) from the Customers list (kippo#42). Editing a project is the dedicated
-// /projects/:id/edit page, not this modal.
+// CustomerProjectModal creates a project for a customer (collecting the slim KippoProject /add/
+// fields — name / phase / category / start_date) from the Customers list (kippo#42). Everything
+// else (担当PM, 完了予定日, the contract) is added on a later edit. Editing a project is the
+// dedicated /projects/:id/edit page, not this modal.
 
 const organizationsMembersRetrieve = vi.fn();
 const projectCategoriesList = vi.fn();
@@ -121,28 +122,23 @@ describe("CustomerProjectModal", () => {
 
     await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
     expect(container.textContent).toContain("Beta Co"); // customer read-only
-    // name only → still disabled (PM / category / dates / 工数 / 課題 missing)
+    // name only → still disabled (category / start_date missing)
     setValue(container.querySelector("#customer-project-name") as HTMLInputElement, "Apollo");
     await new Promise((r) => setTimeout(r, 50));
     expect(findButton(container, "作成")?.disabled).toBe(true);
 
-    const pm = await waitFor(() => {
-      const s = container.querySelector<HTMLSelectElement>("#customer-project-pm");
-      return s && s.querySelectorAll("option").length > 1 ? s : null;
-    });
-    setValue(pm as HTMLSelectElement, "user-1");
+    // the slim form has no PM / target_date / 工数 / 課題 inputs — those are edit-page concerns
+    expect(container.querySelector("#customer-project-pm")).toBeNull();
+    expect(container.querySelector("#customer-project-target")).toBeNull();
+    expect(container.querySelector("#customer-project-allocated")).toBeNull();
+    expect(container.querySelector("#customer-project-problem")).toBeNull();
+
     const cat = await waitFor(() => {
       const s = container.querySelector<HTMLSelectElement>("#customer-project-category");
       return s && s.querySelectorAll("option").length > 1 ? s : null;
     });
     setValue(cat as HTMLSelectElement, "ai-development");
     setValue(container.querySelector("#customer-project-start") as HTMLInputElement, "2026-02-01");
-    setValue(container.querySelector("#customer-project-target") as HTMLInputElement, "2026-08-31");
-    setValue(container.querySelector("#customer-project-allocated") as HTMLInputElement, "10");
-    setValue(
-      container.querySelector("#customer-project-problem") as HTMLTextAreaElement,
-      "課題XYZ",
-    );
 
     const submit = await waitFor(() =>
       findButton(container, "作成")?.disabled === false ? findButton(container, "作成") : null,
@@ -156,11 +152,7 @@ describe("CustomerProjectModal", () => {
       name: "Apollo",
       phase: "proposing-low",
       category: "ai-development",
-      project_manager: "user-1",
       start_date: "2026-02-01",
-      target_date: "2026-08-31",
-      allocated_staff_days: 10,
-      problem_definition: "課題XYZ",
     });
     await waitFor(() => (onClose.mock.calls.length > 0 ? true : null));
     expect(onClose).toHaveBeenCalledTimes(1);

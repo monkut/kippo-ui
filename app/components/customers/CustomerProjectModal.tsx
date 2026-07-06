@@ -1,12 +1,13 @@
 import type { KippoCustomer, KippoProjectRequest } from "~/lib/api/generated/models";
 import { ModalShell } from "~/components/project-form/ModalShell";
 import { ProjectForm, type ProjectFormValues } from "~/components/project-form/ProjectForm";
-import { useProjectFormData } from "~/components/project-form/useProjectFormData";
+import { useProjectCategories } from "~/components/project-form/useProjectFormData";
 
 // Create a project for a customer from the Customers list (kippo#42). Organization + customer are
-// fixed (from the customer) and shown read-only. Collects the required KippoProject /add/ fields
-// (KIPPO_PROJECT_FIELDS.md / kippo#41) via the shared ProjectForm. (The contract / 請求方法 is
-// created separately after the project.) Editing an existing project is the /projects/:id/edit page.
+// fixed (from the customer) and shown read-only. Collects the slim KippoProject /add/ fields
+// (プロジェクト名 / ステータス / カテゴリ / 開始日) via the shared ProjectForm; everything else —
+// 担当PM, 完了予定日, the contract / 請求方法 — is added on a later edit as needed. Editing an
+// existing project is the /projects/:id/edit page.
 export type ProjectFormTarget = { customer: KippoCustomer };
 
 type CustomerProjectModalProps = {
@@ -28,7 +29,7 @@ export function CustomerProjectModal({
   const organizationName = target?.customer.organization_name ?? "";
   const customerName = target?.customer.name ?? "";
 
-  const { members, categories } = useProjectFormData(open, organizationId);
+  const categories = useProjectCategories(open, organizationId);
 
   if (!open || !target) return null;
 
@@ -55,7 +56,6 @@ export function CustomerProjectModal({
             )}
           </div>
         }
-        members={members}
         categories={categories}
         isSaving={isSaving}
         onCancel={onClose}
