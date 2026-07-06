@@ -108,6 +108,16 @@ export default function WeeklyEffort() {
     return monthEffortProjects.filter((p) => !weekProjectIds.has(p.project));
   }, [monthEffortProjects, selectedWeekEntries]);
 
+  // Customer name per project id, used to annotate the project name in 登録済みの入力.
+  const customerNamesByProject = useMemo(
+    () =>
+      projects.reduce<Record<string, string | null>>((acc, p) => {
+        acc[p.id] = p.customer_name;
+        return acc;
+      }, {}),
+    [projects],
+  );
+
   if (authLoading) {
     return (
       <Layout title="KIPPO プロジェクト週間稼働量">
@@ -204,6 +214,7 @@ export default function WeeklyEffort() {
               <ExistingEntriesList
                 selectedWeekEntries={selectedWeekEntries}
                 monthOnlyProjects={monthOnlyProjects}
+                customerNamesByProject={customerNamesByProject}
                 monthHoursByProject={monthHoursByProject}
                 weekStart={weekStart}
                 isSubmitting={isSubmitting}
