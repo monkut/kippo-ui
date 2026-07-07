@@ -42,6 +42,9 @@ export default function ProjectEdit() {
   const [organizationName, setOrganizationName] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [customerName, setCustomerName] = useState<string | null>(null);
+  // customer_document_url is the linked customer's contract-folder URL (read-only; kippo#51 / T04).
+  // Customer itself is intentionally immutable after creation, so this is display-only.
+  const [customerDocumentUrl, setCustomerDocumentUrl] = useState<string | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [categories, setCategories] = useState<KippoProjectOrganizationCategory[]>([]);
 
@@ -92,6 +95,7 @@ export default function ProjectEdit() {
         setOrganizationName(p.organization_name);
         setCustomerId(p.customer ?? "");
         setCustomerName(p.customer_name);
+        setCustomerDocumentUrl(p.customer_document_url ?? null);
         setName(p.name ?? "");
         if (p.phase) setPhase(p.phase);
         setCategory(p.category ?? "");
@@ -245,12 +249,28 @@ export default function ProjectEdit() {
         {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
         <div className="text-sm text-gray-600">
-          <span className="font-medium">組織:</span> {organizationName}
-          {customerName && (
-            <>
-              <span className="mx-2 text-gray-300">/</span>
-              <span className="font-medium">顧客:</span> {customerName}
-            </>
+          <div>
+            <span className="font-medium">組織:</span> {organizationName}
+            {customerName && (
+              <>
+                <span className="mx-2 text-gray-300">/</span>
+                <span className="font-medium">顧客:</span> {customerName}
+              </>
+            )}
+          </div>
+          {/* 契約書フォルダURL — the linked customer's document_url, read-only (kippo#51 / T04) */}
+          {customerDocumentUrl && (
+            <div className="mt-1 text-xs text-gray-500">
+              契約書フォルダ:{" "}
+              <a
+                href={customerDocumentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:underline"
+              >
+                {customerDocumentUrl}
+              </a>
+            </div>
           )}
         </div>
 
