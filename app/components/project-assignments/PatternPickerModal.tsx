@@ -8,6 +8,7 @@ import {
   projectsMembersRetrieve,
   projectsSuggestAssignmentsCreate,
 } from "~/lib/api/generated/projects/projects";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 import { PatternCard } from "./PatternCard";
 import { flattenPatternToAssignmentRequests, memberDisplayName } from "./utils";
 
@@ -186,7 +187,8 @@ function Header({ project }: { project: KippoProject | null }) {
   return (
     <div className="mb-4">
       <h3 className="text-lg font-medium text-gray-900">
-        候補パターン{project ? `: ${project.name}` : ""}
+        候補パターン
+        {project ? `: ${formatProjectWithCustomer(project.name, project.customer_name)}` : ""}
       </h3>
       {(targetDate || targetMonth) && (
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">

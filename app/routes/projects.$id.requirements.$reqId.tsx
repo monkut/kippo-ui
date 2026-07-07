@@ -137,7 +137,11 @@ export default function BusinessRequirementDetails() {
   const comments = (requirement.comments || []) as unknown as CommentData[];
 
   return (
-    <Layout projectName={project?.name} projectId={projectId}>
+    <Layout
+      projectName={project?.name}
+      projectCustomerName={project?.customer_name}
+      projectId={projectId}
+    >
       <div className="space-y-6">
         <div>
           <div className="flex items-center gap-3">

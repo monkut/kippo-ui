@@ -474,7 +474,11 @@ export default function ProjectDetails() {
   );
 
   return (
-    <Layout projectName={project.name} projectId={projectId}>
+    <Layout
+      projectName={project.name}
+      projectCustomerName={project.customer_name}
+      projectId={projectId}
+    >
       <div className="space-y-6">
         {/* Display controls (font size) */}
         <div className="flex items-center justify-end gap-2">

@@ -376,7 +376,11 @@ export default function ProjectSummary() {
   const hasWarnings = uncoveredProblems.length > 0 || uncoveredBusinessReqs.length > 0;
 
   return (
-    <Layout projectName={project.name} projectId={projectId}>
+    <Layout
+      projectName={project.name}
+      projectCustomerName={project.customer_name}
+      projectId={projectId}
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">見積サマリー</h1>
