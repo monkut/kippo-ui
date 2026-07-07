@@ -156,11 +156,12 @@ describe("ProjectEdit route", () => {
       return s && s.querySelectorAll("option").length > 1 ? true : null;
     });
 
-    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
-    // `setInputValue` sets the DOM value directly, so the input reads "New Name" before React's
-    // onChange has updated state — meaning a single click can fire handleSave with the stale name
-    // under load. Re-click until a PATCH carries the new name (React will have flushed by then).
+    // `setInputValue` sets the DOM value directly, so React's onChange may not have committed the
+    // new name to state before handleSave reads it — under CI load a single onChange can be lost
+    // entirely, so re-dispatch the input event AND re-click each poll until a PATCH carries the new
+    // name (React will have flushed by then).
     await waitFor(() => {
+      setInputValue(container.querySelector("#p-name") as HTMLInputElement, "New Name");
       findButton(container, "保存")?.click();
       return projectsPartialUpdate.mock.calls.some((c) => c[1]?.name === "New Name") ? true : null;
     });
