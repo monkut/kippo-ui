@@ -258,6 +258,33 @@ describe("ProjectEdit route", () => {
     expect(navigateSpy).not.toHaveBeenCalled(); // stayed on the page
   });
 
+  test("shows the customer's contract-folder URL read-only when present", async () => {
+    // customer_document_url is the linked customer's contract-folder link (kippo#51 / T04) —
+    // display-only, since the customer itself is immutable after creation.
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, customer_document_url: "https://drive.example/contract" },
+    });
+    root.render(<ProjectEdit />);
+
+    const link = await waitFor(() =>
+      Array.from(container.querySelectorAll<HTMLAnchorElement>("a")).find(
+        (a) => a.href === "https://drive.example/contract",
+      ),
+    );
+    expect(link).not.toBeNull();
+    expect(container.textContent).toContain("契約書フォルダ");
+  });
+
+  test("omits the contract-folder link when the customer has no document URL", async () => {
+    // default mock has no customer_document_url — the read-only link must not render.
+    root.render(<ProjectEdit />);
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    expect(container.textContent).not.toContain("契約書フォルダ");
+  });
+
   test("without a contract the dates stay editable and are sent", async () => {
     // default mock has no billing_types (older payload shape) — dates remain directly editable
     root.render(<ProjectEdit />);
