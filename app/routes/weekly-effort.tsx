@@ -198,6 +198,7 @@ export default function WeeklyEffort() {
             <MonthlyAssignmentsPanel
               monthlyAssignments={monthlyAssignments}
               monthHoursByProject={monthHoursByProject}
+              customerNamesByProject={customerNamesByProject}
               targetMonth={targetMonth}
             />
 

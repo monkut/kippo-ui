@@ -13,6 +13,7 @@ import type {
 import { projectsList } from "~/lib/api/generated";
 import { readList } from "~/lib/api/read-list";
 import { formatDisplayDate } from "~/lib/dates";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 import { useAuthGate } from "~/hooks/useAuthGate";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
@@ -197,7 +198,12 @@ export default function ProjectStatus() {
                         d="M15.75 19.5L8.25 12l7.5-7.5"
                       />
                     </svg>
-                    <span className="text-sm truncate max-w-[200px]">{previousProject.name}</span>
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formatProjectWithCustomer(
+                        previousProject.name,
+                        previousProject.customer_name,
+                      )}
+                    </span>
                   </button>
                 )}
               </div>
@@ -215,7 +221,9 @@ export default function ProjectStatus() {
                     onClick={goToNext}
                     className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
                   >
-                    <span className="text-sm truncate max-w-[200px]">{nextProject.name}</span>
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formatProjectWithCustomer(nextProject.name, nextProject.customer_name)}
+                    </span>
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -505,7 +513,9 @@ function ProjectListSidebar({ projects, currentIndex, onSelectProject }: Project
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  <span className="block truncate">{project.name}</span>
+                  <span className="block truncate">
+                    {formatProjectWithCustomer(project.name, project.customer_name)}
+                  </span>
                 </button>
               </li>
             ))}

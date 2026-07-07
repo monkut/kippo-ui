@@ -1,5 +1,6 @@
 import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 import type { FormEntry } from "./types";
 import { computeMonthEffortPercents, isProjectOpenForWeek, normalizeDigits } from "./utils";
 
@@ -108,7 +109,7 @@ function WeeklyEffortFormImpl({
               {(entry.filterType === "anon-project" ? nonProjectProjects : projectProjects).map(
                 (p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    {formatProjectWithCustomer(p.name, p.customer_name)}
                   </option>
                 ),
               )}

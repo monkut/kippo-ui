@@ -33,7 +33,12 @@ export default function ProjectAssignments() {
   if (!user) return null;
 
   return (
-    <Layout title="プロジェクト割当" projectName={state.project?.name} projectId={id}>
+    <Layout
+      title="プロジェクト割当"
+      projectName={state.project?.name}
+      projectCustomerName={state.project?.customer_name}
+      projectId={id}
+    >
       <Body projectId={id} state={state} />
     </Layout>
   );

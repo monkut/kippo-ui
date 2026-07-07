@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useAuth } from "~/lib/auth-context";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 
 interface LayoutProps {
   children: React.ReactNode;
   projectName?: string;
+  projectCustomerName?: string | null;
   projectId?: string;
   title?: string;
   fullHeight?: boolean;
@@ -12,7 +14,14 @@ interface LayoutProps {
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
-export function Layout({ children, projectName, projectId, title, fullHeight }: LayoutProps) {
+export function Layout({
+  children,
+  projectName,
+  projectCustomerName,
+  projectId,
+  title,
+  fullHeight,
+}: LayoutProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,7 +72,7 @@ export function Layout({ children, projectName, projectId, title, fullHeight }: 
                     to={`/projects/${projectId}`}
                     className="text-lg font-medium text-indigo-600 hover:text-indigo-500"
                   >
-                    {projectName}
+                    {formatProjectWithCustomer(projectName, projectCustomerName)}
                   </Link>
                 </>
               )}

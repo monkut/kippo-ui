@@ -1,10 +1,13 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 
 type MonthlyAssignmentsPanelProps = {
   monthlyAssignments: ProjectMonthlyAssignment[];
   /** Saved cumulative effort hours for the target month, keyed by project id. */
   monthHoursByProject: Record<string, number>;
+  /** Customer name per project id, used to annotate the project name. */
+  customerNamesByProject?: Record<string, string | null>;
   /** Target month (YYYY-MM-DD, first day) the panel reflects. */
   targetMonth: string;
 };
@@ -12,6 +15,7 @@ type MonthlyAssignmentsPanelProps = {
 function MonthlyAssignmentsPanelImpl({
   monthlyAssignments,
   monthHoursByProject,
+  customerNamesByProject = {},
   targetMonth,
 }: MonthlyAssignmentsPanelProps) {
   const monthTotalHours = useMemo(
@@ -39,7 +43,12 @@ function MonthlyAssignmentsPanelImpl({
               key={assignment.id}
               className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
             >
-              <span className="text-gray-700">{assignment.project_name}</span>
+              <span className="text-gray-700">
+                {formatProjectWithCustomer(
+                  assignment.project_name,
+                  customerNamesByProject[assignment.project],
+                )}
+              </span>
               <span className="flex items-baseline gap-3 tabular-nums">
                 {actualPercent !== null && (
                   <span

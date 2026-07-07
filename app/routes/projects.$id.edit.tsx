@@ -13,6 +13,7 @@ import {
 } from "~/lib/api/generated/projects/projects";
 import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 import { readList } from "~/lib/api/read-list";
+import { formatProjectWithCustomer } from "~/lib/format-project";
 import type {
   KippoProject,
   KippoProjectOrganizationCategory,
@@ -460,7 +461,9 @@ function ParentProjectField({
   onSelect: (id: string | null, name: string | null) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ id: string; name: string }[]>([]);
+  const [results, setResults] = useState<
+    { id: string; name: string; customer_name: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -485,7 +488,7 @@ function ParentProjectField({
           .filter(
             (p) => p.id !== currentProjectId && (customerId || p.organization === organizationId),
           )
-          .map((p) => ({ id: p.id, name: p.name }));
+          .map((p) => ({ id: p.id, name: p.name, customer_name: p.customer_name }));
         setResults(items);
       } catch {
         if (!cancelled) setResults([]);
@@ -545,7 +548,7 @@ function ParentProjectField({
                         }}
                         className="block w-full px-3 py-2 text-left text-sm hover:bg-indigo-50"
                       >
-                        {r.name}
+                        {formatProjectWithCustomer(r.name, r.customer_name)}
                       </button>
                     </li>
                   ))}
