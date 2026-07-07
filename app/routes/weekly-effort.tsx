@@ -7,6 +7,7 @@ import { MonthlyAssignmentsPanel } from "~/components/weekly-effort/MonthlyAssig
 import { ExistingEntriesList } from "~/components/weekly-effort/ExistingEntriesList";
 import { WeeklyEffortForm } from "~/components/weekly-effort/WeeklyEffortForm";
 import { HolidayModal } from "~/components/weekly-effort/HolidayModal";
+import { RequestUnlockModal } from "~/components/weekly-effort/RequestUnlockModal";
 import { createEmptyEntry, getPreviousWeekStartDate } from "~/components/weekly-effort/utils";
 import type { FormEntry } from "~/components/weekly-effort/types";
 import { useWeeklyEffort } from "~/hooks/useWeeklyEffort";
@@ -21,6 +22,7 @@ export default function WeeklyEffort() {
   const [weekStart, setWeekStart] = useState(getPreviousWeekStartDate());
   const [entries, setEntries] = useState<FormEntry[]>([]);
   const [holidayModalOpen, setHolidayModalOpen] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -98,6 +100,14 @@ export default function WeeklyEffort() {
     const weekProjectIds = new Set(selectedWeekEntries.map((e) => e.project));
     return monthEffortProjects.filter((p) => !weekProjectIds.has(p.project));
   }, [monthEffortProjects, selectedWeekEntries]);
+
+  // Organization of the closed week's entries — the unlock request is org-scoped. is_closed is per
+  // (org, user, week), so resolving from any closed entry's project gives the right org.
+  const closedWeekOrganizationId = useMemo(() => {
+    const closed = selectedWeekEntries.find((e) => e.is_closed);
+    if (!closed) return "";
+    return projects.find((p) => p.id === closed.project)?.organization ?? "";
+  }, [selectedWeekEntries, projects]);
 
   // Customer name per project id, used to annotate the project name in 登録済みの入力.
   const customerNamesByProject = useMemo(
@@ -214,6 +224,7 @@ export default function WeeklyEffort() {
                 onDelete={handleDelete}
                 onAddEntry={handleAddEntry}
                 onHolidayCreated={handleHolidayChanged}
+                onRequestUnlock={() => setUnlockModalOpen(true)}
               >
                 <WeeklyEffortForm
                   variant="inline"
@@ -256,6 +267,13 @@ export default function WeeklyEffort() {
           initialDate={weekStart}
           onClose={() => setHolidayModalOpen(false)}
           onHolidayCreated={handleHolidayChanged}
+        />
+
+        <RequestUnlockModal
+          open={unlockModalOpen}
+          weekStart={weekStart}
+          organizationId={closedWeekOrganizationId}
+          onClose={() => setUnlockModalOpen(false)}
         />
       </div>
     </Layout>

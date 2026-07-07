@@ -17,6 +17,8 @@ type ExistingEntriesListProps = {
   onDelete: (entryId: number) => Promise<boolean> | void;
   onAddEntry: (filterType: "project" | "anon-project") => void;
   onHolidayCreated: () => void;
+  /** Opens the request-unlock modal; shown only when the week is closed (is_closed). */
+  onRequestUnlock?: () => void;
   children?: ReactNode;
 };
 
@@ -31,8 +33,13 @@ function ExistingEntriesListImpl({
   onDelete,
   onAddEntry,
   onHolidayCreated,
+  onRequestUnlock,
   children,
 }: ExistingEntriesListProps) {
+  // is_closed is computed per (org, user, week) and identical across the user's rows for a week, so
+  // any closed row means the whole week is locked. Past the deadline the API rejects edits/creates
+  // with 400 until an admin approves an unlock (kippo#54 / T17,T18).
+  const weekIsClosed = selectedWeekEntries.some((e) => e.is_closed);
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [editingHours, setEditingHours] = useState<string>("");
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -141,7 +148,7 @@ function ExistingEntriesListImpl({
             type="button"
             onClick={() => onAddEntry("project")}
             className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100"
-            disabled={isSubmitting}
+            disabled={isSubmitting || weekIsClosed}
           >
             <svg
               className="h-3 w-3"
@@ -159,7 +166,7 @@ function ExistingEntriesListImpl({
             type="button"
             onClick={() => onAddEntry("anon-project")}
             className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
-            disabled={isSubmitting}
+            disabled={isSubmitting || weekIsClosed}
           >
             <svg
               className="h-3 w-3"
@@ -194,6 +201,37 @@ function ExistingEntriesListImpl({
         </div>
       </div>
 
+      {weekIsClosed && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <svg
+              className="h-4 w-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+            >
+              <title>ロック</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+              />
+            </svg>
+            <span>この週は締め切られています。編集するには管理者の承認が必要です。</span>
+          </div>
+          {onRequestUnlock && (
+            <button
+              type="button"
+              onClick={onRequestUnlock}
+              className="flex-shrink-0 whitespace-nowrap rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+            >
+              アンロックを申請
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {sortedMonthOnlyProjects.map((p) => (
           <div
@@ -224,9 +262,11 @@ function ExistingEntriesListImpl({
           return (
             <div
               key={entry.id}
-              className="group grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded cursor-pointer"
+              className={`group grid grid-cols-[1fr_4rem_auto_3.5rem_6rem] items-center gap-2 py-2 border-b border-gray-100 last:border-0 -mx-2 px-2 rounded ${
+                weekIsClosed ? "cursor-default" : "hover:bg-gray-50 cursor-pointer"
+              }`}
               title={effortTooltip(entry.project, entry.hours)}
-              onClick={() => !isEditing && !isSubmitting && startEditEntry(entry)}
+              onClick={() => !weekIsClosed && !isEditing && !isSubmitting && startEditEntry(entry)}
             >
               <span className="text-gray-700 min-w-0 truncate">
                 {entry.project_name}
@@ -337,20 +377,37 @@ function ExistingEntriesListImpl({
                   <span className="text-right text-gray-500 text-sm tabular-nums">
                     ({cumulativePercent(entry.project)}%)
                   </span>
-                  <svg
-                    className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                    stroke="currentColor"
-                  >
-                    <title>編集</title>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                    />
-                  </svg>
+                  {weekIsClosed ? (
+                    <svg
+                      className="h-4 w-4 text-amber-500 justify-self-end"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <title>ロック済み</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <title>編集</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                      />
+                    </svg>
+                  )}
                 </>
               )}
             </div>
@@ -459,7 +516,8 @@ function ExistingEntriesListImpl({
           </div>
         )}
 
-        {children}
+        {/* Hide the inline create form when locked — a new entry in a closed week would 400. */}
+        {!weekIsClosed && children}
 
         <div className="flex justify-between items-center pt-2 font-medium">
           <span className="text-gray-900">合計</span>
