@@ -255,4 +255,62 @@ describe("CreateProjectModal — registration with required fields", () => {
     await waitFor(() => (container.textContent?.includes("カラムセット") ? true : null));
     expect(container.textContent).toContain("組織の既定値");
   });
+
+  test("populates the category picker with the org's OWN (non-null organization) categories", async () => {
+    // Regression (kippo#49 copy-on-create): the list endpoint returns the org's OWN category copies
+    // (organization != null) and no longer surfaces the global template to members. The picker must
+    // show them; the previous globals-only (organization == null) filter emptied it to (カテゴリがありません).
+    projectCategoriesList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            key: "ai-development",
+            label: "AI開発",
+            organization: "org-1",
+            sort_order: 10,
+            is_active: true,
+          },
+          { key: "sunx", label: "SUNX", organization: "org-1", sort_order: 20, is_active: true },
+        ],
+      },
+    });
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    root.render(
+      <CreateProjectModal open={true} isSaving={false} onClose={vi.fn()} onSubmit={onSubmit} />,
+    );
+    await waitFor(() => (container.textContent?.includes("Acme") ? true : null));
+
+    const categorySelect = await waitFor(() => {
+      const select = container.querySelector<HTMLSelectElement>("#create-project-category");
+      return select && !select.disabled ? select : null;
+    });
+    const values = Array.from(categorySelect?.querySelectorAll("option") ?? []).map((o) => o.value);
+    expect(values).toContain("sunx");
+    expect(values).toContain("ai-development");
+    expect(container.textContent).not.toContain("カテゴリがありません");
+
+    // the org-custom category is selectable and submits as its key
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-name") as HTMLInputElement,
+      "Apollo",
+    );
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-customer") as HTMLInputElement,
+      "Beta",
+    );
+    (await waitFor(() => findButton(container, "Beta Co")))?.click();
+    setInputValue(
+      container.querySelector<HTMLInputElement>("#create-project-start") as HTMLInputElement,
+      "2026-02-01",
+    );
+    setSelectValue(categorySelect as HTMLSelectElement, "sunx");
+
+    const submitBtn = await waitFor(() =>
+      findButton(container, "作成")?.disabled === false ? findButton(container, "作成") : null,
+    );
+    submitBtn?.click();
+    await waitFor(() => (onSubmit.mock.calls.length > 0 ? true : null));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: "sunx" }));
+  });
 });
