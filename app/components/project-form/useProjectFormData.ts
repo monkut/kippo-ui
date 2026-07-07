@@ -33,8 +33,10 @@ export function useOrgMembers(open: boolean, organizationId: string) {
   return members;
 }
 
-/** Writable categories for the org via kippo#341. Only globals are writable (the project serializer's
- * category queryset is organization__isnull); org-specific keys would 400 on save, so exclude them. */
+/** The organization's own selectable categories (kippo#49 copy-on-create). The list endpoint
+ * returns the org's copies (org-scoped, active-only) and no longer surfaces the global template to
+ * members, and the project serializer now resolves the key against the org's set — so every returned
+ * category is writable and none must be filtered out. */
 export function useProjectCategories(open: boolean, organizationId: string) {
   const [categories, setCategories] = useState<KippoProjectOrganizationCategory[]>([]);
 
@@ -47,12 +49,7 @@ export function useProjectCategories(open: boolean, organizationId: string) {
     (async () => {
       try {
         const response = await projectCategoriesList({ organization: organizationId });
-        if (!cancelled)
-          setCategories(
-            readList<KippoProjectOrganizationCategory>(response.data).filter(
-              (c) => c.organization == null,
-            ),
-          );
+        if (!cancelled) setCategories(readList<KippoProjectOrganizationCategory>(response.data));
       } catch {
         if (!cancelled) setCategories([]);
       }
