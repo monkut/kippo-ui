@@ -8,6 +8,10 @@ const projectsRetrieve = vi.hoisted(() => vi.fn());
 const projectsPartialUpdate = vi.hoisted(() => vi.fn());
 const projectsForecastRetrieve = vi.hoisted(() => vi.fn());
 const projectsList = vi.hoisted(() => vi.fn());
+const projectsContractList = vi.hoisted(() => vi.fn());
+const projectsContractCreate = vi.hoisted(() => vi.fn());
+const projectsContractPartialUpdate = vi.hoisted(() => vi.fn());
+const projectsContractDestroy = vi.hoisted(() => vi.fn());
 const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
 const projectCategoriesList = vi.hoisted(() => vi.fn());
 
@@ -25,6 +29,10 @@ vi.mock("~/lib/api/generated/projects/projects", () => ({
   projectsPartialUpdate: (...a: unknown[]) => projectsPartialUpdate(...a),
   projectsForecastRetrieve: (...a: unknown[]) => projectsForecastRetrieve(...a),
   projectsList: (...a: unknown[]) => projectsList(...a),
+  projectsContractList: (...a: unknown[]) => projectsContractList(...a),
+  projectsContractCreate: (...a: unknown[]) => projectsContractCreate(...a),
+  projectsContractPartialUpdate: (...a: unknown[]) => projectsContractPartialUpdate(...a),
+  projectsContractDestroy: (...a: unknown[]) => projectsContractDestroy(...a),
 }));
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsMembersRetrieve: (...a: unknown[]) => organizationsMembersRetrieve(...a),
@@ -62,6 +70,12 @@ function setInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setSelectValue(select: HTMLSelectElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set;
+  setter?.call(select, value);
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 const defaultProject = {
   organization: "org-1",
   organization_name: "Acme",
@@ -94,6 +108,10 @@ describe("ProjectEdit route", () => {
     projectsPartialUpdate.mockReset();
     projectsForecastRetrieve.mockReset();
     projectsList.mockReset();
+    projectsContractList.mockReset();
+    projectsContractCreate.mockReset();
+    projectsContractPartialUpdate.mockReset();
+    projectsContractDestroy.mockReset();
     organizationsMembersRetrieve.mockReset();
     projectCategoriesList.mockReset();
     projectsRetrieve.mockResolvedValue({ status: 200, data: { ...defaultProject } });
@@ -125,6 +143,8 @@ describe("ProjectEdit route", () => {
       },
     });
     projectsList.mockResolvedValue({ status: 200, data: { results: [] } });
+    // No contract by default — the 契約 section shows the "契約を追加" flow.
+    projectsContractList.mockResolvedValue({ status: 200, data: { results: [] } });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -295,5 +315,223 @@ describe("ProjectEdit route", () => {
     const startInput = container.querySelector<HTMLInputElement>("#p-start");
     expect(startInput?.disabled).toBe(false);
     expect(container.textContent).not.toContain("契約期間から自動設定");
+  });
+
+  test("loads an existing contract into the 契約 section", async () => {
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 7,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "monthly",
+            pricing_basis: "effort",
+            total_amount: "3000000",
+            estimated_monthly_amount: "500000",
+            start_date: "2026-03-01",
+            end_date: "2026-09-30",
+            note: "初回契約",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type")?.value === "monthly"
+        ? true
+        : null,
+    );
+    expect(projectsContractList).toHaveBeenCalledWith("proj-1");
+    expect(container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value).toBe("effort");
+    expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.value).toBe("3000000");
+    expect(container.querySelector<HTMLInputElement>("#c-end")?.value).toBe("2026-09-30");
+    // 仮月額 is shown (effort + monthly) and populated.
+    expect(container.querySelector<HTMLInputElement>("#c-estimated-monthly")?.value).toBe("500000");
+    // A contract exists ⇒ project's own dates are locked (contract-managed).
+    expect(container.querySelector<HTMLInputElement>("#p-start")?.disabled).toBe(true);
+    // Delete affordance is available for an existing contract.
+    expect(findButton(container, "契約を削除")).not.toBeNull();
+  });
+
+  test("仮月額 is hidden for a non-(effort+monthly) contract", async () => {
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 8,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "delivery",
+            pricing_basis: "fixed",
+            total_amount: "3000000",
+            estimated_monthly_amount: null,
+            start_date: "2026-03-01",
+            end_date: "2026-09-30",
+            note: "",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value === "fixed"
+        ? true
+        : null,
+    );
+    expect(container.querySelector("#c-estimated-monthly")).toBeNull();
+  });
+
+  test("仮月額 sent for an effort+monthly contract created in-page", async () => {
+    projectsContractCreate.mockResolvedValue({
+      status: 201,
+      data: {
+        id: 11,
+        project: "proj-1",
+        project_name: "Old Name",
+        billing_type: "monthly",
+        pricing_basis: "effort",
+        total_amount: null,
+        estimated_monthly_amount: "500000",
+        start_date: "2026-02-01",
+        end_date: "2026-08-31",
+        note: "",
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    findButton(container, "契約を追加")?.click();
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type") ? true : null,
+    );
+
+    // Switch to 月額 + 実績 so the 仮月額 field appears, then fill it.
+    setSelectValue(container.querySelector("#c-billing-type") as HTMLSelectElement, "monthly");
+    setSelectValue(container.querySelector("#c-pricing-basis") as HTMLSelectElement, "effort");
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#c-estimated-monthly") ? true : null,
+    );
+    await waitFor(() => {
+      const el = container.querySelector<HTMLInputElement>("#c-estimated-monthly");
+      if (el) setInputValue(el, "500000");
+      findButton(container, "契約を保存")?.click();
+      return projectsContractCreate.mock.calls.length > 0 ? true : null;
+    });
+    const body = projectsContractCreate.mock.calls[0]?.[1];
+    expect(body?.billing_type).toBe("monthly");
+    expect(body?.pricing_basis).toBe("effort");
+    expect(body?.estimated_monthly_amount).toBe("500000");
+  });
+
+  test("adds a contract via its own save, which then locks the project dates", async () => {
+    projectsContractCreate.mockResolvedValue({
+      status: 201,
+      data: {
+        id: 10,
+        project: "proj-1",
+        project_name: "Old Name",
+        billing_type: "delivery",
+        pricing_basis: "fixed",
+        total_amount: "1000000",
+        start_date: "2026-02-01",
+        end_date: "2026-08-31",
+        note: "",
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    // Starts with no contract — reveal the create form.
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    findButton(container, "契約を追加")?.click();
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#c-total-amount") ? true : null,
+    );
+
+    // fixed pricing requires a total_amount before the contract save enables.
+    await waitFor(() => {
+      setInputValue(container.querySelector("#c-total-amount") as HTMLInputElement, "1000000");
+      findButton(container, "契約を保存")?.click();
+      return projectsContractCreate.mock.calls.length > 0 ? true : null;
+    });
+    expect(projectsContractCreate).toHaveBeenCalledWith("proj-1", {
+      billing_type: "delivery",
+      pricing_basis: "fixed",
+      total_amount: "1000000",
+      // delivery + fixed is not effort+monthly → 仮月額 sent as null (not shown in the form).
+      estimated_monthly_amount: null,
+      start_date: null,
+      end_date: null,
+      note: "",
+    });
+
+    // After creation the contract owns the period: project date inputs lock.
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-start")?.disabled ? true : null,
+    );
+    expect(container.querySelector<HTMLInputElement>("#p-target")?.disabled).toBe(true);
+  });
+
+  test("closed project locks the contract section (read-only, no save/delete)", async () => {
+    // The backend refuses contract writes on a closed project (admin's LockWhenProjectClosedInline
+    // parity); the UI shows the contract read-only.
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, is_closed: true },
+    });
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 9,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "delivery",
+            pricing_basis: "fixed",
+            total_amount: "1000000",
+            start_date: "2026-02-01",
+            end_date: "2026-08-31",
+            note: "",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type")?.value === "delivery"
+        ? true
+        : null,
+    );
+    // Fields render but are disabled.
+    expect(container.querySelector<HTMLSelectElement>("#c-billing-type")?.disabled).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.disabled).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#c-end")?.disabled).toBe(true);
+    // No write affordances when closed.
+    expect(findButton(container, "契約を保存")).toBeNull();
+    expect(findButton(container, "契約を削除")).toBeNull();
+    expect(container.textContent).toContain("クローズ済みのため");
+  });
+
+  test("closed project without a contract offers no add button", async () => {
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, is_closed: true },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    expect(findButton(container, "契約を追加")).toBeNull();
   });
 });

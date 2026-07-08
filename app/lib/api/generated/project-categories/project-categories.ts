@@ -7,27 +7,33 @@
  */
 import type {
   KippoProjectOrganizationCategory,
+  KippoProjectOrganizationCategoryRequest,
   PaginatedKippoProjectOrganizationCategoryList,
+  PatchedKippoProjectOrganizationCategoryRequest,
   ProjectCategoriesListParams
 } from '../models';
 
 import { customFetch } from '../../custom-fetch';
 
 /**
- * Read-only list of selectable project categories (kippo#43).
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
 
-Backs the kippo-ui project create/edit form category picker.
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
 
-**Organization Scoping:**
-- Regular users see global default categories plus the categories of organizations they belong to.
-- Superusers see all active categories.
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
 
 **Filtering:**
-- organization: UUID filter — narrows to that organization's categories (intersected with the
-  user's memberships) while still including the global defaults.
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
  */
 export type projectCategoriesListResponse200 = {
   data: PaginatedKippoProjectOrganizationCategoryList
@@ -69,20 +75,77 @@ export const projectCategoriesList = async (params?: ProjectCategoriesListParams
 
 
 /**
- * Read-only list of selectable project categories (kippo#43).
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
 
-Backs the kippo-ui project create/edit form category picker.
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
 
-**Organization Scoping:**
-- Regular users see global default categories plus the categories of organizations they belong to.
-- Superusers see all active categories.
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
 
 **Filtering:**
-- organization: UUID filter — narrows to that organization's categories (intersected with the
-  user's memberships) while still including the global defaults.
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
 
 **Permissions:**
 - Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+ */
+export type projectCategoriesCreateResponse201 = {
+  data: KippoProjectOrganizationCategory
+  status: 201
+}
+
+export type projectCategoriesCreateResponseSuccess = (projectCategoriesCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type projectCategoriesCreateResponse = (projectCategoriesCreateResponseSuccess)
+
+export const getProjectCategoriesCreateUrl = () => {
+
+
+
+
+  return `/api/project-categories/`
+}
+
+export const projectCategoriesCreate = async (kippoProjectOrganizationCategoryRequest: KippoProjectOrganizationCategoryRequest, options?: RequestInit): Promise<projectCategoriesCreateResponse> => {
+
+  return customFetch<projectCategoriesCreateResponse>(getProjectCategoriesCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectOrganizationCategoryRequest,)
+  }
+);}
+
+
+/**
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
+
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
+
+**Filtering:**
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
+
+**Permissions:**
+- Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
  */
 export type projectCategoriesRetrieveResponse200 = {
   data: KippoProjectOrganizationCategory
@@ -110,6 +173,166 @@ export const projectCategoriesRetrieve = async (id: string, options?: RequestIni
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
+
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
+
+**Filtering:**
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
+
+**Permissions:**
+- Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+ */
+export type projectCategoriesUpdateResponse200 = {
+  data: KippoProjectOrganizationCategory
+  status: 200
+}
+
+export type projectCategoriesUpdateResponseSuccess = (projectCategoriesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectCategoriesUpdateResponse = (projectCategoriesUpdateResponseSuccess)
+
+export const getProjectCategoriesUpdateUrl = (id: string,) => {
+
+
+
+
+  return `/api/project-categories/${id}/`
+}
+
+export const projectCategoriesUpdate = async (id: string,
+    kippoProjectOrganizationCategoryRequest: KippoProjectOrganizationCategoryRequest, options?: RequestInit): Promise<projectCategoriesUpdateResponse> => {
+
+  return customFetch<projectCategoriesUpdateResponse>(getProjectCategoriesUpdateUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectOrganizationCategoryRequest,)
+  }
+);}
+
+
+/**
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
+
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
+
+**Filtering:**
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
+
+**Permissions:**
+- Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+ */
+export type projectCategoriesPartialUpdateResponse200 = {
+  data: KippoProjectOrganizationCategory
+  status: 200
+}
+
+export type projectCategoriesPartialUpdateResponseSuccess = (projectCategoriesPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectCategoriesPartialUpdateResponse = (projectCategoriesPartialUpdateResponseSuccess)
+
+export const getProjectCategoriesPartialUpdateUrl = (id: string,) => {
+
+
+
+
+  return `/api/project-categories/${id}/`
+}
+
+export const projectCategoriesPartialUpdate = async (id: string,
+    patchedKippoProjectOrganizationCategoryRequest: PatchedKippoProjectOrganizationCategoryRequest, options?: RequestInit): Promise<projectCategoriesPartialUpdateResponse> => {
+
+  return customFetch<projectCategoriesPartialUpdateResponse>(getProjectCategoriesPartialUpdateUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedKippoProjectOrganizationCategoryRequest,)
+  }
+);}
+
+
+/**
+ * Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+Backs the kippo-ui project create/edit form category picker (read) and the org category
+management screen (write).
+
+**Organization Scoping (copy-on-create, kippo#49):**
+- Regular users see only the categories owned by organizations they belong to. Global
+  (organization=null) rows are the seed template and are NOT listed for members.
+- Superusers see all categories (including the global template).
+
+**Filtering:**
+- organization: UUID filter — narrows to that organization's own categories (intersected with
+  the user's memberships).
+
+**Permissions:**
+- Read (GET): Authenticated users (organization-scoped for regular users).
+- Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+  organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+ */
+export type projectCategoriesDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type projectCategoriesDestroyResponseSuccess = (projectCategoriesDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type projectCategoriesDestroyResponse = (projectCategoriesDestroyResponseSuccess)
+
+export const getProjectCategoriesDestroyUrl = (id: string,) => {
+
+
+
+
+  return `/api/project-categories/${id}/`
+}
+
+export const projectCategoriesDestroy = async (id: string, options?: RequestInit): Promise<projectCategoriesDestroyResponse> => {
+
+  return customFetch<projectCategoriesDestroyResponse>(getProjectCategoriesDestroyUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
 
 
   }
