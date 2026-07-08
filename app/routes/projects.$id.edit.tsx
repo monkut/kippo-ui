@@ -494,16 +494,25 @@ export default function ProjectEdit() {
           {contractError && (
             <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{contractError}</div>
           )}
+          {/* Closed project: the backend refuses contract writes (admin's LockWhenProjectClosedInline
+              parity), so the section is read-only. */}
+          {isClosed && (
+            <p className="text-xs text-gray-500">
+              ※ プロジェクトはクローズ済みのため、契約は編集できません
+            </p>
+          )}
           {contractId == null && !showContractForm ? (
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">契約が登録されていません</p>
-              <button
-                type="button"
-                onClick={() => setShowContractForm(true)}
-                className="text-sm text-indigo-600 hover:text-indigo-500"
-              >
-                ＋ 契約を追加
-              </button>
+              {!isClosed && (
+                <button
+                  type="button"
+                  onClick={() => setShowContractForm(true)}
+                  className="text-sm text-indigo-600 hover:text-indigo-500"
+                >
+                  ＋ 契約を追加
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -512,6 +521,7 @@ export default function ProjectEdit() {
                 label="請求方法"
                 value={billingType}
                 onChange={(v) => setBillingType(v as BillingTypeEnum)}
+                disabled={isClosed}
               >
                 <option value="delivery">納品</option>
                 <option value="monthly">月額</option>
@@ -521,6 +531,7 @@ export default function ProjectEdit() {
                 label="料金体系"
                 value={pricingBasis}
                 onChange={(v) => setPricingBasis(v as PricingBasisEnum)}
+                disabled={isClosed}
               >
                 <option value="fixed">固定</option>
                 <option value="effort">実績</option>
@@ -533,6 +544,7 @@ export default function ProjectEdit() {
                   step={1}
                   value={contractTotalAmount}
                   onChange={setContractTotalAmount}
+                  disabled={isClosed}
                 />
                 {contractTotalRequired && (
                   <p className="mt-1 text-xs text-red-600">※ 固定料金の場合、契約金額は必須です</p>
@@ -549,6 +561,7 @@ export default function ProjectEdit() {
                 type="date"
                 value={contractStartDate}
                 onChange={setContractStartDate}
+                disabled={isClosed}
               />
               <Input
                 id="c-end"
@@ -556,6 +569,7 @@ export default function ProjectEdit() {
                 type="date"
                 value={contractEndDate}
                 onChange={setContractEndDate}
+                disabled={isClosed}
               />
               {contractDateRangeInvalid && (
                 <p className="text-xs text-red-600">※ 契約開始日は契約終了日以前にしてください</p>
@@ -569,60 +583,63 @@ export default function ProjectEdit() {
                 value={contractNote}
                 onChange={setContractNote}
                 maxLength={255}
+                disabled={isClosed}
               />
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  {contractId != null &&
-                    (confirmDeleteContract ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-red-700">削除しますか？</span>
+              {!isClosed && (
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    {contractId != null &&
+                      (confirmDeleteContract ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-red-700">削除しますか？</span>
+                          <button
+                            type="button"
+                            onClick={handleDeleteContract}
+                            disabled={contractSaving}
+                            className="text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            はい
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteContract(false)}
+                            className="text-gray-500 hover:underline"
+                          >
+                            いいえ
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           type="button"
-                          onClick={handleDeleteContract}
-                          disabled={contractSaving}
-                          className="text-red-600 hover:underline disabled:opacity-50"
+                          onClick={() => setConfirmDeleteContract(true)}
+                          className="text-sm text-red-600 hover:text-red-500"
                         >
-                          はい
+                          契約を削除
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteContract(false)}
-                          className="text-gray-500 hover:underline"
-                        >
-                          いいえ
-                        </button>
-                      </div>
-                    ) : (
+                      ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {contractId == null && (
                       <button
                         type="button"
-                        onClick={() => setConfirmDeleteContract(true)}
-                        className="text-sm text-red-600 hover:text-red-500"
+                        onClick={() => setShowContractForm(false)}
+                        disabled={contractSaving}
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
                       >
-                        契約を削除
+                        キャンセル
                       </button>
-                    ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  {contractId == null && (
+                    )}
                     <button
                       type="button"
-                      onClick={() => setShowContractForm(false)}
-                      disabled={contractSaving}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                      onClick={handleSaveContract}
+                      disabled={contractSaveDisabled}
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      キャンセル
+                      {contractSaving ? "保存中..." : "契約を保存"}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSaveContract}
-                    disabled={contractSaveDisabled}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {contractSaving ? "保存中..." : "契約を保存"}
-                  </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </Section>
@@ -930,12 +947,14 @@ function Select({
   value,
   onChange,
   children,
+  disabled,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -946,7 +965,8 @@ function Select({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        disabled={disabled}
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
       >
         {children}
       </select>

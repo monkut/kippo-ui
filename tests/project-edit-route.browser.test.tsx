@@ -394,4 +394,59 @@ describe("ProjectEdit route", () => {
     );
     expect(container.querySelector<HTMLInputElement>("#p-target")?.disabled).toBe(true);
   });
+
+  test("closed project locks the contract section (read-only, no save/delete)", async () => {
+    // The backend refuses contract writes on a closed project (admin's LockWhenProjectClosedInline
+    // parity); the UI shows the contract read-only.
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, is_closed: true },
+    });
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 9,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "delivery",
+            pricing_basis: "fixed",
+            total_amount: "1000000",
+            start_date: "2026-02-01",
+            end_date: "2026-08-31",
+            note: "",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type")?.value === "delivery"
+        ? true
+        : null,
+    );
+    // Fields render but are disabled.
+    expect(container.querySelector<HTMLSelectElement>("#c-billing-type")?.disabled).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.disabled).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#c-end")?.disabled).toBe(true);
+    // No write affordances when closed.
+    expect(findButton(container, "契約を保存")).toBeNull();
+    expect(findButton(container, "契約を削除")).toBeNull();
+    expect(container.textContent).toContain("クローズ済みのため");
+  });
+
+  test("closed project without a contract offers no add button", async () => {
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, is_closed: true },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    expect(findButton(container, "契約を追加")).toBeNull();
+  });
 });
