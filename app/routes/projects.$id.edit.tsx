@@ -6,6 +6,10 @@ import { PHASE_OPTIONS } from "~/components/project-form/fields";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
 import {
+  projectsContractCreate,
+  projectsContractDestroy,
+  projectsContractList,
+  projectsContractPartialUpdate,
   projectsForecastRetrieve,
   projectsList,
   projectsPartialUpdate,
@@ -15,11 +19,15 @@ import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 import { readList } from "~/lib/api/read-list";
 import { formatProjectWithCustomer } from "~/lib/format-project";
 import type {
+  BillingTypeEnum,
   KippoProject,
+  KippoProjectContract,
+  KippoProjectContractRequest,
   KippoProjectOrganizationCategory,
   OrganizationMember,
   PatchedKippoProjectRequest,
   PhaseEnum,
+  PricingBasisEnum,
 } from "~/lib/api/generated/models";
 
 // In-SPA KippoProject record edit (kippo#42 — replaces linking out to the Django admin). Covers the
@@ -73,14 +81,33 @@ export default function ProjectEdit() {
   const [isClosed, setIsClosed] = useState(false);
   // Once a contract exists its period is the single source of the project dates (synced server-side);
   // the backend rejects a changed start_date/target_date. billing_types is contract-derived, so a
-  // non-empty list means the project has a contract.
-  const [hasContract, setHasContract] = useState(false);
+  // non-empty list is an early proxy for "has a contract" before the contract record itself loads.
+  const [billingTypesPresent, setBillingTypesPresent] = useState(false);
   // 完了予測日 — read-only forecast from GET /projects/:id/forecast/ (null when no future
   // assignments to project from). Mirrors the admin's estimated_completion_date display.
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState<string | null>(null);
   // MTG カレンダー作成 URL + dsearch tag — read-only (admin parity).
   const [meetingCalendarUrl, setMeetingCalendarUrl] = useState("");
   const [meetingDescriptionTag, setMeetingDescriptionTag] = useState("");
+
+  // Contract (契約, kippo#31) — OneToOne with the project (admin's KippoProjectContractInline). Its
+  // period is the single source of the project's start/target dates (synced server-side). contractId
+  // null = no contract yet; showContractForm reveals the create form when none exists.
+  const [contractId, setContractId] = useState<number | null>(null);
+  const [showContractForm, setShowContractForm] = useState(false);
+  const [confirmDeleteContract, setConfirmDeleteContract] = useState(false);
+  const [contractSaving, setContractSaving] = useState(false);
+  const [contractError, setContractError] = useState("");
+  const [billingType, setBillingType] = useState<BillingTypeEnum>("delivery");
+  const [pricingBasis, setPricingBasis] = useState<PricingBasisEnum>("fixed");
+  const [contractTotalAmount, setContractTotalAmount] = useState("");
+  const [contractStartDate, setContractStartDate] = useState("");
+  const [contractEndDate, setContractEndDate] = useState("");
+  const [contractNote, setContractNote] = useState("");
+
+  // A loaded contract is authoritative; billing_types covers the window before it loads. Derived (not
+  // stored) so a project re-fetch can't clobber it back to false after a contract is created in-page.
+  const hasContract = contractId !== null || billingTypesPresent;
 
   useEffect(() => {
     if (!user || !id) return;
@@ -115,7 +142,7 @@ export default function ProjectEdit() {
         setMeetingCalendarUrl(p.meeting_calendar_url ?? "");
         setMeetingDescriptionTag(p.meeting_description_tag ?? "");
         setIsClosed(p.is_closed ?? false);
-        setHasContract((p.billing_types ?? []).length > 0);
+        setBillingTypesPresent((p.billing_types ?? []).length > 0);
         // Best-effort forecast; a failure (or no future assignments) just leaves it blank.
         try {
           const forecast = await projectsForecastRetrieve(id);
@@ -161,6 +188,103 @@ export default function ProjectEdit() {
       cancelled = true;
     };
   }, [organizationId]);
+
+  const applyContract = useCallback((c: KippoProjectContract) => {
+    setContractId(c.id);
+    setBillingType(c.billing_type ?? "delivery");
+    setPricingBasis(c.pricing_basis ?? "fixed");
+    setContractTotalAmount(c.total_amount ?? "");
+    setContractStartDate(c.start_date ?? "");
+    setContractEndDate(c.end_date ?? "");
+    setContractNote(c.note ?? "");
+  }, []);
+
+  // Load the project's contract (kippo#31) — OneToOne, so the list holds at most one. Its presence
+  // reconciles hasContract (the project's own dates become contract-managed once a contract exists).
+  useEffect(() => {
+    if (!user || !id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await projectsContractList(id);
+        if (cancelled) return;
+        const contract = readList<KippoProjectContract>(response.data)[0];
+        if (contract) applyContract(contract);
+      } catch {
+        // no contract / no access — leave the "契約を追加" flow available
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, id, applyContract]);
+
+  const handleSaveContract = useCallback(async () => {
+    setContractSaving(true);
+    setContractError("");
+    const body: KippoProjectContractRequest = {
+      billing_type: billingType,
+      pricing_basis: pricingBasis,
+      // fixed pricing requires a total; effort pricing treats it as an optional cap (blank → null).
+      total_amount: contractTotalAmount.trim() === "" ? null : contractTotalAmount.trim(),
+      // blank period is auto-filled from the project's start_date/target_date server-side.
+      start_date: contractStartDate || null,
+      end_date: contractEndDate || null,
+      note: contractNote.trim(),
+    };
+    try {
+      const response = throwOnError(
+        contractId == null
+          ? await projectsContractCreate(id, body)
+          : await projectsContractPartialUpdate(id, contractId, body),
+      );
+      const saved = response.data;
+      applyContract(saved);
+      // The contract now owns the project period (synced server-side) — mirror the dates onto the
+      // project fields; hasContract (derived from contractId) locks them + omits them from the patch.
+      setStartDate(saved.start_date ?? "");
+      setTargetDate(saved.end_date ?? "");
+      setShowContractForm(false);
+    } catch (error) {
+      setContractError(apiErrorMessage(error) ?? "契約の保存に失敗しました");
+    } finally {
+      setContractSaving(false);
+    }
+  }, [
+    id,
+    contractId,
+    billingType,
+    pricingBasis,
+    contractTotalAmount,
+    contractStartDate,
+    contractEndDate,
+    contractNote,
+    applyContract,
+  ]);
+
+  const handleDeleteContract = useCallback(async () => {
+    if (contractId == null) return;
+    setContractSaving(true);
+    setContractError("");
+    try {
+      throwOnError(await projectsContractDestroy(id, contractId));
+      // Contract gone — the project's own dates become editable again (billing_types clears too).
+      setContractId(null);
+      setBillingTypesPresent(false);
+      setConfirmDeleteContract(false);
+      setShowContractForm(false);
+      setBillingType("delivery");
+      setPricingBasis("fixed");
+      setContractTotalAmount("");
+      setContractStartDate("");
+      setContractEndDate("");
+      setContractNote("");
+    } catch (error) {
+      setContractError(apiErrorMessage(error) ?? "契約の削除に失敗しました");
+    } finally {
+      setContractSaving(false);
+    }
+  }, [id, contractId]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -231,6 +355,12 @@ export default function ProjectEdit() {
   if (!user) return null;
 
   const saveDisabled = isSaving || name.trim().length === 0;
+
+  // Contract validation mirrors the serializer (start<=end; total_amount required for fixed pricing).
+  const contractDateRangeInvalid =
+    contractStartDate !== "" && contractEndDate !== "" && contractStartDate > contractEndDate;
+  const contractTotalRequired = pricingBasis === "fixed" && contractTotalAmount.trim() === "";
+  const contractSaveDisabled = contractSaving || contractDateRangeInvalid || contractTotalRequired;
 
   return (
     <Layout>
@@ -355,6 +485,146 @@ export default function ProjectEdit() {
               ? new Date(estimatedCompletionDate).toLocaleDateString("ja-JP")
               : "—"}
           </div>
+        </Section>
+
+        {/* 契約 (kippo#31) — the admin's KippoProjectContractInline, edited via its own nested REST
+            resource (POST/PATCH/DELETE) with a dedicated save so it stays independent of the project
+            patch. Once saved, its period drives the project's (locked) start/target dates. */}
+        <Section title="契約">
+          {contractError && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{contractError}</div>
+          )}
+          {contractId == null && !showContractForm ? (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">契約が登録されていません</p>
+              <button
+                type="button"
+                onClick={() => setShowContractForm(true)}
+                className="text-sm text-indigo-600 hover:text-indigo-500"
+              >
+                ＋ 契約を追加
+              </button>
+            </div>
+          ) : (
+            <>
+              <Select
+                id="c-billing-type"
+                label="請求方法"
+                value={billingType}
+                onChange={(v) => setBillingType(v as BillingTypeEnum)}
+              >
+                <option value="delivery">納品</option>
+                <option value="monthly">月額</option>
+              </Select>
+              <Select
+                id="c-pricing-basis"
+                label="料金体系"
+                value={pricingBasis}
+                onChange={(v) => setPricingBasis(v as PricingBasisEnum)}
+              >
+                <option value="fixed">固定</option>
+                <option value="effort">実績</option>
+              </Select>
+              <div>
+                <Input
+                  id="c-total-amount"
+                  label={pricingBasis === "fixed" ? "契約金額(円)" : "契約金額(上限・任意)"}
+                  type="number"
+                  step={1}
+                  value={contractTotalAmount}
+                  onChange={setContractTotalAmount}
+                />
+                {contractTotalRequired && (
+                  <p className="mt-1 text-xs text-red-600">※ 固定料金の場合、契約金額は必須です</p>
+                )}
+                {pricingBasis === "effort" && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    ※ 実績料金では契約金額は上限(任意)。空欄可
+                  </p>
+                )}
+              </div>
+              <Input
+                id="c-start"
+                label="契約開始日"
+                type="date"
+                value={contractStartDate}
+                onChange={setContractStartDate}
+              />
+              <Input
+                id="c-end"
+                label="契約終了日"
+                type="date"
+                value={contractEndDate}
+                onChange={setContractEndDate}
+              />
+              {contractDateRangeInvalid && (
+                <p className="text-xs text-red-600">※ 契約開始日は契約終了日以前にしてください</p>
+              )}
+              <p className="text-xs text-gray-500">
+                ※ 契約期間を空欄にすると、プロジェクトの開始日・完了予定日から自動設定されます
+              </p>
+              <Input
+                id="c-note"
+                label="備考"
+                value={contractNote}
+                onChange={setContractNote}
+                maxLength={255}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  {contractId != null &&
+                    (confirmDeleteContract ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-red-700">削除しますか？</span>
+                        <button
+                          type="button"
+                          onClick={handleDeleteContract}
+                          disabled={contractSaving}
+                          className="text-red-600 hover:underline disabled:opacity-50"
+                        >
+                          はい
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteContract(false)}
+                          className="text-gray-500 hover:underline"
+                        >
+                          いいえ
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteContract(true)}
+                        className="text-sm text-red-600 hover:text-red-500"
+                      >
+                        契約を削除
+                      </button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  {contractId == null && (
+                    <button
+                      type="button"
+                      onClick={() => setShowContractForm(false)}
+                      disabled={contractSaving}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      キャンセル
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveContract}
+                    disabled={contractSaveDisabled}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {contractSaving ? "保存中..." : "契約を保存"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </Section>
 
         <CollapsibleSection title="詳細">

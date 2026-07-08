@@ -8,6 +8,10 @@ const projectsRetrieve = vi.hoisted(() => vi.fn());
 const projectsPartialUpdate = vi.hoisted(() => vi.fn());
 const projectsForecastRetrieve = vi.hoisted(() => vi.fn());
 const projectsList = vi.hoisted(() => vi.fn());
+const projectsContractList = vi.hoisted(() => vi.fn());
+const projectsContractCreate = vi.hoisted(() => vi.fn());
+const projectsContractPartialUpdate = vi.hoisted(() => vi.fn());
+const projectsContractDestroy = vi.hoisted(() => vi.fn());
 const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
 const projectCategoriesList = vi.hoisted(() => vi.fn());
 
@@ -25,6 +29,10 @@ vi.mock("~/lib/api/generated/projects/projects", () => ({
   projectsPartialUpdate: (...a: unknown[]) => projectsPartialUpdate(...a),
   projectsForecastRetrieve: (...a: unknown[]) => projectsForecastRetrieve(...a),
   projectsList: (...a: unknown[]) => projectsList(...a),
+  projectsContractList: (...a: unknown[]) => projectsContractList(...a),
+  projectsContractCreate: (...a: unknown[]) => projectsContractCreate(...a),
+  projectsContractPartialUpdate: (...a: unknown[]) => projectsContractPartialUpdate(...a),
+  projectsContractDestroy: (...a: unknown[]) => projectsContractDestroy(...a),
 }));
 vi.mock("~/lib/api/generated/organizations/organizations", () => ({
   organizationsMembersRetrieve: (...a: unknown[]) => organizationsMembersRetrieve(...a),
@@ -94,6 +102,10 @@ describe("ProjectEdit route", () => {
     projectsPartialUpdate.mockReset();
     projectsForecastRetrieve.mockReset();
     projectsList.mockReset();
+    projectsContractList.mockReset();
+    projectsContractCreate.mockReset();
+    projectsContractPartialUpdate.mockReset();
+    projectsContractDestroy.mockReset();
     organizationsMembersRetrieve.mockReset();
     projectCategoriesList.mockReset();
     projectsRetrieve.mockResolvedValue({ status: 200, data: { ...defaultProject } });
@@ -125,6 +137,8 @@ describe("ProjectEdit route", () => {
       },
     });
     projectsList.mockResolvedValue({ status: 200, data: { results: [] } });
+    // No contract by default — the 契約 section shows the "契約を追加" flow.
+    projectsContractList.mockResolvedValue({ status: 200, data: { results: [] } });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -295,5 +309,89 @@ describe("ProjectEdit route", () => {
     const startInput = container.querySelector<HTMLInputElement>("#p-start");
     expect(startInput?.disabled).toBe(false);
     expect(container.textContent).not.toContain("契約期間から自動設定");
+  });
+
+  test("loads an existing contract into the 契約 section", async () => {
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 7,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "monthly",
+            pricing_basis: "effort",
+            total_amount: "3000000",
+            start_date: "2026-03-01",
+            end_date: "2026-09-30",
+            note: "初回契約",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type")?.value === "monthly"
+        ? true
+        : null,
+    );
+    expect(projectsContractList).toHaveBeenCalledWith("proj-1");
+    expect(container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value).toBe("effort");
+    expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.value).toBe("3000000");
+    expect(container.querySelector<HTMLInputElement>("#c-end")?.value).toBe("2026-09-30");
+    // A contract exists ⇒ project's own dates are locked (contract-managed).
+    expect(container.querySelector<HTMLInputElement>("#p-start")?.disabled).toBe(true);
+    // Delete affordance is available for an existing contract.
+    expect(findButton(container, "契約を削除")).not.toBeNull();
+  });
+
+  test("adds a contract via its own save, which then locks the project dates", async () => {
+    projectsContractCreate.mockResolvedValue({
+      status: 201,
+      data: {
+        id: 10,
+        project: "proj-1",
+        project_name: "Old Name",
+        billing_type: "delivery",
+        pricing_basis: "fixed",
+        total_amount: "1000000",
+        start_date: "2026-02-01",
+        end_date: "2026-08-31",
+        note: "",
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    // Starts with no contract — reveal the create form.
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    findButton(container, "契約を追加")?.click();
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#c-total-amount") ? true : null,
+    );
+
+    // fixed pricing requires a total_amount before the contract save enables.
+    await waitFor(() => {
+      setInputValue(container.querySelector("#c-total-amount") as HTMLInputElement, "1000000");
+      findButton(container, "契約を保存")?.click();
+      return projectsContractCreate.mock.calls.length > 0 ? true : null;
+    });
+    expect(projectsContractCreate).toHaveBeenCalledWith("proj-1", {
+      billing_type: "delivery",
+      pricing_basis: "fixed",
+      total_amount: "1000000",
+      start_date: null,
+      end_date: null,
+      note: "",
+    });
+
+    // After creation the contract owns the period: project date inputs lock.
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-start")?.disabled ? true : null,
+    );
+    expect(container.querySelector<HTMLInputElement>("#p-target")?.disabled).toBe(true);
   });
 });
