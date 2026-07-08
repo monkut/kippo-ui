@@ -1876,26 +1876,36 @@ paths:
     get:
       operationId: project_categories_list
       description: |-
-        Read-only list of selectable project categories (kippo#43).
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
 
-        Backs the kippo-ui project create/edit form category picker.
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
 
-        **Organization Scoping:**
-        - Regular users see global default categories plus the categories of organizations they belong to.
-        - Superusers see all active categories.
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
 
         **Filtering:**
-        - organization: UUID filter — narrows to that organization's categories (intersected with the
-          user's memberships) while still including the global defaults.
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
       parameters:
+      - in: query
+        name: include_inactive
+        schema:
+          type: boolean
+        description: Include inactive (is_active=false) categories in the list (management
+          view). Default false.
       - in: query
         name: organization
         schema:
           type: string
-        description: Filter by organization UUID (globals always included)
+        description: Filter by organization UUID (that organization's own categories)
       - name: page
         required: false
         in: query
@@ -1920,24 +1930,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedKippoProjectOrganizationCategoryList'
           description: ''
+    post:
+      operationId: project_categories_create
+      description: |-
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
+
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+      tags:
+      - project-categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectOrganizationCategory'
+          description: ''
   /api/project-categories/{id}/:
     get:
       operationId: project_categories_retrieve
       description: |-
-        Read-only list of selectable project categories (kippo#43).
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
 
-        Backs the kippo-ui project create/edit form category picker.
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
 
-        **Organization Scoping:**
-        - Regular users see global default categories plus the categories of organizations they belong to.
-        - Superusers see all active categories.
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
 
         **Filtering:**
-        - organization: UUID filter — narrows to that organization's categories (intersected with the
-          user's memberships) while still including the global defaults.
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
 
         **Permissions:**
         - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
       parameters:
       - in: path
         name: id
@@ -1958,6 +2017,148 @@ paths:
               schema:
                 $ref: '#/components/schemas/KippoProjectOrganizationCategory'
           description: ''
+    put:
+      operationId: project_categories_update
+      description: |-
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
+
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクトカテゴリ.
+        required: true
+      tags:
+      - project-categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectOrganizationCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectOrganizationCategory'
+          description: ''
+    patch:
+      operationId: project_categories_partial_update
+      description: |-
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
+
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクトカテゴリ.
+        required: true
+      tags:
+      - project-categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectOrganizationCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectOrganizationCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedKippoProjectOrganizationCategoryRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectOrganizationCategory'
+          description: ''
+    delete:
+      operationId: project_categories_destroy
+      description: |-
+        Selectable project categories (kippo#43 read; kippo#48 org-PM management).
+
+        Backs the kippo-ui project create/edit form category picker (read) and the org category
+        management screen (write).
+
+        **Organization Scoping (copy-on-create, kippo#49):**
+        - Regular users see only the categories owned by organizations they belong to. Global
+          (organization=null) rows are the seed template and are NOT listed for members.
+        - Superusers see all categories (including the global template).
+
+        **Filtering:**
+        - organization: UUID filter — narrows to that organization's own categories (intersected with
+          the user's memberships).
+
+        **Permissions:**
+        - Read (GET): Authenticated users (organization-scoped for regular users).
+        - Write (POST/PUT/PATCH/DELETE) on an org-scoped category: superuser or any member of that
+          organization. Global template rows are superuser-only. See ``IsSuperuserOrOrgMemberForCategory``.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this プロジェクトカテゴリ.
+        required: true
+      tags:
+      - project-categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/project-surveys/:
     get:
       operationId: project_surveys_list
@@ -8152,7 +8353,6 @@ components:
           minimum: 0
         category:
           type: string
-          title: キー
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         category_label:
           type: string
@@ -8511,6 +8711,16 @@ components:
             it is split evenly across the contract months with the remainder on the
             final month). For 'effort' pricing it is an optional cap (上限) and may
             be left blank.
+        estimated_monthly_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 仮月額
+          description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
+            (kippo#46): every contract month is billed this amount up front, then
+            corrected to actuals (実績) via the true-up admin action before the entry
+            is received. Blank bills logged actuals directly.'
         start_date:
           type: string
           format: date
@@ -8576,6 +8786,16 @@ components:
             it is split evenly across the contract months with the remainder on the
             final month). For 'effort' pricing it is an optional cap (上限) and may
             be left blank.
+        estimated_monthly_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 仮月額
+          description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
+            (kippo#46): every contract month is billed this amount up front, then
+            corrected to actuals (実績) via the true-up admin action before the entry
+            is received. Blank bills logged actuals directly.'
         start_date:
           type: string
           format: date
@@ -8596,8 +8816,14 @@ components:
           maxLength: 255
     KippoProjectOrganizationCategory:
       type: object
-      description: Read-only serializer for KippoProjectOrganizationCategory (project
-        category picker).
+      description: |-
+        Read/write serializer for KippoProjectOrganizationCategory.
+
+        Backs both the project category picker (read, kippo#43) and org category management
+        (write, kippo#48). Write access is gated by ``IsSuperuserOrOrgMemberForCategory``; this
+        serializer additionally (a) runs the model's cross-scope/uniqueness validation so duplicates
+        surface as 400s (never a DB IntegrityError 500) and (b) rejects an ``organization`` the
+        requester is not a member of (defence-in-depth alongside the permission class).
       properties:
         id:
           type: string
@@ -8605,35 +8831,80 @@ components:
           readOnly: true
         key:
           type: string
-          readOnly: true
           title: キー
+          maxLength: 32
         label:
           type: string
-          readOnly: true
           title: ラベル
+          maxLength: 128
         organization:
           type: string
           format: uuid
-          readOnly: true
           nullable: true
           title: 組織
           description: Organization this category belongs to; leave empty for a global
             default category
         sort_order:
           type: integer
-          readOnly: true
+          maximum: 32767
+          minimum: 0
           title: 表示順
         is_active:
           type: boolean
-          readOnly: true
           title: 有効
+        is_default:
+          type: boolean
+          title: デフォルト
+          description: Auto-selected category for new projects in this organization
+            (at most one per organization)
       required:
       - id
-      - is_active
       - key
       - label
-      - organization
-      - sort_order
+    KippoProjectOrganizationCategoryRequest:
+      type: object
+      description: |-
+        Read/write serializer for KippoProjectOrganizationCategory.
+
+        Backs both the project category picker (read, kippo#43) and org category management
+        (write, kippo#48). Write access is gated by ``IsSuperuserOrOrgMemberForCategory``; this
+        serializer additionally (a) runs the model's cross-scope/uniqueness validation so duplicates
+        surface as 400s (never a DB IntegrityError 500) and (b) rejects an ``organization`` the
+        requester is not a member of (defence-in-depth alongside the permission class).
+      properties:
+        key:
+          type: string
+          minLength: 1
+          title: キー
+          maxLength: 32
+        label:
+          type: string
+          minLength: 1
+          title: ラベル
+          maxLength: 128
+        organization:
+          type: string
+          format: uuid
+          nullable: true
+          title: 組織
+          description: Organization this category belongs to; leave empty for a global
+            default category
+        sort_order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: 表示順
+        is_active:
+          type: boolean
+          title: 有効
+        is_default:
+          type: boolean
+          title: デフォルト
+          description: Auto-selected category for new projects in this organization
+            (at most one per organization)
+      required:
+      - key
+      - label
     KippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -8680,8 +8951,6 @@ components:
           minimum: 0
         category:
           type: string
-          minLength: 1
-          title: キー
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         slack_channel_name:
           type: string
@@ -9844,6 +10113,16 @@ components:
             it is split evenly across the contract months with the remainder on the
             final month). For 'effort' pricing it is an optional cap (上限) and may
             be left blank.
+        estimated_monthly_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          nullable: true
+          title: 仮月額
+          description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
+            (kippo#46): every contract month is billed this amount up front, then
+            corrected to actuals (実績) via the true-up admin action before the entry
+            is received. Blank bills logged actuals directly.'
         start_date:
           type: string
           format: date
@@ -9862,6 +10141,47 @@ components:
           type: string
           title: 備考
           maxLength: 255
+    PatchedKippoProjectOrganizationCategoryRequest:
+      type: object
+      description: |-
+        Read/write serializer for KippoProjectOrganizationCategory.
+
+        Backs both the project category picker (read, kippo#43) and org category management
+        (write, kippo#48). Write access is gated by ``IsSuperuserOrOrgMemberForCategory``; this
+        serializer additionally (a) runs the model's cross-scope/uniqueness validation so duplicates
+        surface as 400s (never a DB IntegrityError 500) and (b) rejects an ``organization`` the
+        requester is not a member of (defence-in-depth alongside the permission class).
+      properties:
+        key:
+          type: string
+          minLength: 1
+          title: キー
+          maxLength: 32
+        label:
+          type: string
+          minLength: 1
+          title: ラベル
+          maxLength: 128
+        organization:
+          type: string
+          format: uuid
+          nullable: true
+          title: 組織
+          description: Organization this category belongs to; leave empty for a global
+            default category
+        sort_order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: 表示順
+        is_active:
+          type: boolean
+          title: 有効
+        is_default:
+          type: boolean
+          title: デフォルト
+          description: Auto-selected category for new projects in this organization
+            (at most one per organization)
     PatchedKippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -9908,8 +10228,6 @@ components:
           minimum: 0
         category:
           type: string
-          minLength: 1
-          title: キー
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
         slack_channel_name:
           type: string

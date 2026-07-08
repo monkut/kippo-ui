@@ -41,10 +41,7 @@ export interface PatchedKippoProjectRequest {
      * @maximum 100
      */
   confidence?: number;
-  /**
-     * Project category key (e.g. 'ai-development', 'other', 'non-project').
-     * @minLength 1
-     */
+  /** Project category key (e.g. 'ai-development', 'other', 'non-project'). */
   category?: string;
   /**
      * Conversation Channel — invite the organization's slack bot to enable channel notification

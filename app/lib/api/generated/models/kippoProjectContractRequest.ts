@@ -29,6 +29,12 @@ export interface KippoProjectContractRequest {
      */
   total_amount?: string | null;
   /**
+     * JPY. Provisional (仮) monthly amount for effort + monthly contracts (kippo#46): every contract month is billed this amount up front, then corrected to actuals (実績) via the true-up admin action before the entry is received. Blank bills logged actuals directly.
+     * @nullable
+     * @pattern ^-?\d{0,12}(?:\.\d{0,0})?$
+     */
+  estimated_monthly_amount?: string | null;
+  /**
      * Contract period start. Auto-populated from the project start_date when left blank.
      * @nullable
      */

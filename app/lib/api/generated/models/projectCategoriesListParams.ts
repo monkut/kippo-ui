@@ -8,7 +8,11 @@
 
 export type ProjectCategoriesListParams = {
 /**
- * Filter by organization UUID (globals always included)
+ * Include inactive (is_active=false) categories in the list (management view). Default false.
+ */
+include_inactive?: boolean;
+/**
+ * Filter by organization UUID (that organization's own categories)
  */
 organization?: string;
 /**

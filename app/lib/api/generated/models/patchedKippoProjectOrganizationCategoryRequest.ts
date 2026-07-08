@@ -15,12 +15,17 @@ serializer additionally (a) runs the model's cross-scope/uniqueness validation s
 surface as 400s (never a DB IntegrityError 500) and (b) rejects an ``organization`` the
 requester is not a member of (defence-in-depth alongside the permission class).
  */
-export interface KippoProjectOrganizationCategory {
-  readonly id: string;
-  /** @maxLength 32 */
-  key: string;
-  /** @maxLength 128 */
-  label: string;
+export interface PatchedKippoProjectOrganizationCategoryRequest {
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  key?: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  label?: string;
   /**
      * Organization this category belongs to; leave empty for a global default category
      * @nullable
