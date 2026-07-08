@@ -101,6 +101,9 @@ export default function ProjectEdit() {
   const [billingType, setBillingType] = useState<BillingTypeEnum>("delivery");
   const [pricingBasis, setPricingBasis] = useState<PricingBasisEnum>("fixed");
   const [contractTotalAmount, setContractTotalAmount] = useState("");
+  // 仮月額 (kippo#46) — provisional monthly amount, only meaningful for effort + monthly contracts
+  // (the backend rejects it elsewhere). Manually entered; blank bills logged actuals directly.
+  const [contractEstimatedMonthly, setContractEstimatedMonthly] = useState("");
   const [contractStartDate, setContractStartDate] = useState("");
   const [contractEndDate, setContractEndDate] = useState("");
   const [contractNote, setContractNote] = useState("");
@@ -108,6 +111,8 @@ export default function ProjectEdit() {
   // A loaded contract is authoritative; billing_types covers the window before it loads. Derived (not
   // stored) so a project re-fetch can't clobber it back to false after a contract is created in-page.
   const hasContract = contractId !== null || billingTypesPresent;
+  // 仮月額 only applies to effort (実績) + monthly (月額) contracts (mirrors the model/serializer).
+  const isEffortMonthly = pricingBasis === "effort" && billingType === "monthly";
 
   useEffect(() => {
     if (!user || !id) return;
@@ -194,6 +199,7 @@ export default function ProjectEdit() {
     setBillingType(c.billing_type ?? "delivery");
     setPricingBasis(c.pricing_basis ?? "fixed");
     setContractTotalAmount(c.total_amount ?? "");
+    setContractEstimatedMonthly(c.estimated_monthly_amount ?? "");
     setContractStartDate(c.start_date ?? "");
     setContractEndDate(c.end_date ?? "");
     setContractNote(c.note ?? "");
@@ -227,6 +233,13 @@ export default function ProjectEdit() {
       pricing_basis: pricingBasis,
       // fixed pricing requires a total; effort pricing treats it as an optional cap (blank → null).
       total_amount: contractTotalAmount.trim() === "" ? null : contractTotalAmount.trim(),
+      // 仮月額 only for effort + monthly; always send null otherwise so switching pricing away clears
+      // any stored value (the serializer validates against the stored value on PATCH → would 400).
+      estimated_monthly_amount: isEffortMonthly
+        ? contractEstimatedMonthly.trim() === ""
+          ? null
+          : contractEstimatedMonthly.trim()
+        : null,
       // blank period is auto-filled from the project's start_date/target_date server-side.
       start_date: contractStartDate || null,
       end_date: contractEndDate || null,
@@ -255,7 +268,9 @@ export default function ProjectEdit() {
     contractId,
     billingType,
     pricingBasis,
+    isEffortMonthly,
     contractTotalAmount,
+    contractEstimatedMonthly,
     contractStartDate,
     contractEndDate,
     contractNote,
@@ -276,6 +291,7 @@ export default function ProjectEdit() {
       setBillingType("delivery");
       setPricingBasis("fixed");
       setContractTotalAmount("");
+      setContractEstimatedMonthly("");
       setContractStartDate("");
       setContractEndDate("");
       setContractNote("");
@@ -555,6 +571,24 @@ export default function ProjectEdit() {
                   </p>
                 )}
               </div>
+              {/* 仮月額 (kippo#46) — only for 実績(effort) + 月額(monthly). Provisional monthly amount
+                  billed up front, then trued-up to actuals server-side. Blank bills actuals directly. */}
+              {isEffortMonthly && (
+                <div>
+                  <Input
+                    id="c-estimated-monthly"
+                    label="仮月額(円・任意)"
+                    type="number"
+                    step={1}
+                    value={contractEstimatedMonthly}
+                    onChange={setContractEstimatedMonthly}
+                    disabled={isClosed}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    ※ 実績+月額の暫定月額。各月これで仮請求し、後で実績に調整。空欄は実績を直接請求
+                  </p>
+                </div>
+              )}
               <Input
                 id="c-start"
                 label="契約開始日"

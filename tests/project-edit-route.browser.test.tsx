@@ -70,6 +70,12 @@ function setInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setSelectValue(select: HTMLSelectElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set;
+  setter?.call(select, value);
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 const defaultProject = {
   organization: "org-1",
   organization_name: "Acme",
@@ -323,6 +329,7 @@ describe("ProjectEdit route", () => {
             billing_type: "monthly",
             pricing_basis: "effort",
             total_amount: "3000000",
+            estimated_monthly_amount: "500000",
             start_date: "2026-03-01",
             end_date: "2026-09-30",
             note: "初回契約",
@@ -341,10 +348,86 @@ describe("ProjectEdit route", () => {
     expect(container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value).toBe("effort");
     expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.value).toBe("3000000");
     expect(container.querySelector<HTMLInputElement>("#c-end")?.value).toBe("2026-09-30");
+    // 仮月額 is shown (effort + monthly) and populated.
+    expect(container.querySelector<HTMLInputElement>("#c-estimated-monthly")?.value).toBe("500000");
     // A contract exists ⇒ project's own dates are locked (contract-managed).
     expect(container.querySelector<HTMLInputElement>("#p-start")?.disabled).toBe(true);
     // Delete affordance is available for an existing contract.
     expect(findButton(container, "契約を削除")).not.toBeNull();
+  });
+
+  test("仮月額 is hidden for a non-(effort+monthly) contract", async () => {
+    projectsContractList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            id: 8,
+            project: "proj-1",
+            project_name: "Old Name",
+            billing_type: "delivery",
+            pricing_basis: "fixed",
+            total_amount: "3000000",
+            estimated_monthly_amount: null,
+            start_date: "2026-03-01",
+            end_date: "2026-09-30",
+            note: "",
+          },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value === "fixed"
+        ? true
+        : null,
+    );
+    expect(container.querySelector("#c-estimated-monthly")).toBeNull();
+  });
+
+  test("仮月額 sent for an effort+monthly contract created in-page", async () => {
+    projectsContractCreate.mockResolvedValue({
+      status: 201,
+      data: {
+        id: 11,
+        project: "proj-1",
+        project_name: "Old Name",
+        billing_type: "monthly",
+        pricing_basis: "effort",
+        total_amount: null,
+        estimated_monthly_amount: "500000",
+        start_date: "2026-02-01",
+        end_date: "2026-08-31",
+        note: "",
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    findButton(container, "契約を追加")?.click();
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#c-billing-type") ? true : null,
+    );
+
+    // Switch to 月額 + 実績 so the 仮月額 field appears, then fill it.
+    setSelectValue(container.querySelector("#c-billing-type") as HTMLSelectElement, "monthly");
+    setSelectValue(container.querySelector("#c-pricing-basis") as HTMLSelectElement, "effort");
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#c-estimated-monthly") ? true : null,
+    );
+    await waitFor(() => {
+      const el = container.querySelector<HTMLInputElement>("#c-estimated-monthly");
+      if (el) setInputValue(el, "500000");
+      findButton(container, "契約を保存")?.click();
+      return projectsContractCreate.mock.calls.length > 0 ? true : null;
+    });
+    const body = projectsContractCreate.mock.calls[0]?.[1];
+    expect(body?.billing_type).toBe("monthly");
+    expect(body?.pricing_basis).toBe("effort");
+    expect(body?.estimated_monthly_amount).toBe("500000");
   });
 
   test("adds a contract via its own save, which then locks the project dates", async () => {
@@ -383,6 +466,8 @@ describe("ProjectEdit route", () => {
       billing_type: "delivery",
       pricing_basis: "fixed",
       total_amount: "1000000",
+      // delivery + fixed is not effort+monthly → 仮月額 sent as null (not shown in the form).
+      estimated_monthly_amount: null,
       start_date: null,
       end_date: null,
       note: "",
