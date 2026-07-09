@@ -1,6 +1,5 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { formatProjectWithCustomer } from "~/lib/format-project";
 
 type MonthlyAssignmentsPanelProps = {
   monthlyAssignments: ProjectMonthlyAssignment[];
@@ -43,10 +42,12 @@ function MonthlyAssignmentsPanelImpl({
               key={assignment.id}
               className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
             >
-              <span className="text-gray-700">
-                {formatProjectWithCustomer(
-                  assignment.project_name,
-                  customerNamesByProject[assignment.project],
+              <span className="text-gray-700 min-w-0 truncate">
+                {assignment.project_name}
+                {customerNamesByProject[assignment.project] && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    {customerNamesByProject[assignment.project]}
+                  </span>
                 )}
               </span>
               <span className="flex items-baseline gap-3 tabular-nums">
