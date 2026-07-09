@@ -1,9 +1,19 @@
 import type {
   KippoProjectOrganizationCategory,
+  LeadSourceEnum,
   OrganizationMember,
   PhaseEnum,
 } from "~/lib/api/generated/models";
 import { SelectField } from "./LabeledField";
+
+// lead_source key -> Japanese label (mirrors VALID_LEAD_SOURCES in kippo projects/definitions.py).
+export const LEAD_SOURCE_OPTIONS: { value: LeadSourceEnum; label: string }[] = [
+  { value: "sunx", label: "SUNX経由" },
+  { value: "info", label: "info" },
+  { value: "employee-referral", label: "社員紹介" },
+  { value: "customer-referral", label: "顧客紹介" },
+  { value: "continuation", label: "継続" },
+];
 
 // phase key -> Japanese label (mirrors VALID_PROJECT_PHASES in kippo projects/models.py).
 export const PHASE_OPTIONS: { value: PhaseEnum; label: string }[] = [

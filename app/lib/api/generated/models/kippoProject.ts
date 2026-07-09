@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.1.0
  */
 import type { GithubRepositoryInline } from './githubRepositoryInline';
+import type { KippoProjectLeadSource } from './kippoProjectLeadSource';
 import type { LatestCommentInline } from './latestCommentInline';
 import type { MonthlyBillingScheduleEntry } from './monthlyBillingScheduleEntry';
 import type { PhaseEnum } from './phaseEnum';
@@ -22,7 +23,7 @@ export interface KippoProject {
   organization: string;
   readonly organization_name: string;
   /**
-     * Customer this project is delivered for (optional)
+     * このプロジェクトの納品先となる顧客（任意）
      * @nullable
      */
   customer?: string | null;
@@ -31,14 +32,14 @@ export interface KippoProject {
   /** @nullable */
   readonly customer_document_url: string | null;
   /**
-     * Name of the project
+     * プロジェクトの名称
      * @maxLength 256
      */
   name: string;
   readonly slug: string;
   /** ProjectColumnSet for this project. Defaults to the organization's default columnset when omitted. */
   columnset?: string;
-  /** State or phase of the project
+  /** プロジェクトの状態（フェーズ）
 
   * `keep-in-touch` - KIT
   * `proposing-low` - 提案(低)
@@ -59,41 +60,50 @@ export interface KippoProject {
   category?: string;
   /** @nullable */
   readonly category_label: string | null;
+  /** 案件のリード獲得元（任意）
+
+  * `sunx` - SUNX経由
+  * `info` - info
+  * `employee-referral` - 社員紹介
+  * `customer-referral` - 顧客紹介
+  * `continuation` - 継続 */
+  lead_source?: typeof KippoProjectLeadSource[keyof typeof KippoProjectLeadSource];
+  readonly lead_source_display: string;
   readonly billing_types: readonly string[];
   readonly monthly_billing_schedule: readonly MonthlyBillingScheduleEntry[];
   /**
-     * Conversation Channel — invite the organization's slack bot to enable channel notification
+     * 会話用チャンネル。組織のSlackボットを招待するとチャンネル通知が有効になります
      * @maxLength 80
      */
   slack_channel_name?: string;
   /**
-     * Notification Channel for crawler / batch / development notifications (separate from the conversation channel)
+     * クローラー・バッチ・開発通知用のチャンネル（会話用チャンネルとは別）
      * @maxLength 80
      */
   slack_notification_channel_name?: string;
-  /** Set to True if you want to enable cost reporting to the configured slack channel */
+  /** 設定済みのSlackチャンネルへコストレポートを送信する場合はTrueに設定します */
   enable_cost_report?: boolean;
   /**
-     * Project Manager assigned to the project
+     * プロジェクトに割り当てるプロジェクトマネージャー
      * @nullable
      */
   project_manager?: string | null;
   /** @nullable */
   readonly project_manager_username: string | null;
   /**
-     * Original (parent) project for upsell projects.
+     * Original (parent) project for continuation projects.
      * @nullable
      */
   parent_project?: string | null;
   /** @nullable */
   readonly parent_project_name: string | null;
-  /** Manually set when project is complete */
+  /** プロジェクト完了時に手動で設定します */
   is_closed?: boolean;
   /** @nullable */
   readonly closed_datetime: string | null;
-  /** If True, project will be included in the ActiveKippoProject List */
+  /** Trueの場合、アクティブプロジェクト一覧に表示されます */
   display_as_active?: boolean;
-  /** If True, project will be included in the Project Report Summary */
+  /** Trueの場合、プロジェクトレポートサマリに表示されます */
   display_in_project_report?: boolean;
   /** @maxLength 200 */
   github_project_html_url?: string;
@@ -101,7 +111,7 @@ export interface KippoProject {
   github_project_api_nodeid?: string;
   readonly github_repositories: readonly GithubRepositoryInline[];
   /**
-     * Estimated Staff Days needed for Project Completion
+     * プロジェクト完了に必要な見積工数（人日）
      * @minimum 0
      * @maximum 2147483647
      * @nullable
@@ -110,17 +120,17 @@ export interface KippoProject {
   /** @nullable */
   readonly allocated_effort_hours: number | null;
   /**
-     * Date the Project requires engineering resources
+     * プロジェクトがエンジニアリングリソースを必要とする日
      * @nullable
      */
   start_date?: string | null;
   /**
-     * Date the Project is planned to be completed by.
+     * プロジェクトの完了予定日
      * @nullable
      */
   target_date?: string | null;
   /**
-     * The date the project was actually completed on (not the initial target)
+     * プロジェクトが実際に完了した日（当初の予定日ではありません）
      * @nullable
      */
   actual_date?: string | null;
@@ -129,17 +139,17 @@ export interface KippoProject {
   /** @pattern ^-?\d{0,12}(?:\.\d{0,0})?$ */
   readonly contract_amount: string;
   /**
-     * URL of where documents for the projects are maintained
+     * プロジェクトのドキュメントを保管しているURL
      * @maxLength 200
      */
   document_folder_url?: string;
   /** @maxLength 255 */
   docbase_tag?: string;
-  /** Define the problem that the project is set out to solve. */
+  /** このプロジェクトが解決しようとする課題を定義します */
   problem_definition?: string;
   readonly meeting_calendar_url: string;
   readonly meeting_description_tag: string;
-  /** Update when survey is issued! */
+  /** アンケートを発行したら更新してください */
   survey_issued?: boolean;
   readonly assignment_rates: readonly ProjectAssignmentRateInline[];
   readonly has_requirements: boolean;

@@ -191,6 +191,7 @@ describe("ProjectEdit route", () => {
       name: "New Name",
       phase: "proposing-low",
       category: "ai-development",
+      lead_source: "",
       project_manager: "user-1",
       problem_definition: "old problem",
       start_date: "2026-02-01",
@@ -206,6 +207,34 @@ describe("ProjectEdit route", () => {
     });
     await waitFor(() => (navigateSpy.mock.calls.length > 0 ? true : null));
     expect(navigateSpy).toHaveBeenCalledWith(-1);
+  });
+
+  test("loads lead_source (リード) and round-trips it in the PATCH", async () => {
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, lead_source: "employee-referral" },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    // the リード select is populated from the loaded project
+    await waitFor(() =>
+      container.querySelector<HTMLSelectElement>("#p-lead-source")?.value === "employee-referral"
+        ? true
+        : null,
+    );
+
+    await waitFor(() => {
+      setInputValue(container.querySelector("#p-name") as HTMLInputElement, "Lead Named");
+      findButton(container, "保存")?.click();
+      return projectsPartialUpdate.mock.calls.some((c) => c[1]?.name === "Lead Named")
+        ? true
+        : null;
+    });
+    const payload = projectsPartialUpdate.mock.calls.find((c) => c[1]?.name === "Lead Named")?.[1];
+    expect(payload?.lead_source).toBe("employee-referral");
   });
 
   test("contract-managed dates: inputs disabled and omitted from the PATCH", async () => {
@@ -348,7 +377,7 @@ describe("ProjectEdit route", () => {
     expect(container.querySelector<HTMLSelectElement>("#c-pricing-basis")?.value).toBe("effort");
     expect(container.querySelector<HTMLInputElement>("#c-total-amount")?.value).toBe("3000000");
     expect(container.querySelector<HTMLInputElement>("#c-end")?.value).toBe("2026-09-30");
-    // 仮月額 is shown (effort + monthly) and populated.
+    // 月額 is shown (effort + monthly) and populated.
     expect(container.querySelector<HTMLInputElement>("#c-estimated-monthly")?.value).toBe("500000");
     // A contract exists ⇒ project's own dates are locked (contract-managed).
     expect(container.querySelector<HTMLInputElement>("#p-start")?.disabled).toBe(true);
@@ -356,7 +385,7 @@ describe("ProjectEdit route", () => {
     expect(findButton(container, "契約を削除")).not.toBeNull();
   });
 
-  test("仮月額 is hidden for a non-(effort+monthly) contract", async () => {
+  test("月額 is hidden for a non-(effort+monthly) contract", async () => {
     projectsContractList.mockResolvedValue({
       status: 200,
       data: {
@@ -386,7 +415,7 @@ describe("ProjectEdit route", () => {
     expect(container.querySelector("#c-estimated-monthly")).toBeNull();
   });
 
-  test("仮月額 sent for an effort+monthly contract created in-page", async () => {
+  test("月額 sent for an effort+monthly contract created in-page", async () => {
     projectsContractCreate.mockResolvedValue({
       status: 201,
       data: {
@@ -412,7 +441,7 @@ describe("ProjectEdit route", () => {
       container.querySelector<HTMLSelectElement>("#c-billing-type") ? true : null,
     );
 
-    // Switch to 月額 + 実績 so the 仮月額 field appears, then fill it.
+    // Switch to 月額 + 実績 so the 月額 field appears, then fill it.
     setSelectValue(container.querySelector("#c-billing-type") as HTMLSelectElement, "monthly");
     setSelectValue(container.querySelector("#c-pricing-basis") as HTMLSelectElement, "effort");
     await waitFor(() =>
@@ -466,7 +495,7 @@ describe("ProjectEdit route", () => {
       billing_type: "delivery",
       pricing_basis: "fixed",
       total_amount: "1000000",
-      // delivery + fixed is not effort+monthly → 仮月額 sent as null (not shown in the form).
+      // delivery + fixed is not effort+monthly → 月額 sent as null (not shown in the form).
       estimated_monthly_amount: null,
       start_date: null,
       end_date: null,

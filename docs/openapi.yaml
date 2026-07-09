@@ -8306,7 +8306,7 @@ components:
           format: uuid
           nullable: true
           title: 顧客
-          description: Customer this project is delivered for (optional)
+          description: このプロジェクトの納品先となる顧客（任意）
         customer_name:
           type: string
           readOnly: true
@@ -8319,7 +8319,7 @@ components:
         name:
           type: string
           title: プロジェクト名
-          description: Name of the project
+          description: プロジェクトの名称
           maxLength: 256
         slug:
           type: string
@@ -8334,7 +8334,7 @@ components:
           - $ref: '#/components/schemas/PhaseEnum'
           title: フェーズ
           description: |-
-            State or phase of the project
+            プロジェクトの状態（フェーズ）
 
             * `keep-in-touch` - KIT
             * `proposing-low` - 提案(低)
@@ -8358,6 +8358,22 @@ components:
           type: string
           readOnly: true
           nullable: true
+        lead_source:
+          title: リード
+          description: |-
+            案件のリード獲得元（任意）
+
+            * `sunx` - SUNX経由
+            * `info` - info
+            * `employee-referral` - 社員紹介
+            * `customer-referral` - 顧客紹介
+            * `continuation` - 継続
+          oneOf:
+          - $ref: '#/components/schemas/LeadSourceEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        lead_source_display:
+          type: string
+          readOnly: true
         billing_types:
           type: array
           items:
@@ -8371,26 +8387,23 @@ components:
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
-          description: Conversation Channel — invite the organization's slack bot
-            to enable channel notification
+          description: 会話用チャンネル。組織のSlackボットを招待するとチャンネル通知が有効になります
           maxLength: 80
         slack_notification_channel_name:
           type: string
           title: Slack通知チャンネル名
-          description: Notification Channel for crawler / batch / development notifications
-            (separate from the conversation channel)
+          description: クローラー・バッチ・開発通知用のチャンネル（会話用チャンネルとは別）
           maxLength: 80
         enable_cost_report:
           type: boolean
           title: コストレポート有効化
-          description: Set to True if you want to enable cost reporting to the configured
-            slack channel
+          description: 設定済みのSlackチャンネルへコストレポートを送信する場合はTrueに設定します
         project_manager:
           type: string
           format: uuid
           nullable: true
           title: プロジェクトマネージャー
-          description: Project Manager assigned to the project
+          description: プロジェクトに割り当てるプロジェクトマネージャー
         project_manager_username:
           type: string
           readOnly: true
@@ -8399,7 +8412,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Original (parent) project for upsell projects.
+          description: Original (parent) project for continuation projects.
         parent_project_name:
           type: string
           readOnly: true
@@ -8407,7 +8420,7 @@ components:
         is_closed:
           type: boolean
           title: プロジェクト終了済み
-          description: Manually set when project is complete
+          description: プロジェクト完了時に手動で設定します
         closed_datetime:
           type: string
           format: date-time
@@ -8416,12 +8429,11 @@ components:
         display_as_active:
           type: boolean
           title: アクティブとして表示
-          description: If True, project will be included in the ActiveKippoProject
-            List
+          description: Trueの場合、アクティブプロジェクト一覧に表示されます
         display_in_project_report:
           type: boolean
           title: プロジェクトレポートサマリ(Slack)に表示
-          description: If True, project will be included in the Project Report Summary
+          description: Trueの場合、プロジェクトレポートサマリに表示されます
         github_project_html_url:
           type: string
           format: uri
@@ -8442,7 +8454,7 @@ components:
           minimum: 0
           nullable: true
           title: 割当工数(人日)
-          description: Estimated Staff Days needed for Project Completion
+          description: プロジェクト完了に必要な見積工数（人日）
         allocated_effort_hours:
           type: number
           format: double
@@ -8453,20 +8465,19 @@ components:
           format: date
           nullable: true
           title: 開始日
-          description: Date the Project requires engineering resources
+          description: プロジェクトがエンジニアリングリソースを必要とする日
         target_date:
           type: string
           format: date
           nullable: true
           title: 完了予定日
-          description: Date the Project is planned to be completed by.
+          description: プロジェクトの完了予定日
         actual_date:
           type: string
           format: date
           nullable: true
           title: 完了日
-          description: The date the project was actually completed on (not the initial
-            target)
+          description: プロジェクトが実際に完了した日（当初の予定日ではありません）
         total_revenue:
           type: string
           format: decimal
@@ -8481,7 +8492,7 @@ components:
           type: string
           format: uri
           title: ドキュメント保管URL
-          description: URL of where documents for the projects are maintained
+          description: プロジェクトのドキュメントを保管しているURL
           maxLength: 200
         docbase_tag:
           type: string
@@ -8489,7 +8500,7 @@ components:
         problem_definition:
           type: string
           title: プロジェクト紹介
-          description: Define the problem that the project is set out to solve.
+          description: このプロジェクトが解決しようとする課題を定義します
         meeting_calendar_url:
           type: string
           readOnly: true
@@ -8499,7 +8510,7 @@ components:
         survey_issued:
           type: boolean
           title: アンケート発行済み
-          description: Update when survey is issued!
+          description: アンケートを発行したら更新してください
         assignment_rates:
           type: array
           items:
@@ -8550,6 +8561,7 @@ components:
       - has_requirements
       - id
       - latest_comment
+      - lead_source_display
       - meeting_calendar_url
       - meeting_description_tag
       - monthly_billing_schedule
@@ -8716,7 +8728,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
           nullable: true
-          title: 仮月額
+          title: 月額
           description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
             (kippo#46): every contract month is billed this amount up front, then
             corrected to actuals (実績) via the true-up admin action before the entry
@@ -8791,7 +8803,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
           nullable: true
-          title: 仮月額
+          title: 月額
           description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
             (kippo#46): every contract month is billed this amount up front, then
             corrected to actuals (実績) via the true-up admin action before the entry
@@ -8918,12 +8930,12 @@ components:
           format: uuid
           nullable: true
           title: 顧客
-          description: Customer this project is delivered for (optional)
+          description: このプロジェクトの納品先となる顧客（任意）
         name:
           type: string
           minLength: 1
           title: プロジェクト名
-          description: Name of the project
+          description: プロジェクトの名称
           maxLength: 256
         columnset:
           type: string
@@ -8935,7 +8947,7 @@ components:
           - $ref: '#/components/schemas/PhaseEnum'
           title: フェーズ
           description: |-
-            State or phase of the project
+            プロジェクトの状態（フェーズ）
 
             * `keep-in-touch` - KIT
             * `proposing-low` - 提案(低)
@@ -8952,47 +8964,56 @@ components:
         category:
           type: string
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
+        lead_source:
+          title: リード
+          description: |-
+            案件のリード獲得元（任意）
+
+            * `sunx` - SUNX経由
+            * `info` - info
+            * `employee-referral` - 社員紹介
+            * `customer-referral` - 顧客紹介
+            * `continuation` - 継続
+          oneOf:
+          - $ref: '#/components/schemas/LeadSourceEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
-          description: Conversation Channel — invite the organization's slack bot
-            to enable channel notification
+          description: 会話用チャンネル。組織のSlackボットを招待するとチャンネル通知が有効になります
           maxLength: 80
         slack_notification_channel_name:
           type: string
           title: Slack通知チャンネル名
-          description: Notification Channel for crawler / batch / development notifications
-            (separate from the conversation channel)
+          description: クローラー・バッチ・開発通知用のチャンネル（会話用チャンネルとは別）
           maxLength: 80
         enable_cost_report:
           type: boolean
           title: コストレポート有効化
-          description: Set to True if you want to enable cost reporting to the configured
-            slack channel
+          description: 設定済みのSlackチャンネルへコストレポートを送信する場合はTrueに設定します
         project_manager:
           type: string
           format: uuid
           nullable: true
           title: プロジェクトマネージャー
-          description: Project Manager assigned to the project
+          description: プロジェクトに割り当てるプロジェクトマネージャー
         parent_project:
           type: string
           format: uuid
           nullable: true
-          description: Original (parent) project for upsell projects.
+          description: Original (parent) project for continuation projects.
         is_closed:
           type: boolean
           title: プロジェクト終了済み
-          description: Manually set when project is complete
+          description: プロジェクト完了時に手動で設定します
         display_as_active:
           type: boolean
           title: アクティブとして表示
-          description: If True, project will be included in the ActiveKippoProject
-            List
+          description: Trueの場合、アクティブプロジェクト一覧に表示されます
         display_in_project_report:
           type: boolean
           title: プロジェクトレポートサマリ(Slack)に表示
-          description: If True, project will be included in the Project Report Summary
+          description: Trueの場合、プロジェクトレポートサマリに表示されます
         github_project_html_url:
           type: string
           format: uri
@@ -9008,31 +9029,30 @@ components:
           minimum: 0
           nullable: true
           title: 割当工数(人日)
-          description: Estimated Staff Days needed for Project Completion
+          description: プロジェクト完了に必要な見積工数（人日）
         start_date:
           type: string
           format: date
           nullable: true
           title: 開始日
-          description: Date the Project requires engineering resources
+          description: プロジェクトがエンジニアリングリソースを必要とする日
         target_date:
           type: string
           format: date
           nullable: true
           title: 完了予定日
-          description: Date the Project is planned to be completed by.
+          description: プロジェクトの完了予定日
         actual_date:
           type: string
           format: date
           nullable: true
           title: 完了日
-          description: The date the project was actually completed on (not the initial
-            target)
+          description: プロジェクトが実際に完了した日（当初の予定日ではありません）
         document_folder_url:
           type: string
           format: uri
           title: ドキュメント保管URL
-          description: URL of where documents for the projects are maintained
+          description: プロジェクトのドキュメントを保管しているURL
           maxLength: 200
         docbase_tag:
           type: string
@@ -9040,11 +9060,11 @@ components:
         problem_definition:
           type: string
           title: プロジェクト紹介
-          description: Define the problem that the project is set out to solve.
+          description: このプロジェクトが解決しようとする課題を定義します
         survey_issued:
           type: boolean
           title: アンケート発行済み
-          description: Update when survey is issued!
+          description: アンケートを発行したら更新してください
       required:
       - name
       - organization
@@ -9153,6 +9173,20 @@ components:
       - created_by_display_name
       - created_by_username
       - created_datetime
+    LeadSourceEnum:
+      enum:
+      - sunx
+      - info
+      - employee-referral
+      - customer-referral
+      - continuation
+      type: string
+      description: |-
+        * `sunx` - SUNX経由
+        * `info` - info
+        * `employee-referral` - 社員紹介
+        * `customer-referral` - 顧客紹介
+        * `continuation` - 継続
     MonthlyBillingScheduleEntry:
       type: object
       description: 'One planned monthly billing row (kippo#39 / T15): month-end date
@@ -10118,7 +10152,7 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
           nullable: true
-          title: 仮月額
+          title: 月額
           description: 'JPY. Provisional (仮) monthly amount for effort + monthly contracts
             (kippo#46): every contract month is billed this amount up front, then
             corrected to actuals (実績) via the true-up admin action before the entry
@@ -10195,12 +10229,12 @@ components:
           format: uuid
           nullable: true
           title: 顧客
-          description: Customer this project is delivered for (optional)
+          description: このプロジェクトの納品先となる顧客（任意）
         name:
           type: string
           minLength: 1
           title: プロジェクト名
-          description: Name of the project
+          description: プロジェクトの名称
           maxLength: 256
         columnset:
           type: string
@@ -10212,7 +10246,7 @@ components:
           - $ref: '#/components/schemas/PhaseEnum'
           title: フェーズ
           description: |-
-            State or phase of the project
+            プロジェクトの状態（フェーズ）
 
             * `keep-in-touch` - KIT
             * `proposing-low` - 提案(低)
@@ -10229,47 +10263,56 @@ components:
         category:
           type: string
           description: Project category key (e.g. 'ai-development', 'other', 'non-project').
+        lead_source:
+          title: リード
+          description: |-
+            案件のリード獲得元（任意）
+
+            * `sunx` - SUNX経由
+            * `info` - info
+            * `employee-referral` - 社員紹介
+            * `customer-referral` - 顧客紹介
+            * `continuation` - 継続
+          oneOf:
+          - $ref: '#/components/schemas/LeadSourceEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         slack_channel_name:
           type: string
           title: Slack会話チャンネル名
-          description: Conversation Channel — invite the organization's slack bot
-            to enable channel notification
+          description: 会話用チャンネル。組織のSlackボットを招待するとチャンネル通知が有効になります
           maxLength: 80
         slack_notification_channel_name:
           type: string
           title: Slack通知チャンネル名
-          description: Notification Channel for crawler / batch / development notifications
-            (separate from the conversation channel)
+          description: クローラー・バッチ・開発通知用のチャンネル（会話用チャンネルとは別）
           maxLength: 80
         enable_cost_report:
           type: boolean
           title: コストレポート有効化
-          description: Set to True if you want to enable cost reporting to the configured
-            slack channel
+          description: 設定済みのSlackチャンネルへコストレポートを送信する場合はTrueに設定します
         project_manager:
           type: string
           format: uuid
           nullable: true
           title: プロジェクトマネージャー
-          description: Project Manager assigned to the project
+          description: プロジェクトに割り当てるプロジェクトマネージャー
         parent_project:
           type: string
           format: uuid
           nullable: true
-          description: Original (parent) project for upsell projects.
+          description: Original (parent) project for continuation projects.
         is_closed:
           type: boolean
           title: プロジェクト終了済み
-          description: Manually set when project is complete
+          description: プロジェクト完了時に手動で設定します
         display_as_active:
           type: boolean
           title: アクティブとして表示
-          description: If True, project will be included in the ActiveKippoProject
-            List
+          description: Trueの場合、アクティブプロジェクト一覧に表示されます
         display_in_project_report:
           type: boolean
           title: プロジェクトレポートサマリ(Slack)に表示
-          description: If True, project will be included in the Project Report Summary
+          description: Trueの場合、プロジェクトレポートサマリに表示されます
         github_project_html_url:
           type: string
           format: uri
@@ -10285,31 +10328,30 @@ components:
           minimum: 0
           nullable: true
           title: 割当工数(人日)
-          description: Estimated Staff Days needed for Project Completion
+          description: プロジェクト完了に必要な見積工数（人日）
         start_date:
           type: string
           format: date
           nullable: true
           title: 開始日
-          description: Date the Project requires engineering resources
+          description: プロジェクトがエンジニアリングリソースを必要とする日
         target_date:
           type: string
           format: date
           nullable: true
           title: 完了予定日
-          description: Date the Project is planned to be completed by.
+          description: プロジェクトの完了予定日
         actual_date:
           type: string
           format: date
           nullable: true
           title: 完了日
-          description: The date the project was actually completed on (not the initial
-            target)
+          description: プロジェクトが実際に完了した日（当初の予定日ではありません）
         document_folder_url:
           type: string
           format: uri
           title: ドキュメント保管URL
-          description: URL of where documents for the projects are maintained
+          description: プロジェクトのドキュメントを保管しているURL
           maxLength: 200
         docbase_tag:
           type: string
@@ -10317,11 +10359,11 @@ components:
         problem_definition:
           type: string
           title: プロジェクト紹介
-          description: Define the problem that the project is set out to solve.
+          description: このプロジェクトが解決しようとする課題を定義します
         survey_issued:
           type: boolean
           title: アンケート発行済み
-          description: Update when survey is issued!
+          description: アンケートを発行したら更新してください
     PatchedKippoProjectUserStatisfactionResultRequest:
       type: object
       description: |-
