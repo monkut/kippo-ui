@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
-import { PHASE_OPTIONS } from "~/components/project-form/fields";
+import { LEAD_SOURCE_OPTIONS, PHASE_OPTIONS } from "~/components/project-form/fields";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { projectCategoriesList } from "~/lib/api/generated/project-categories/project-categories";
 import {
@@ -60,6 +60,7 @@ export default function ProjectEdit() {
   const [name, setName] = useState("");
   const [phase, setPhase] = useState<PhaseEnum>("proposing-low");
   const [category, setCategory] = useState("");
+  const [leadSource, setLeadSource] = useState("");
   const [projectManagerId, setProjectManagerId] = useState("");
   const [problemDefinition, setProblemDefinition] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -71,7 +72,7 @@ export default function ProjectEdit() {
   const [slackNotificationChannelName, setSlackNotificationChannelName] = useState("");
   const [githubProjectHtmlUrl, setGithubProjectHtmlUrl] = useState("");
   const [enableCostReport, setEnableCostReport] = useState(false);
-  // parent_project (親プロジェクト) — optional upsell parent; name-searched picker. Backend rejects a
+  // parent_project (親プロジェクト) — optional continuation parent; name-searched picker. Backend rejects a
   // cross-org or self-referencing parent. parentProjectName is the read-only label for the selection.
   const [parentProjectId, setParentProjectId] = useState("");
   const [parentProjectName, setParentProjectName] = useState<string | null>(null);
@@ -101,7 +102,7 @@ export default function ProjectEdit() {
   const [billingType, setBillingType] = useState<BillingTypeEnum>("delivery");
   const [pricingBasis, setPricingBasis] = useState<PricingBasisEnum>("fixed");
   const [contractTotalAmount, setContractTotalAmount] = useState("");
-  // 仮月額 (kippo#46) — provisional monthly amount, only meaningful for effort + monthly contracts
+  // 月額 (kippo#46) — provisional monthly amount, only meaningful for effort + monthly contracts
   // (the backend rejects it elsewhere). Manually entered; blank bills logged actuals directly.
   const [contractEstimatedMonthly, setContractEstimatedMonthly] = useState("");
   const [contractStartDate, setContractStartDate] = useState("");
@@ -111,7 +112,7 @@ export default function ProjectEdit() {
   // A loaded contract is authoritative; billing_types covers the window before it loads. Derived (not
   // stored) so a project re-fetch can't clobber it back to false after a contract is created in-page.
   const hasContract = contractId !== null || billingTypesPresent;
-  // 仮月額 only applies to effort (実績) + monthly (月額) contracts (mirrors the model/serializer).
+  // 月額 only applies to effort (実績) + monthly (月額) contracts (mirrors the model/serializer).
   const isEffortMonthly = pricingBasis === "effort" && billingType === "monthly";
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function ProjectEdit() {
         setName(p.name ?? "");
         if (p.phase) setPhase(p.phase);
         setCategory(p.category ?? "");
+        setLeadSource(p.lead_source ?? "");
         setProjectManagerId(p.project_manager ?? "");
         setProblemDefinition(p.problem_definition ?? "");
         setStartDate(p.start_date ?? "");
@@ -233,7 +235,7 @@ export default function ProjectEdit() {
       pricing_basis: pricingBasis,
       // fixed pricing requires a total; effort pricing treats it as an optional cap (blank → null).
       total_amount: contractTotalAmount.trim() === "" ? null : contractTotalAmount.trim(),
-      // 仮月額 only for effort + monthly; always send null otherwise so switching pricing away clears
+      // 月額 only for effort + monthly; always send null otherwise so switching pricing away clears
       // any stored value (the serializer validates against the stored value on PATCH → would 400).
       estimated_monthly_amount: isEffortMonthly
         ? contractEstimatedMonthly.trim() === ""
@@ -313,6 +315,7 @@ export default function ProjectEdit() {
       name: name.trim(),
       phase,
       category: writableCategory,
+      lead_source: leadSource as PatchedKippoProjectRequest["lead_source"],
       project_manager: projectManagerId || null,
       problem_definition: problemDefinition,
       // contract-managed dates are omitted (not just echoed) — the contract period is the write path
@@ -343,6 +346,7 @@ export default function ProjectEdit() {
     phase,
     category,
     categories,
+    leadSource,
     projectManagerId,
     problemDefinition,
     hasContract,
@@ -445,6 +449,14 @@ export default function ProjectEdit() {
             {categories.map((c) => (
               <option key={c.key} value={c.key}>
                 {c.label}
+              </option>
+            ))}
+          </Select>
+          <Select id="p-lead-source" label="リード" value={leadSource} onChange={setLeadSource}>
+            <option value="">選択してください</option>
+            {LEAD_SOURCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </Select>
@@ -571,13 +583,13 @@ export default function ProjectEdit() {
                   </p>
                 )}
               </div>
-              {/* 仮月額 (kippo#46) — only for 実績(effort) + 月額(monthly). Provisional monthly amount
+              {/* 月額 (kippo#46) — only for 実績(effort) + 月額(monthly). Provisional monthly amount
                   billed up front, then trued-up to actuals server-side. Blank bills actuals directly. */}
               {isEffortMonthly && (
                 <div>
                   <Input
                     id="c-estimated-monthly"
-                    label="仮月額(円・任意)"
+                    label="月額(円・任意)"
                     type="number"
                     step={1}
                     value={contractEstimatedMonthly}
@@ -784,7 +796,7 @@ export default function ProjectEdit() {
 
 // Optional parent_project picker with project-name search. Queries the org-scoped project list
 // (projectsList?search=) and limits candidates to the SAME KippoCustomer as the project being
-// edited (upsell parents share a customer), excluding the project itself. Falls back to the same
+// edited (continuation parents share a customer), excluding the project itself. Falls back to the same
 // organization when the project has no customer. The backend rejects a cross-org / self parent.
 function ParentProjectField({
   organizationId,
