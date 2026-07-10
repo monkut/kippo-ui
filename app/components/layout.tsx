@@ -13,6 +13,10 @@ interface LayoutProps {
 }
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
+// The Django admin is same-origin in production (empty VITE_BASE_URL → relative `${urlPrefix}/admin/`).
+// In local dev the SPA is served by Vite (:5173) while Django runs at VITE_BASE_URL (:8000), so a bare
+// `/admin/` would hit the Vite dev server ("public base URL of /ui/") — prefix the API origin when set.
+const adminUrl = `${(import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "")}${urlPrefix}/admin/`;
 
 export function Layout({
   children,
@@ -110,7 +114,7 @@ export function Layout({
             <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <div className="flex flex-col space-y-1">
                 <a
-                  href={`${urlPrefix}/admin/`}
+                  href={adminUrl}
                   onClick={() => setMenuOpen(false)}
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                 >
