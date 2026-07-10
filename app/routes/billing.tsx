@@ -177,7 +177,7 @@ export default function Billing() {
           </div>
         ) : (
           <div className="bg-white shadow overflow-x-auto sm:rounded-md">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <table className="min-w-full divide-y divide-gray-200 whitespace-nowrap text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   <th className="px-4 py-2">契約終了日</th>
