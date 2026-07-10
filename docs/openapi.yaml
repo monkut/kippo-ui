@@ -8695,6 +8695,17 @@ components:
         project_name:
           type: string
           readOnly: true
+        billed_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: 請求先
+          description: Customer invoiced for this contract. Defaults to the project's
+            customer (顧客); set explicitly when billing goes to a different customer.
+        billed_to_name:
+          type: string
+          readOnly: true
+          nullable: true
         billing_type:
           allOf:
           - $ref: '#/components/schemas/BillingTypeEnum'
@@ -8760,6 +8771,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - billed_to_name
       - created_datetime
       - id
       - project
@@ -8770,6 +8782,13 @@ components:
       description: The project's contract (kippo#31) — billing terms. project is set
         from the nested route.
       properties:
+        billed_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: 請求先
+          description: Customer invoiced for this contract. Defaults to the project's
+            customer (顧客); set explicitly when billing goes to a different customer.
         billing_type:
           allOf:
           - $ref: '#/components/schemas/BillingTypeEnum'
@@ -10119,6 +10138,13 @@ components:
       description: The project's contract (kippo#31) — billing terms. project is set
         from the nested route.
       properties:
+        billed_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: 請求先
+          description: Customer invoiced for this contract. Defaults to the project's
+            customer (顧客); set explicitly when billing goes to a different customer.
         billing_type:
           allOf:
           - $ref: '#/components/schemas/BillingTypeEnum'

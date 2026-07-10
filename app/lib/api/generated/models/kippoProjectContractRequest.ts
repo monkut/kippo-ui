@@ -12,6 +12,11 @@ import type { PricingBasisEnum } from './pricingBasisEnum';
  * The project's contract (kippo#31) — billing terms. project is set from the nested route.
  */
 export interface KippoProjectContractRequest {
+  /**
+     * Customer invoiced for this contract. Defaults to the project's customer (顧客); set explicitly when billing goes to a different customer.
+     * @nullable
+     */
+  billed_to?: string | null;
   /** When revenue is billed: 'delivery' (納品, once at the contract end_date) or 'monthly' (月額, each month-end across the contract period).
 
   * `delivery` - 納品

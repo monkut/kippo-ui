@@ -14,6 +14,7 @@ const projectsContractPartialUpdate = vi.hoisted(() => vi.fn());
 const projectsContractDestroy = vi.hoisted(() => vi.fn());
 const organizationsMembersRetrieve = vi.hoisted(() => vi.fn());
 const projectCategoriesList = vi.hoisted(() => vi.fn());
+const customersList = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router", () => ({
   useNavigate: () => navigateSpy,
@@ -39,6 +40,9 @@ vi.mock("~/lib/api/generated/organizations/organizations", () => ({
 }));
 vi.mock("~/lib/api/generated/project-categories/project-categories", () => ({
   projectCategoriesList: (...a: unknown[]) => projectCategoriesList(...a),
+}));
+vi.mock("~/lib/api/generated/customers/customers", () => ({
+  customersList: (...a: unknown[]) => customersList(...a),
 }));
 
 import ProjectEdit from "../app/routes/projects.$id.edit";
@@ -114,6 +118,8 @@ describe("ProjectEdit route", () => {
     projectsContractDestroy.mockReset();
     organizationsMembersRetrieve.mockReset();
     projectCategoriesList.mockReset();
+    customersList.mockReset();
+    customersList.mockResolvedValue({ status: 200, data: { results: [] } });
     projectsRetrieve.mockResolvedValue({ status: 200, data: { ...defaultProject } });
     organizationsMembersRetrieve.mockResolvedValue({
       status: 200,
@@ -500,6 +506,8 @@ describe("ProjectEdit route", () => {
       start_date: null,
       end_date: null,
       note: "",
+      // default mock has no customer id → 請求先 unset → null (server defaults it to the project customer).
+      billed_to: null,
     });
 
     // After creation the contract owns the period: project date inputs lock.
@@ -507,6 +515,49 @@ describe("ProjectEdit route", () => {
       container.querySelector<HTMLInputElement>("#p-start")?.disabled ? true : null,
     );
     expect(container.querySelector<HTMLInputElement>("#p-target")?.disabled).toBe(true);
+  });
+
+  test("seeds 請求先 from the project's customer and sends it on contract create", async () => {
+    // Project has a customer → clicking 契約を追加 pre-fills 請求先 with it (the server-side default made
+    // visible), and the create body carries billed_to = that customer id.
+    projectsRetrieve.mockResolvedValue({
+      status: 200,
+      data: { ...defaultProject, customer: "cust-beta", customer_name: "Beta Co" },
+    });
+    projectsContractCreate.mockResolvedValue({
+      status: 201,
+      data: {
+        id: 11,
+        project: "proj-1",
+        project_name: "Old Name",
+        billing_type: "delivery",
+        pricing_basis: "fixed",
+        total_amount: "500000",
+        billed_to: "cust-beta",
+        billed_to_name: "Beta Co",
+        start_date: "2026-02-01",
+        end_date: "2026-08-31",
+        note: "",
+      },
+    });
+    root.render(<ProjectEdit />);
+
+    await waitFor(() =>
+      container.textContent?.includes("契約が登録されていません") ? true : null,
+    );
+    findButton(container, "契約を追加")?.click();
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#c-total-amount") ? true : null,
+    );
+    // 請求先 shows the seeded project customer name.
+    expect(container.textContent).toContain("Beta Co");
+
+    await waitFor(() => {
+      setInputValue(container.querySelector("#c-total-amount") as HTMLInputElement, "500000");
+      findButton(container, "契約を保存")?.click();
+      return projectsContractCreate.mock.calls.length > 0 ? true : null;
+    });
+    expect(projectsContractCreate.mock.calls[0]?.[1]).toMatchObject({ billed_to: "cust-beta" });
   });
 
   test("closed project locks the contract section (read-only, no save/delete)", async () => {

@@ -15,6 +15,13 @@ export interface KippoProjectContract {
   readonly id: number;
   readonly project: string;
   readonly project_name: string;
+  /**
+     * Customer invoiced for this contract. Defaults to the project's customer (顧客); set explicitly when billing goes to a different customer.
+     * @nullable
+     */
+  billed_to?: string | null;
+  /** @nullable */
+  readonly billed_to_name: string | null;
   /** When revenue is billed: 'delivery' (納品, once at the contract end_date) or 'monthly' (月額, each month-end across the contract period).
 
   * `delivery` - 納品
