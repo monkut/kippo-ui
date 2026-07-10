@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Layout } from "~/components/layout";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { type BillingListEntry, fetchAllBillingEntries } from "~/lib/api/billing";
@@ -30,13 +30,15 @@ const formatJpy = (value: string | number | null | undefined): string => {
 
 export default function Billing() {
   const { user, authLoading } = useAuthGate();
+  // Deep-link support: KippoCustomerAdmin's per-month chart links here with ?month=YYYY-MM.
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<BillingListEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [completedOnly, setCompletedOnly] = useState(false);
   const [received, setReceived] = useState<ReceivedFilter>("all");
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState(searchParams.get("month") ?? "");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -67,7 +69,11 @@ export default function Billing() {
   const filteredRows = useMemo(() => filterBillingRows(rows, filters), [rows, filters]);
   const groups = useMemo<ProjectGroup[]>(() => groupByProject(filteredRows), [filteredRows]);
   const totals = useMemo(() => summarize(filteredRows), [filteredRows]);
-  const months = useMemo(() => availableMonths(rows), [rows]);
+  const months = useMemo(() => {
+    const available = availableMonths(rows);
+    // Keep a deep-linked ?month= selectable even if it has no billing entries yet.
+    return month && !available.includes(month) ? [month, ...available] : available;
+  }, [rows, month]);
 
   const toggleExpanded = useCallback((projectId: string) => {
     setExpanded((prev) => {

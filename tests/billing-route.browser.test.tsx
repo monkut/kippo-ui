@@ -10,10 +10,13 @@ import type { BillingListEntry } from "~/lib/api/billing";
 const auth = vi.hoisted(() => ({
   state: { user: null as { username: string } | null, isLoading: true },
 }));
+// Controls the ?month= deep-link (KippoCustomerAdmin per-month chart → this page).
+const search = vi.hoisted(() => ({ value: "" }));
 
 vi.mock("react-router", () => ({
   useNavigate: () => () => {},
   useLocation: () => ({ pathname: "/billing" }),
+  useSearchParams: () => [new URLSearchParams(search.value), () => {}],
   Link: ({ children }: { children: unknown }) => children,
 }));
 vi.mock("~/lib/auth-context", () => ({ useAuth: () => auth.state }));
@@ -70,6 +73,7 @@ describe("Billing route", () => {
   beforeEach(() => {
     auth.state = { user: null, isLoading: true };
     api.rows = [];
+    search.value = "";
     csv.downloadCsv.mockClear();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -180,5 +184,33 @@ describe("Billing route", () => {
     const [, content] = csv.downloadCsv.mock.calls[0];
     expect(content).toContain("Alpha");
     expect(content).toContain("Beta");
+  });
+
+  test("?month= deep-link pre-filters to that month", async () => {
+    search.value = "month=2026-08";
+    api.rows = [
+      row({
+        id: 1,
+        project_id: "pa",
+        billing_date: "2026-07-31",
+        amount: "111",
+        contract_total_amount: "999",
+      }),
+      row({
+        id: 2,
+        project_id: "pa",
+        billing_date: "2026-08-31",
+        amount: "222",
+        contract_total_amount: "999",
+      }),
+    ];
+    auth.state = { user: { username: "me" }, isLoading: false };
+
+    root.render(<Billing />);
+    await flush();
+
+    // Only the 2026-08 entry survives the deep-linked month filter.
+    expect(container.textContent).toContain("¥222");
+    expect(container.textContent).not.toContain("¥111");
   });
 });
