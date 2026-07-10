@@ -85,6 +85,7 @@ describe("Billing route", () => {
       row({
         id: 1,
         project_name: "Alpha",
+        customer_name: "AlphaCust",
         billed_to_name: "AlphaCo",
         amount: "1000000",
         is_received: true,
@@ -93,6 +94,7 @@ describe("Billing route", () => {
       row({
         id: 2,
         project_name: "Beta",
+        customer_name: "BetaCust",
         billed_to_name: "BetaCo",
         is_received: false,
         project_phase: "in-progress",
@@ -114,26 +116,27 @@ describe("Billing route", () => {
     expect(container.textContent).toContain("請求金額計");
     expect(container.textContent).not.toContain("読み込み中");
 
-    // Flat table: exactly one <table>, with 請求先 + プロジェクト + 組織 column headers.
+    // Flat table: exactly one <table>; 顧客 is right of プロジェクト, 請求先 left of 請求方法, no 組織.
     const tables = container.querySelectorAll("table");
     expect(tables).toHaveLength(1);
     const headers = Array.from(tables[0].querySelectorAll("th")).map((th) => th.textContent);
     expect(headers).toEqual([
       "請求日",
-      "請求先",
       "プロジェクト",
+      "顧客",
       "完了",
-      "組織",
+      "請求先",
       "請求方法",
       "金額",
       "入金日",
     ]);
+    expect(headers).not.toContain("組織");
 
-    // Both entries share the one table; customer + project shown per row.
+    // 顧客 (customer) and 請求先 (billing dest) are distinct columns, both shown per row.
+    expect(container.textContent).toContain("AlphaCust");
     expect(container.textContent).toContain("AlphaCo");
-    expect(container.textContent).toContain("Alpha");
+    expect(container.textContent).toContain("BetaCust");
     expect(container.textContent).toContain("BetaCo");
-    expect(container.textContent).toContain("Beta");
 
     // 完了 is its own column: exactly one cell reads 完了 (Alpha completed; Beta in-progress is blank).
     const completedCells = Array.from(container.querySelectorAll("td")).filter(

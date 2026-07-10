@@ -98,7 +98,7 @@ export default function Billing() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="検索（請求先・プロジェクト・組織）"
+              placeholder="検索（プロジェクト・顧客・請求先）"
               aria-label="請求検索"
               className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
@@ -171,10 +171,10 @@ export default function Billing() {
               <thead className="bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   <th className="px-4 py-2">請求日</th>
-                  <th className="px-4 py-2">請求先</th>
                   <th className="px-4 py-2">プロジェクト</th>
+                  <th className="px-4 py-2">顧客</th>
                   <th className="px-4 py-2 text-center">完了</th>
-                  <th className="px-4 py-2">組織</th>
+                  <th className="px-4 py-2">請求先</th>
                   <th className="px-4 py-2">請求方法</th>
                   <th className="px-4 py-2 text-right">金額</th>
                   <th className="px-4 py-2">入金日</th>
@@ -209,8 +209,8 @@ function BillingSummaryBar({ totals }: { totals: ReturnType<typeof summarize> })
   );
 }
 
-// One billing entry as a flat table row: 請求先 (customer) and プロジェクト as columns, plus how
-// much (金額) / when (請求日) / 入金日 (received date, not a boolean).
+// One billing entry as a flat table row: プロジェクト / 顧客 (customer) / 請求先 (billing dest) as
+// columns, plus how much (金額) / when (請求日) / 入金日 (received date, not a boolean).
 function BillingRow({ row }: { row: BillingListEntry }) {
   const billingType = BILLING_TYPE_LABELS[row.billing_type] ?? row.billing_type;
   const pricingBasis = PRICING_BASIS_LABELS[row.pricing_basis] ?? row.pricing_basis;
@@ -219,7 +219,6 @@ function BillingRow({ row }: { row: BillingListEntry }) {
       <td className="px-4 py-2 whitespace-nowrap text-gray-700">
         {formatDisplayDate(row.billing_date)}
       </td>
-      <td className="px-4 py-2 text-gray-700">{billedToDisplay(row)}</td>
       <td className="px-4 py-2">
         <Link
           to={`/projects/${row.project_id}/edit`}
@@ -228,12 +227,13 @@ function BillingRow({ row }: { row: BillingListEntry }) {
           {row.project_name}
         </Link>
       </td>
+      <td className="px-4 py-2 text-gray-700">{row.customer_name || "-"}</td>
       <td className="px-4 py-2 text-center">
         {row.project_phase === "completed" && (
           <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">完了</span>
         )}
       </td>
-      <td className="px-4 py-2 whitespace-nowrap text-gray-500">{row.organization_name}</td>
+      <td className="px-4 py-2 text-gray-700">{billedToDisplay(row)}</td>
       <td className="px-4 py-2 whitespace-nowrap text-gray-600">
         {billingType} / {pricingBasis}
       </td>

@@ -95,8 +95,12 @@ describe("filterBillingRows", () => {
     ]);
   });
 
-  test("search matches 請求先 / project / org, case-insensitive, incl. customer fallback", () => {
+  test("search matches project / 顧客 / 請求先 / org, case-insensitive", () => {
     expect(filterBillingRows(rows, { ...noFilters, search: "beta" }).map((r) => r.id)).toEqual([2]);
+    // 顧客 (customer_name): CustCo is id1 & id2's customer
+    expect(filterBillingRows(rows, { ...noFilters, search: "custco" }).map((r) => r.id)).toEqual([
+      1, 2,
+    ]);
     // Gamma's 請求先 falls back to customer_name "FallbackCo"
     expect(filterBillingRows(rows, { ...noFilters, search: "fallback" }).map((r) => r.id)).toEqual([
       3,

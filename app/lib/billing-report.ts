@@ -41,7 +41,7 @@ function amountOf(row: BillingListEntry): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Apply the UI filters. Free-text search matches 請求先 / プロジェクト / 組織 (case-insensitive). */
+/** Apply the UI filters. Free-text search matches プロジェクト / 顧客 / 請求先 / 組織 (case-insensitive). */
 export function filterBillingRows(
   rows: BillingListEntry[],
   filters: BillingFilters,
@@ -53,7 +53,12 @@ export function filterBillingRows(
     if (filters.received === "unreceived" && row.is_received) return false;
     if (filters.month && billingMonth(row) !== filters.month) return false;
     if (query) {
-      const haystack = [billedToDisplay(row), row.project_name, row.organization_name]
+      const haystack = [
+        row.project_name,
+        row.customer_name,
+        billedToDisplay(row),
+        row.organization_name,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
