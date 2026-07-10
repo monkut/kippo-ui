@@ -171,6 +171,17 @@ export function Layout({
                 >
                   月別プロジェクト割当
                 </Link>
+                <Link
+                  to="/billing"
+                  onClick={() => setMenuOpen(false)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive("/billing")
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  請求一覧
+                </Link>
               </div>
             </div>
           </nav>
