@@ -185,6 +185,7 @@ export default function Billing() {
                   <th className="px-4 py-2">顧客</th>
                   <th className="px-4 py-2 text-center">完了</th>
                   <th className="px-4 py-2">請求先</th>
+                  <th className="px-4 py-2">請求方法</th>
                   <th className="px-4 py-2 text-right">契約金額</th>
                   <th className="px-4 py-2 text-right">請求件数</th>
                   <th className="px-4 py-2 text-right">請求合計</th>
@@ -237,6 +238,8 @@ function ProjectRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const billingType = BILLING_TYPE_LABELS[group.billingType] ?? group.billingType;
+  const pricingBasis = PRICING_BASIS_LABELS[group.pricingBasis] ?? group.pricingBasis;
   return (
     <>
       <tr className="hover:bg-gray-50">
@@ -269,6 +272,9 @@ function ProjectRow({
           )}
         </td>
         <td className="px-4 py-2 text-gray-700">{group.billedTo}</td>
+        <td className="px-4 py-2 whitespace-nowrap text-gray-600">
+          {billingType} / {pricingBasis}
+        </td>
         <td className="px-4 py-2 text-right whitespace-nowrap text-gray-700">
           {formatJpy(group.contractTotal)}
         </td>
@@ -285,7 +291,7 @@ function ProjectRow({
       </tr>
       {expanded && (
         <tr className="bg-gray-50">
-          <td colSpan={10} className="px-0 py-0">
+          <td colSpan={11} className="px-0 py-0">
             <div className="px-10 py-2">
               <BillingEntriesDetail entries={group.entries} />
             </div>
@@ -303,38 +309,26 @@ function BillingEntriesDetail({ entries }: { entries: BillingListEntry[] }) {
       <thead>
         <tr className="text-left text-xs font-medium text-gray-500">
           <th className="px-2 py-1">請求日</th>
-          <th className="px-2 py-1">請求方法</th>
           <th className="px-2 py-1 text-right">金額</th>
           <th className="px-2 py-1">入金日</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100">
-        {entries.map((entry) => {
-          const billingType = BILLING_TYPE_LABELS[entry.billing_type] ?? entry.billing_type;
-          const pricingBasis = PRICING_BASIS_LABELS[entry.pricing_basis] ?? entry.pricing_basis;
-          return (
-            <tr key={entry.id} className="text-gray-700">
-              <td className="px-2 py-1 whitespace-nowrap">
-                {formatDisplayDate(entry.billing_date)}
-              </td>
-              <td className="px-2 py-1 whitespace-nowrap text-gray-600">
-                {billingType} / {pricingBasis}
-              </td>
-              <td className="px-2 py-1 text-right whitespace-nowrap font-medium text-gray-900">
-                {formatJpy(entry.amount)}
-              </td>
-              <td className="px-2 py-1 whitespace-nowrap">
-                {entry.is_received && entry.received_datetime ? (
-                  <span className="text-green-700">
-                    {formatDisplayDate(entry.received_datetime)}
-                  </span>
-                ) : (
-                  <span className="text-amber-700">未入金</span>
-                )}
-              </td>
-            </tr>
-          );
-        })}
+        {entries.map((entry) => (
+          <tr key={entry.id} className="text-gray-700">
+            <td className="px-2 py-1 whitespace-nowrap">{formatDisplayDate(entry.billing_date)}</td>
+            <td className="px-2 py-1 text-right whitespace-nowrap font-medium text-gray-900">
+              {formatJpy(entry.amount)}
+            </td>
+            <td className="px-2 py-1 whitespace-nowrap">
+              {entry.is_received && entry.received_datetime ? (
+                <span className="text-green-700">{formatDisplayDate(entry.received_datetime)}</span>
+              ) : (
+                <span className="text-amber-700">未入金</span>
+              )}
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );

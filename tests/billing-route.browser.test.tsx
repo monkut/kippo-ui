@@ -151,6 +151,7 @@ describe("Billing route", () => {
     expect(container.textContent).toContain("AlphaCo");
     expect(container.textContent).toContain("¥3,000,000"); // 契約金額
     expect(container.textContent).toContain("¥2,000,000"); // 請求合計 = sum of Alpha's two entries
+    expect(container.textContent).toContain("月額 / 固定"); // 請求方法 on the master row
 
     // Collapsed: the individual entry 請求日 are hidden.
     expect(container.textContent).not.toContain("2026/8/31");

@@ -95,6 +95,8 @@ export interface ProjectGroup {
   customerName: string | null;
   billedTo: string;
   phase: string;
+  billingType: string; // 請求方法 (delivery/monthly) — contract-level, same for all entries
+  pricingBasis: string; // fixed/effort — contract-level
   contractTotal: string | null; // 契約金額 (contract cost)
   contractEndDate: string | null; // 契約終了日 (contract end date)
   entries: BillingListEntry[]; // billing entries, 請求日 ascending (the fold-down detail)
@@ -122,6 +124,8 @@ export function groupByProject(rows: BillingListEntry[]): ProjectGroup[] {
       customerName: head.customer_name,
       billedTo: billedToDisplay(head),
       phase: head.project_phase,
+      billingType: head.billing_type,
+      pricingBasis: head.pricing_basis,
       contractTotal: head.contract_total_amount,
       contractEndDate: head.contract_end_date,
       entries,

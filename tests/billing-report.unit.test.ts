@@ -160,6 +160,7 @@ describe("groupByProject", () => {
     expect(alpha.entries.map((e) => e.id)).toEqual([2, 1]); // 請求日 ascending
     expect(alpha.contractTotal).toBe("3000000"); // contract cost carried onto the master row
     expect(alpha.contractEndDate).toBe("2026-09-30"); // 契約終了日 carried onto the master row
+    expect(alpha.billingType).toBe("monthly"); // 請求方法 carried onto the master row
     expect(alpha.totals.count).toBe(2);
     expect(alpha.totals.amount).toBe(2000000); // summed billing entries (folded-up display)
     expect(alpha.totals.receivedAmount).toBe(1000000);
