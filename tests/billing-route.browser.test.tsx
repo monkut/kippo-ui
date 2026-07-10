@@ -50,6 +50,7 @@ function row(overrides: Partial<BillingListEntry>): BillingListEntry {
     billing_type: "monthly",
     pricing_basis: "fixed",
     contract_total_amount: "3000000",
+    contract_end_date: "2026-09-30",
     ...overrides,
   };
 }
@@ -133,6 +134,11 @@ describe("Billing route", () => {
 
     expect(container.textContent).toContain("請求一覧");
     expect(container.textContent).not.toContain("読み込み中");
+
+    // 契約終了日 is the first column, showing the contract end date on the master row.
+    const firstHeader = container.querySelector("thead th");
+    expect(firstHeader?.textContent).toBe("契約終了日");
+    expect(container.textContent).toContain("2026/9/30");
 
     // One master row per project → two fold toggles, both collapsed initially.
     const toggles = () =>

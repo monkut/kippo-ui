@@ -26,6 +26,7 @@ export interface BillingListEntry {
   billing_type: string; // "delivery" | "monthly"
   pricing_basis: string; // "fixed" | "effort"
   contract_total_amount: string | null;
+  contract_end_date: string | null;
 }
 
 export interface BillingListParams {

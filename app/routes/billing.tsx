@@ -180,7 +180,7 @@ export default function Billing() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-2 py-2" />
+                  <th className="px-4 py-2">契約終了日</th>
                   <th className="px-4 py-2">プロジェクト</th>
                   <th className="px-4 py-2">顧客</th>
                   <th className="px-4 py-2 text-center">完了</th>
@@ -240,18 +240,19 @@ function ProjectRow({
   return (
     <>
       <tr className="hover:bg-gray-50">
-        <td className="px-2 py-2 align-top">
+        <td className="px-4 py-2 whitespace-nowrap align-top text-gray-700">
           <button
             type="button"
             onClick={onToggle}
             aria-expanded={expanded}
             aria-label={`${group.projectName} の請求明細を${expanded ? "折りたたむ" : "展開"}`}
-            className="text-gray-400 hover:text-gray-700"
+            className="mr-2 text-gray-400 hover:text-gray-700"
           >
             <span className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}>
               ▶
             </span>
           </button>
+          {formatDisplayDate(group.contractEndDate)}
         </td>
         <td className="px-4 py-2">
           <Link

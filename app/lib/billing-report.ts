@@ -96,6 +96,7 @@ export interface ProjectGroup {
   billedTo: string;
   phase: string;
   contractTotal: string | null; // 契約金額 (contract cost)
+  contractEndDate: string | null; // 契約終了日 (contract end date)
   entries: BillingListEntry[]; // billing entries, 請求日 ascending (the fold-down detail)
   totals: BillingTotals; // count + summed billing entries (請求合計) + received/unreceived split
 }
@@ -122,6 +123,7 @@ export function groupByProject(rows: BillingListEntry[]): ProjectGroup[] {
       billedTo: billedToDisplay(head),
       phase: head.project_phase,
       contractTotal: head.contract_total_amount,
+      contractEndDate: head.contract_end_date,
       entries,
       totals: summarize(entries),
     };
