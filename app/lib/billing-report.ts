@@ -1,4 +1,4 @@
-// Pure helpers for the 請求一覧 (billing list) view: labels, filtering, monthly grouping,
+// Pure helpers for the 請求一覧 (billing list) view: labels, filtering, per-project grouping,
 // summation and CSV serialization. Kept free of React/DOM so they are unit-testable and reused
 // by both the route component and its tests. The download side-effect lives in ./csv.
 
@@ -84,28 +84,16 @@ export function summarize(rows: BillingListEntry[]): BillingTotals {
   );
 }
 
-export interface MonthGroup {
-  month: string; // "YYYY-MM"
-  rows: BillingListEntry[];
-  totals: BillingTotals;
-}
-
-/** Group rows by 請求月, newest month first; rows within a month keep the incoming order
- * (the API sorts by billing_date desc then project name). */
-export function groupByMonth(rows: BillingListEntry[]): MonthGroup[] {
-  const byMonth = new Map<string, BillingListEntry[]>();
-  for (const row of rows) {
-    const key = billingMonth(row);
-    const bucket = byMonth.get(key);
-    if (bucket) bucket.push(row);
-    else byMonth.set(key, [row]);
-  }
-  return [...byMonth.keys()]
-    .sort((a, b) => b.localeCompare(a))
-    .map((month) => {
-      const monthRows = byMonth.get(month) as BillingListEntry[];
-      return { month, rows: monthRows, totals: summarize(monthRows) };
-    });
+/** Order rows for the flat table: 請求先, then project name, then 請求日 ascending. Keeps a
+ * project's monthly entries contiguous (reads as a schedule) within a single table — no sections. */
+export function sortBillingRows(rows: BillingListEntry[]): BillingListEntry[] {
+  const collator = new Intl.Collator("ja");
+  return [...rows].sort(
+    (a, b) =>
+      collator.compare(billedToDisplay(a), billedToDisplay(b)) ||
+      collator.compare(a.project_name, b.project_name) ||
+      a.billing_date.localeCompare(b.billing_date),
+  );
 }
 
 /** Distinct 請求月 present in the rows, newest first — drives the month filter dropdown. */

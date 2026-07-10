@@ -6,14 +6,13 @@ import { type BillingListEntry, fetchAllBillingEntries } from "~/lib/api/billing
 import {
   BILLING_TYPE_LABELS,
   type BillingFilters,
-  type MonthGroup,
   PRICING_BASIS_LABELS,
   type ReceivedFilter,
   availableMonths,
   billedToDisplay,
   buildBillingCsv,
   filterBillingRows,
-  groupByMonth,
+  sortBillingRows,
   summarize,
 } from "~/lib/billing-report";
 import { downloadCsv } from "~/lib/csv";
@@ -65,14 +64,15 @@ export default function Billing() {
     [search, completedOnly, received, month],
   );
   const filteredRows = useMemo(() => filterBillingRows(rows, filters), [rows, filters]);
-  const groups = useMemo<MonthGroup[]>(() => groupByMonth(filteredRows), [filteredRows]);
+  const sortedRows = useMemo(() => sortBillingRows(filteredRows), [filteredRows]);
   const totals = useMemo(() => summarize(filteredRows), [filteredRows]);
   const months = useMemo(() => availableMonths(rows), [rows]);
 
   const handleDownloadCsv = useCallback(() => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(`billing-${stamp}.csv`, buildBillingCsv(filteredRows));
-  }, [filteredRows]);
+    // Export in the on-screen row order so the CSV matches the table.
+    downloadCsv(`billing-${stamp}.csv`, buildBillingCsv(sortedRows));
+  }, [sortedRows]);
 
   if (authLoading) {
     return (
@@ -166,10 +166,25 @@ export default function Billing() {
             <p className="text-gray-500">条件に一致する請求がありません</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {groups.map((group) => (
-              <MonthSection key={group.month} group={group} />
-            ))}
+          <div className="bg-white shadow overflow-x-auto sm:rounded-md">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-2">請求日</th>
+                  <th className="px-4 py-2">請求先</th>
+                  <th className="px-4 py-2">プロジェクト</th>
+                  <th className="px-4 py-2">組織</th>
+                  <th className="px-4 py-2">請求方法</th>
+                  <th className="px-4 py-2 text-right">金額</th>
+                  <th className="px-4 py-2">入金日</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {sortedRows.map((row) => (
+                  <BillingRow key={row.id} row={row} />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -193,40 +208,8 @@ function BillingSummaryBar({ totals }: { totals: ReturnType<typeof summarize> })
   );
 }
 
-function MonthSection({ group }: { group: MonthGroup }) {
-  return (
-    <div className="bg-white shadow overflow-x-auto sm:rounded-md">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2">
-        <h2 className="text-base font-semibold text-gray-900">{group.month}</h2>
-        <div className="flex flex-wrap gap-x-4 text-xs text-gray-600">
-          <span>件数: {group.totals.count}</span>
-          <span>計: {formatJpy(group.totals.amount)}</span>
-          <span className="text-green-700">入金済: {formatJpy(group.totals.receivedAmount)}</span>
-          <span className="text-amber-700">未入金: {formatJpy(group.totals.unreceivedAmount)}</span>
-        </div>
-      </div>
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50">
-          <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-            <th className="px-4 py-2">請求日</th>
-            <th className="px-4 py-2">請求先</th>
-            <th className="px-4 py-2">プロジェクト</th>
-            <th className="px-4 py-2">請求方法</th>
-            <th className="px-4 py-2 text-right">金額</th>
-            <th className="px-4 py-2 text-center">入金</th>
-            <th className="px-4 py-2">入金日</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {group.rows.map((row) => (
-            <BillingRow key={row.id} row={row} />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
+// One billing entry as a flat table row: 請求先 (customer) and プロジェクト as columns, plus how
+// much (金額) / when (請求日) / 入金日 (received date, not a boolean).
 function BillingRow({ row }: { row: BillingListEntry }) {
   const billingType = BILLING_TYPE_LABELS[row.billing_type] ?? row.billing_type;
   const pricingBasis = PRICING_BASIS_LABELS[row.pricing_basis] ?? row.pricing_basis;
@@ -243,32 +226,25 @@ function BillingRow({ row }: { row: BillingListEntry }) {
         >
           {row.project_name}
         </Link>
-        <div className="mt-0.5 text-xs text-gray-500">
-          {row.organization_name}
-          {row.project_phase === "completed" && (
-            <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-green-700">完了</span>
-          )}
-        </div>
+        {row.project_phase === "completed" && (
+          <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">
+            完了
+          </span>
+        )}
       </td>
+      <td className="px-4 py-2 whitespace-nowrap text-gray-500">{row.organization_name}</td>
       <td className="px-4 py-2 whitespace-nowrap text-gray-600">
         {billingType} / {pricingBasis}
       </td>
       <td className="px-4 py-2 text-right whitespace-nowrap font-medium text-gray-900">
         {formatJpy(row.amount)}
       </td>
-      <td className="px-4 py-2 text-center">
-        {row.is_received ? (
-          <span className="text-green-600" title="入金済">
-            ✓
-          </span>
+      <td className="px-4 py-2 whitespace-nowrap">
+        {row.is_received && row.received_datetime ? (
+          <span className="text-green-700">{formatDisplayDate(row.received_datetime)}</span>
         ) : (
-          <span className="text-gray-300" title="未入金">
-            —
-          </span>
+          <span className="text-amber-700">未入金</span>
         )}
-      </td>
-      <td className="px-4 py-2 whitespace-nowrap text-gray-500">
-        {row.received_datetime ? formatDisplayDate(row.received_datetime) : "-"}
       </td>
     </tr>
   );

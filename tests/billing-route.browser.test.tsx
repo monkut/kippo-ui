@@ -80,8 +80,18 @@ describe("Billing route", () => {
     container.remove();
   });
 
-  test("renders through loading → authenticated without a hooks-order crash", async () => {
-    api.rows = [row({ id: 1, project_name: "Alpha", amount: "1000000" })];
+  test("renders through loading → authenticated as a flat table (customer + project columns)", async () => {
+    api.rows = [
+      row({
+        id: 1,
+        project_name: "Alpha",
+        billed_to_name: "AlphaCo",
+        amount: "1000000",
+        is_received: true,
+        received_datetime: "2026-07-10T00:00:00Z",
+      }),
+      row({ id: 2, project_name: "Beta", billed_to_name: "BetaCo", is_received: false }),
+    ];
 
     // 1) Loading render (authLoading = true): the early return must not skip any hook.
     root.render(<Billing />);
@@ -96,8 +106,31 @@ describe("Billing route", () => {
 
     expect(container.textContent).toContain("請求一覧");
     expect(container.textContent).toContain("請求金額計");
-    expect(container.textContent).toContain("Alpha");
     expect(container.textContent).not.toContain("読み込み中");
+
+    // Flat table: exactly one <table>, with 請求先 + プロジェクト + 組織 column headers.
+    const tables = container.querySelectorAll("table");
+    expect(tables).toHaveLength(1);
+    const headers = Array.from(tables[0].querySelectorAll("th")).map((th) => th.textContent);
+    expect(headers).toEqual([
+      "請求日",
+      "請求先",
+      "プロジェクト",
+      "組織",
+      "請求方法",
+      "金額",
+      "入金日",
+    ]);
+
+    // Both entries share the one table; customer + project shown per row.
+    expect(container.textContent).toContain("AlphaCo");
+    expect(container.textContent).toContain("Alpha");
+    expect(container.textContent).toContain("BetaCo");
+    expect(container.textContent).toContain("Beta");
+
+    // Received entry shows the 入金日 (date, not a boolean); unreceived shows 未入金.
+    expect(container.textContent).toContain("2026/7/10");
+    expect(container.textContent).toContain("未入金");
   });
 
   test("CSV button downloads the filtered rows", async () => {

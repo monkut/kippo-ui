@@ -5,7 +5,7 @@ import {
   billedToDisplay,
   buildBillingCsv,
   filterBillingRows,
-  groupByMonth,
+  sortBillingRows,
   summarize,
 } from "~/lib/billing-report";
 
@@ -114,13 +114,26 @@ describe("summarize", () => {
   });
 });
 
-describe("groupByMonth", () => {
-  test("groups by 請求月, newest first, with per-month totals", () => {
-    const groups = groupByMonth(rows);
-    expect(groups.map((g) => g.month)).toEqual(["2026-08", "2026-07"]);
-    expect(groups[0].totals.amount).toBe(2500000);
-    expect(groups[0].rows).toHaveLength(2);
-    expect(groups[1].totals.amount).toBe(1000000);
+describe("sortBillingRows", () => {
+  test("orders by 請求先, then project, then 請求日 asc — keeps a project's entries contiguous", () => {
+    const grows: BillingListEntry[] = [
+      entry({ id: 12, project_name: "Beta", billed_to_name: "BetaCo", billing_date: "2026-07-31" }),
+      entry({
+        id: 10,
+        project_name: "Alpha",
+        billed_to_name: "AlphaCo",
+        billing_date: "2026-08-31",
+      }),
+      entry({
+        id: 11,
+        project_name: "Alpha",
+        billed_to_name: "AlphaCo",
+        billing_date: "2026-07-31",
+      }),
+    ];
+    // AlphaCo before BetaCo; within Alpha, 請求日 ascending; does not mutate the input
+    expect(sortBillingRows(grows).map((r) => r.id)).toEqual([11, 10, 12]);
+    expect(grows.map((r) => r.id)).toEqual([12, 10, 11]);
   });
 });
 
