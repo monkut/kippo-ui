@@ -86,7 +86,7 @@ export default function Billing() {
 
   if (authLoading) {
     return (
-      <Layout>
+      <Layout title="プロジェクト請求一覧">
         <div className="flex justify-center items-center h-64">
           <div className="text-gray-500">読み込み中...</div>
         </div>
@@ -99,10 +99,9 @@ export default function Billing() {
   }
 
   return (
-    <Layout>
+    <Layout title="プロジェクト請求一覧">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">プロジェクト請求一覧</h1>
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="search"
