@@ -19,7 +19,7 @@ import { downloadCsv } from "~/lib/csv";
 import { formatDisplayDate } from "~/lib/dates";
 
 export function meta() {
-  return [{ title: "請求一覧 - Kippo要件管理" }];
+  return [{ title: "プロジェクト請求一覧 - Kippo要件管理" }];
 }
 
 const formatJpy = (value: string | number | null | undefined): string => {
@@ -102,7 +102,7 @@ export default function Billing() {
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">請求一覧</h1>
+          <h1 className="text-2xl font-bold text-gray-900">プロジェクト請求一覧</h1>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="search"

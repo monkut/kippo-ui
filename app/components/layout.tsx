@@ -180,7 +180,7 @@ export function Layout({
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  請求一覧
+                  プロジェクト請求一覧
                 </Link>
               </div>
             </div>
