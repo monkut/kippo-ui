@@ -173,6 +173,7 @@ export default function Billing() {
                   <th className="px-4 py-2">請求日</th>
                   <th className="px-4 py-2">請求先</th>
                   <th className="px-4 py-2">プロジェクト</th>
+                  <th className="px-4 py-2 text-center">完了</th>
                   <th className="px-4 py-2">組織</th>
                   <th className="px-4 py-2">請求方法</th>
                   <th className="px-4 py-2 text-right">金額</th>
@@ -226,10 +227,10 @@ function BillingRow({ row }: { row: BillingListEntry }) {
         >
           {row.project_name}
         </Link>
+      </td>
+      <td className="px-4 py-2 text-center">
         {row.project_phase === "completed" && (
-          <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">
-            完了
-          </span>
+          <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">完了</span>
         )}
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-gray-500">{row.organization_name}</td>

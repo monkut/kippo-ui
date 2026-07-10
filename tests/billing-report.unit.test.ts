@@ -115,15 +115,15 @@ describe("summarize", () => {
 });
 
 describe("sortBillingRows", () => {
-  test("orders by 請求先, then project, then 請求日 asc — keeps a project's entries contiguous", () => {
+  test("orders by 請求日 ascending; 請求先 then project break same-day ties; no input mutation", () => {
     const grows: BillingListEntry[] = [
-      entry({ id: 12, project_name: "Beta", billed_to_name: "BetaCo", billing_date: "2026-07-31" }),
       entry({
         id: 10,
         project_name: "Alpha",
         billed_to_name: "AlphaCo",
         billing_date: "2026-08-31",
       }),
+      entry({ id: 12, project_name: "Beta", billed_to_name: "BetaCo", billing_date: "2026-07-31" }),
       entry({
         id: 11,
         project_name: "Alpha",
@@ -131,9 +131,9 @@ describe("sortBillingRows", () => {
         billing_date: "2026-07-31",
       }),
     ];
-    // AlphaCo before BetaCo; within Alpha, 請求日 ascending; does not mutate the input
-    expect(sortBillingRows(grows).map((r) => r.id)).toEqual([11, 10, 12]);
-    expect(grows.map((r) => r.id)).toEqual([12, 10, 11]);
+    // 07-31 rows first (AlphaCo before BetaCo on the tie), then 08-31
+    expect(sortBillingRows(grows).map((r) => r.id)).toEqual([11, 12, 10]);
+    expect(grows.map((r) => r.id)).toEqual([10, 12, 11]);
   });
 });
 

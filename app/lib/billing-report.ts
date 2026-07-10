@@ -84,15 +84,15 @@ export function summarize(rows: BillingListEntry[]): BillingTotals {
   );
 }
 
-/** Order rows for the flat table: 請求先, then project name, then 請求日 ascending. Keeps a
- * project's monthly entries contiguous (reads as a schedule) within a single table — no sections. */
+/** Order rows for the flat table by 請求日 ascending (chronological ledger). 請求先 then project
+ * name break ties so same-day rows stay deterministic. */
 export function sortBillingRows(rows: BillingListEntry[]): BillingListEntry[] {
   const collator = new Intl.Collator("ja");
   return [...rows].sort(
     (a, b) =>
+      a.billing_date.localeCompare(b.billing_date) ||
       collator.compare(billedToDisplay(a), billedToDisplay(b)) ||
-      collator.compare(a.project_name, b.project_name) ||
-      a.billing_date.localeCompare(b.billing_date),
+      collator.compare(a.project_name, b.project_name),
   );
 }
 

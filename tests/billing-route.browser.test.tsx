@@ -90,7 +90,13 @@ describe("Billing route", () => {
         is_received: true,
         received_datetime: "2026-07-10T00:00:00Z",
       }),
-      row({ id: 2, project_name: "Beta", billed_to_name: "BetaCo", is_received: false }),
+      row({
+        id: 2,
+        project_name: "Beta",
+        billed_to_name: "BetaCo",
+        is_received: false,
+        project_phase: "in-progress",
+      }),
     ];
 
     // 1) Loading render (authLoading = true): the early return must not skip any hook.
@@ -116,6 +122,7 @@ describe("Billing route", () => {
       "請求日",
       "請求先",
       "プロジェクト",
+      "完了",
       "組織",
       "請求方法",
       "金額",
@@ -127,6 +134,12 @@ describe("Billing route", () => {
     expect(container.textContent).toContain("Alpha");
     expect(container.textContent).toContain("BetaCo");
     expect(container.textContent).toContain("Beta");
+
+    // 完了 is its own column: exactly one cell reads 完了 (Alpha completed; Beta in-progress is blank).
+    const completedCells = Array.from(container.querySelectorAll("td")).filter(
+      (td) => td.textContent === "完了",
+    );
+    expect(completedCells).toHaveLength(1);
 
     // Received entry shows the 入金日 (date, not a boolean); unreceived shows 未入金.
     expect(container.textContent).toContain("2026/7/10");
