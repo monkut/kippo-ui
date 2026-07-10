@@ -5,7 +5,7 @@ import {
   billedToDisplay,
   buildBillingCsv,
   filterBillingRows,
-  sortBillingRows,
+  groupByProject,
   summarize,
 } from "~/lib/billing-report";
 
@@ -118,26 +118,50 @@ describe("summarize", () => {
   });
 });
 
-describe("sortBillingRows", () => {
-  test("orders by 請求日 ascending; 請求先 then project break same-day ties; no input mutation", () => {
+describe("groupByProject", () => {
+  test("one group per project; entries 請求日 asc; totals sum entries; carries 契約金額; ordered by 顧客", () => {
     const grows: BillingListEntry[] = [
       entry({
-        id: 10,
+        id: 1,
+        project_id: "pa",
         project_name: "Alpha",
-        billed_to_name: "AlphaCo",
+        customer_name: "AlphaCust",
         billing_date: "2026-08-31",
+        amount: "1000000",
+        is_received: false,
+        contract_total_amount: "3000000",
       }),
-      entry({ id: 12, project_name: "Beta", billed_to_name: "BetaCo", billing_date: "2026-07-31" }),
       entry({
-        id: 11,
+        id: 2,
+        project_id: "pa",
         project_name: "Alpha",
-        billed_to_name: "AlphaCo",
+        customer_name: "AlphaCust",
         billing_date: "2026-07-31",
+        amount: "1000000",
+        is_received: true,
+        contract_total_amount: "3000000",
+      }),
+      entry({
+        id: 3,
+        project_id: "pb",
+        project_name: "Beta",
+        customer_name: "BetaCust",
+        billing_date: "2026-07-31",
+        amount: "500000",
+        is_received: false,
+        contract_total_amount: "500000",
       }),
     ];
-    // 07-31 rows first (AlphaCo before BetaCo on the tie), then 08-31
-    expect(sortBillingRows(grows).map((r) => r.id)).toEqual([11, 12, 10]);
-    expect(grows.map((r) => r.id)).toEqual([10, 12, 11]);
+    const groups = groupByProject(grows);
+    // one row per project, ordered by 顧客 (AlphaCust before BetaCust)
+    expect(groups.map((g) => g.projectName)).toEqual(["Alpha", "Beta"]);
+    const alpha = groups[0];
+    expect(alpha.entries.map((e) => e.id)).toEqual([2, 1]); // 請求日 ascending
+    expect(alpha.contractTotal).toBe("3000000"); // contract cost carried onto the master row
+    expect(alpha.totals.count).toBe(2);
+    expect(alpha.totals.amount).toBe(2000000); // summed billing entries (folded-up display)
+    expect(alpha.totals.receivedAmount).toBe(1000000);
+    expect(groups[1].totals.amount).toBe(500000);
   });
 });
 

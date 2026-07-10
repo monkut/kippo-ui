@@ -89,15 +89,47 @@ export function summarize(rows: BillingListEntry[]): BillingTotals {
   );
 }
 
-/** Order rows for the flat table by 請求日 ascending (chronological ledger). 請求先 then project
- * name break ties so same-day rows stay deterministic. */
-export function sortBillingRows(rows: BillingListEntry[]): BillingListEntry[] {
+export interface ProjectGroup {
+  projectId: string;
+  projectName: string;
+  customerName: string | null;
+  billedTo: string;
+  phase: string;
+  contractTotal: string | null; // 契約金額 (contract cost)
+  entries: BillingListEntry[]; // billing entries, 請求日 ascending (the fold-down detail)
+  totals: BillingTotals; // count + summed billing entries (請求合計) + received/unreceived split
+}
+
+/** One group per project (collapsed master row): its contract cost, summed billing entries, and
+ * the entries themselves (請求日 ascending) for the fold-down. Groups ordered by 顧客 then project.
+ * Project-level fields (name/顧客/請求先/契約金額/phase) are taken from the first entry — all of a
+ * project's entries share them. */
+export function groupByProject(rows: BillingListEntry[]): ProjectGroup[] {
+  const byProject = new Map<string, BillingListEntry[]>();
+  for (const row of rows) {
+    const bucket = byProject.get(row.project_id);
+    if (bucket) bucket.push(row);
+    else byProject.set(row.project_id, [row]);
+  }
   const collator = new Intl.Collator("ja");
-  return [...rows].sort(
+  const groups = [...byProject.values()].map((projectRows) => {
+    const entries = [...projectRows].sort((a, b) => a.billing_date.localeCompare(b.billing_date));
+    const head = entries[0];
+    return {
+      projectId: head.project_id,
+      projectName: head.project_name,
+      customerName: head.customer_name,
+      billedTo: billedToDisplay(head),
+      phase: head.project_phase,
+      contractTotal: head.contract_total_amount,
+      entries,
+      totals: summarize(entries),
+    };
+  });
+  return groups.sort(
     (a, b) =>
-      a.billing_date.localeCompare(b.billing_date) ||
-      collator.compare(billedToDisplay(a), billedToDisplay(b)) ||
-      collator.compare(a.project_name, b.project_name),
+      collator.compare(a.customerName ?? "", b.customerName ?? "") ||
+      collator.compare(a.projectName, b.projectName),
   );
 }
 

@@ -7,12 +7,12 @@ import {
   BILLING_TYPE_LABELS,
   type BillingFilters,
   PRICING_BASIS_LABELS,
+  type ProjectGroup,
   type ReceivedFilter,
   availableMonths,
-  billedToDisplay,
   buildBillingCsv,
   filterBillingRows,
-  sortBillingRows,
+  groupByProject,
   summarize,
 } from "~/lib/billing-report";
 import { downloadCsv } from "~/lib/csv";
@@ -37,6 +37,7 @@ export default function Billing() {
   const [completedOnly, setCompletedOnly] = useState(false);
   const [received, setReceived] = useState<ReceivedFilter>("all");
   const [month, setMonth] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -64,15 +65,24 @@ export default function Billing() {
     [search, completedOnly, received, month],
   );
   const filteredRows = useMemo(() => filterBillingRows(rows, filters), [rows, filters]);
-  const sortedRows = useMemo(() => sortBillingRows(filteredRows), [filteredRows]);
+  const groups = useMemo<ProjectGroup[]>(() => groupByProject(filteredRows), [filteredRows]);
   const totals = useMemo(() => summarize(filteredRows), [filteredRows]);
   const months = useMemo(() => availableMonths(rows), [rows]);
 
+  const toggleExpanded = useCallback((projectId: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  }, []);
+
   const handleDownloadCsv = useCallback(() => {
     const stamp = new Date().toISOString().slice(0, 10);
-    // Export in the on-screen row order so the CSV matches the table.
-    downloadCsv(`billing-${stamp}.csv`, buildBillingCsv(sortedRows));
-  }, [sortedRows]);
+    // CSV stays one row per billing entry, in the on-screen (per-project) order.
+    downloadCsv(`billing-${stamp}.csv`, buildBillingCsv(groups.flatMap((g) => g.entries)));
+  }, [groups]);
 
   if (authLoading) {
     return (
@@ -170,19 +180,26 @@ export default function Billing() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-4 py-2">請求日</th>
+                  <th className="px-2 py-2" />
                   <th className="px-4 py-2">プロジェクト</th>
                   <th className="px-4 py-2">顧客</th>
                   <th className="px-4 py-2 text-center">完了</th>
                   <th className="px-4 py-2">請求先</th>
-                  <th className="px-4 py-2">請求方法</th>
-                  <th className="px-4 py-2 text-right">金額</th>
-                  <th className="px-4 py-2">入金日</th>
+                  <th className="px-4 py-2 text-right">契約金額</th>
+                  <th className="px-4 py-2 text-right">請求件数</th>
+                  <th className="px-4 py-2 text-right">請求合計</th>
+                  <th className="px-4 py-2 text-right">入金済</th>
+                  <th className="px-4 py-2 text-right">未入金</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {sortedRows.map((row) => (
-                  <BillingRow key={row.id} row={row} />
+                {groups.map((group) => (
+                  <ProjectRow
+                    key={group.projectId}
+                    group={group}
+                    expanded={expanded.has(group.projectId)}
+                    onToggle={() => toggleExpanded(group.projectId)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -209,44 +226,115 @@ function BillingSummaryBar({ totals }: { totals: ReturnType<typeof summarize> })
   );
 }
 
-// One billing entry as a flat table row: プロジェクト / 顧客 (customer) / 請求先 (billing dest) as
-// columns, plus how much (金額) / when (請求日) / 入金日 (received date, not a boolean).
-function BillingRow({ row }: { row: BillingListEntry }) {
-  const billingType = BILLING_TYPE_LABELS[row.billing_type] ?? row.billing_type;
-  const pricingBasis = PRICING_BASIS_LABELS[row.pricing_basis] ?? row.pricing_basis;
+// Master row: one line per project — contract cost (契約金額) + summed billing entries (請求合計) —
+// with a fold-down (▶ / ▼) that reveals the project's individual billing entries.
+function ProjectRow({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: ProjectGroup;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-2 whitespace-nowrap text-gray-700">
-        {formatDisplayDate(row.billing_date)}
-      </td>
-      <td className="px-4 py-2">
-        <Link
-          to={`/projects/${row.project_id}/edit`}
-          className="font-medium text-indigo-600 hover:underline"
-        >
-          {row.project_name}
-        </Link>
-      </td>
-      <td className="px-4 py-2 text-gray-700">{row.customer_name || "-"}</td>
-      <td className="px-4 py-2 text-center">
-        {row.project_phase === "completed" && (
-          <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">完了</span>
-        )}
-      </td>
-      <td className="px-4 py-2 text-gray-700">{billedToDisplay(row)}</td>
-      <td className="px-4 py-2 whitespace-nowrap text-gray-600">
-        {billingType} / {pricingBasis}
-      </td>
-      <td className="px-4 py-2 text-right whitespace-nowrap font-medium text-gray-900">
-        {formatJpy(row.amount)}
-      </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        {row.is_received && row.received_datetime ? (
-          <span className="text-green-700">{formatDisplayDate(row.received_datetime)}</span>
-        ) : (
-          <span className="text-amber-700">未入金</span>
-        )}
-      </td>
-    </tr>
+    <>
+      <tr className="hover:bg-gray-50">
+        <td className="px-2 py-2 align-top">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-label={`${group.projectName} の請求明細を${expanded ? "折りたたむ" : "展開"}`}
+            className="text-gray-400 hover:text-gray-700"
+          >
+            <span className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}>
+              ▶
+            </span>
+          </button>
+        </td>
+        <td className="px-4 py-2">
+          <Link
+            to={`/projects/${group.projectId}/edit`}
+            className="font-medium text-indigo-600 hover:underline"
+          >
+            {group.projectName}
+          </Link>
+        </td>
+        <td className="px-4 py-2 text-gray-700">{group.customerName || "-"}</td>
+        <td className="px-4 py-2 text-center">
+          {group.phase === "completed" && (
+            <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">完了</span>
+          )}
+        </td>
+        <td className="px-4 py-2 text-gray-700">{group.billedTo}</td>
+        <td className="px-4 py-2 text-right whitespace-nowrap text-gray-700">
+          {formatJpy(group.contractTotal)}
+        </td>
+        <td className="px-4 py-2 text-right text-gray-700">{group.totals.count}</td>
+        <td className="px-4 py-2 text-right whitespace-nowrap font-medium text-gray-900">
+          {formatJpy(group.totals.amount)}
+        </td>
+        <td className="px-4 py-2 text-right whitespace-nowrap text-green-700">
+          {formatJpy(group.totals.receivedAmount)}
+        </td>
+        <td className="px-4 py-2 text-right whitespace-nowrap text-amber-700">
+          {formatJpy(group.totals.unreceivedAmount)}
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-gray-50">
+          <td colSpan={10} className="px-0 py-0">
+            <div className="px-10 py-2">
+              <BillingEntriesDetail entries={group.entries} />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// Fold-down detail: the project's individual billing entries (how much + when + 入金日).
+function BillingEntriesDetail({ entries }: { entries: BillingListEntry[] }) {
+  return (
+    <table className="min-w-full text-sm">
+      <thead>
+        <tr className="text-left text-xs font-medium text-gray-500">
+          <th className="px-2 py-1">請求日</th>
+          <th className="px-2 py-1">請求方法</th>
+          <th className="px-2 py-1 text-right">金額</th>
+          <th className="px-2 py-1">入金日</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100">
+        {entries.map((entry) => {
+          const billingType = BILLING_TYPE_LABELS[entry.billing_type] ?? entry.billing_type;
+          const pricingBasis = PRICING_BASIS_LABELS[entry.pricing_basis] ?? entry.pricing_basis;
+          return (
+            <tr key={entry.id} className="text-gray-700">
+              <td className="px-2 py-1 whitespace-nowrap">
+                {formatDisplayDate(entry.billing_date)}
+              </td>
+              <td className="px-2 py-1 whitespace-nowrap text-gray-600">
+                {billingType} / {pricingBasis}
+              </td>
+              <td className="px-2 py-1 text-right whitespace-nowrap font-medium text-gray-900">
+                {formatJpy(entry.amount)}
+              </td>
+              <td className="px-2 py-1 whitespace-nowrap">
+                {entry.is_received && entry.received_datetime ? (
+                  <span className="text-green-700">
+                    {formatDisplayDate(entry.received_datetime)}
+                  </span>
+                ) : (
+                  <span className="text-amber-700">未入金</span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

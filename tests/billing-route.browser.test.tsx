@@ -80,22 +80,41 @@ describe("Billing route", () => {
     container.remove();
   });
 
-  test("renders through loading → authenticated as a flat table (customer + project columns)", async () => {
+  test("one master row per project; folds down to billing-entry detail", async () => {
+    // Project pa (Alpha) has two monthly entries; pb (Beta) has one.
     api.rows = [
       row({
         id: 1,
+        project_id: "pa",
         project_name: "Alpha",
         customer_name: "AlphaCust",
         billed_to_name: "AlphaCo",
+        billing_date: "2026-07-31",
         amount: "1000000",
+        contract_total_amount: "3000000",
         is_received: true,
         received_datetime: "2026-07-10T00:00:00Z",
       }),
       row({
         id: 2,
+        project_id: "pa",
+        project_name: "Alpha",
+        customer_name: "AlphaCust",
+        billed_to_name: "AlphaCo",
+        billing_date: "2026-08-31",
+        amount: "1000000",
+        contract_total_amount: "3000000",
+        is_received: false,
+      }),
+      row({
+        id: 3,
+        project_id: "pb",
         project_name: "Beta",
         customer_name: "BetaCust",
         billed_to_name: "BetaCo",
+        billing_date: "2026-07-31",
+        amount: "500000",
+        contract_total_amount: "500000",
         is_received: false,
         project_phase: "in-progress",
       }),
@@ -113,40 +132,29 @@ describe("Billing route", () => {
     await flush();
 
     expect(container.textContent).toContain("請求一覧");
-    expect(container.textContent).toContain("請求金額計");
     expect(container.textContent).not.toContain("読み込み中");
 
-    // Flat table: exactly one <table>; 顧客 is right of プロジェクト, 請求先 left of 請求方法, no 組織.
-    const tables = container.querySelectorAll("table");
-    expect(tables).toHaveLength(1);
-    const headers = Array.from(tables[0].querySelectorAll("th")).map((th) => th.textContent);
-    expect(headers).toEqual([
-      "請求日",
-      "プロジェクト",
-      "顧客",
-      "完了",
-      "請求先",
-      "請求方法",
-      "金額",
-      "入金日",
-    ]);
-    expect(headers).not.toContain("組織");
+    // One master row per project → two fold toggles, both collapsed initially.
+    const toggles = () =>
+      Array.from(container.querySelectorAll<HTMLButtonElement>("button[aria-expanded]"));
+    expect(toggles()).toHaveLength(2);
+    expect(toggles().every((b) => b.getAttribute("aria-expanded") === "false")).toBe(true);
 
-    // 顧客 (customer) and 請求先 (billing dest) are distinct columns, both shown per row.
+    // Master row shows contract cost (契約金額) and summed billing entries (請求合計); 顧客 + 請求先 distinct.
     expect(container.textContent).toContain("AlphaCust");
     expect(container.textContent).toContain("AlphaCo");
-    expect(container.textContent).toContain("BetaCust");
-    expect(container.textContent).toContain("BetaCo");
+    expect(container.textContent).toContain("¥3,000,000"); // 契約金額
+    expect(container.textContent).toContain("¥2,000,000"); // 請求合計 = sum of Alpha's two entries
 
-    // 完了 is its own column: exactly one cell reads 完了 (Alpha completed; Beta in-progress is blank).
-    const completedCells = Array.from(container.querySelectorAll("td")).filter(
-      (td) => td.textContent === "完了",
-    );
-    expect(completedCells).toHaveLength(1);
+    // Collapsed: the individual entry 請求日 are hidden.
+    expect(container.textContent).not.toContain("2026/8/31");
 
-    // Received entry shows the 入金日 (date, not a boolean); unreceived shows 未入金.
-    expect(container.textContent).toContain("2026/7/10");
-    expect(container.textContent).toContain("未入金");
+    // Fold down Alpha (first group, AlphaCust) → its billing entries appear.
+    toggles()[0].click();
+    await flush();
+    expect(toggles()[0].getAttribute("aria-expanded")).toBe("true");
+    expect(container.textContent).toContain("2026/7/31");
+    expect(container.textContent).toContain("2026/8/31");
   });
 
   test("CSV button downloads the filtered rows", async () => {
