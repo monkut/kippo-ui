@@ -286,6 +286,112 @@ paths:
                   is_staff:
                     type: boolean
           description: ''
+  /api/billing/:
+    get:
+      operationId: billing_list
+      description: |-
+        Flat, cross-project billing ledger for the 請求一覧 (billing list) UI — read-only.
+
+        One row per ``KippoProjectBillingEntry`` across the request user's accessible projects
+        (superusers see all), denormalized with its project / contract / customer display fields via
+        ``BillingListEntrySerializer``. Org-scoped through the contract's project organization. Supports
+        ``month`` / ``from`` / ``to`` / ``project`` server-side filtering to bound the window; the UI does
+        its own free-text search, 完了 toggle and summation client-side over the returned rows.
+      parameters:
+      - in: query
+        name: from
+        schema:
+          type: string
+        description: Filter to billing_date on/after this date, format YYYY-MM-DD.
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: Filter to a single billing month, format YYYY-MM (e.g. 2026-07).
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter to a single project (UUID).
+      - in: query
+        name: to
+        schema:
+          type: string
+        description: Filter to billing_date on/before this date, format YYYY-MM-DD.
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBillingListEntryList'
+          description: ''
+  /api/billing/{id}/:
+    get:
+      operationId: billing_retrieve
+      description: |-
+        Flat, cross-project billing ledger for the 請求一覧 (billing list) UI — read-only.
+
+        One row per ``KippoProjectBillingEntry`` across the request user's accessible projects
+        (superusers see all), denormalized with its project / contract / customer display fields via
+        ``BillingListEntrySerializer``. Org-scoped through the contract's project organization. Supports
+        ``month`` / ``from`` / ``to`` / ``project`` server-side filtering to bound the window; the UI does
+        its own free-text search, 完了 toggle and summation client-side over the returned rows.
+      parameters:
+      - in: query
+        name: from
+        schema:
+          type: string
+        description: Filter to billing_date on/after this date, format YYYY-MM-DD.
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 請求エントリ.
+        required: true
+      - in: query
+        name: month
+        schema:
+          type: string
+        description: Filter to a single billing month, format YYYY-MM (e.g. 2026-07).
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: Filter to a single project (UUID).
+      - in: query
+        name: to
+        schema:
+          type: string
+        description: Filter to billing_date on/before this date, format YYYY-MM-DD.
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingListEntry'
+          description: ''
   /api/customers/:
     get:
       operationId: customers_list
@@ -7732,6 +7838,122 @@ components:
       required:
       - created
       - skip_reason
+    BillingListEntry:
+      type: object
+      description: |-
+        Flat, read-only billing-ledger row for the cross-project 請求一覧 (billing list) UI.
+
+        One row per ``KippoProjectBillingEntry``, denormalized with the project / contract / customer
+        display fields the 請求一覧 needs so the UI can render, filter and sum without a second lookup
+        per row. Read-only — the ledger is edited through the nested per-project billing-entries endpoint.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        billing_date:
+          type: string
+          format: date
+          readOnly: true
+          title: 請求日
+          description: Date the entry is billed/recognized. Monthly-generated entries
+            use the month-end (月末) date.
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          title: 金額
+          description: Billed amount (JPY).
+        is_manual:
+          type: boolean
+          readOnly: true
+          title: 手動追加
+          description: True for hand-added entries; False for entries generated from
+            the contract terms.
+        is_received:
+          type: boolean
+          readOnly: true
+          title: 入金済
+          description: True once payment for this billing entry has been received.
+        received_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: 入金日時
+          description: When payment was received. Auto-set when is_received is enabled;
+            cleared when disabled.
+        received_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        note:
+          type: string
+          readOnly: true
+          title: 備考
+        project_id:
+          type: string
+          format: uuid
+          readOnly: true
+        project_name:
+          type: string
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        project_phase:
+          type: string
+          readOnly: true
+        project_actual_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        billed_to_name:
+          type: string
+          readOnly: true
+          nullable: true
+        customer_name:
+          type: string
+          readOnly: true
+          nullable: true
+        billing_type:
+          type: string
+          readOnly: true
+        pricing_basis:
+          type: string
+          readOnly: true
+        contract_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,0})?$
+          readOnly: true
+          nullable: true
+        contract_end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+      required:
+      - amount
+      - billed_to_name
+      - billing_date
+      - billing_type
+      - contract_end_date
+      - contract_total_amount
+      - customer_name
+      - id
+      - is_manual
+      - is_received
+      - note
+      - organization_name
+      - pricing_basis
+      - project_actual_date
+      - project_id
+      - project_name
+      - project_phase
+      - received_by_username
+      - received_datetime
     BillingTypeEnum:
       enum:
       - delivery
@@ -9372,6 +9594,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssumptionEvaluation'
+    PaginatedBillingListEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingListEntry'
     PaginatedBusinessRequirementEvaluationList:
       type: object
       required:
