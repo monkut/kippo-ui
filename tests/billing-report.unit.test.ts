@@ -240,4 +240,19 @@ describe("buildBillingCsv", () => {
     const csv = buildBillingCsv([entry({ note: 'a,b "c"', project_name: "Alpha" })]);
     expect(csv).toContain('"a,b ""c"""');
   });
+
+  test("neutralizes CSV formula injection on a leading = + - @", () => {
+    const csv = buildBillingCsv([
+      entry({
+        note: "=1+1",
+        project_name: "+cmd",
+        organization_name: "@x",
+        billed_to_name: "-danger",
+      }),
+    ]);
+    expect(csv).toContain("'=1+1");
+    expect(csv).toContain("'+cmd");
+    expect(csv).toContain("'@x");
+    expect(csv).toContain("'-danger");
+  });
 });

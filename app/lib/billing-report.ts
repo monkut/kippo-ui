@@ -3,6 +3,7 @@
 // by both the route component and its tests. The download side-effect lives in ./csv.
 
 import type { BillingListEntry } from "~/lib/api/billing";
+import { formatDisplayDate } from "~/lib/dates";
 
 export const BILLING_TYPE_LABELS: Record<string, string> = {
   delivery: "納品",
@@ -225,7 +226,10 @@ const CSV_HEADERS = [
 
 function csvCell(value: string | number | null | undefined): string {
   const text = value === null || value === undefined ? "" : String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  // Neutralize CSV/formula injection: a leading =, +, -, @ (or tab/CR) makes spreadsheets evaluate
+  // the cell as a formula. Prefix with an apostrophe so it renders as literal text.
+  const guarded = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\n]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
 /** Serialize rows to CSV (no BOM — the download helper adds it for Excel). One row per entry,
@@ -244,7 +248,7 @@ export function buildBillingCsv(rows: BillingListEntry[]): string {
         PRICING_BASIS_LABELS[row.pricing_basis] ?? row.pricing_basis,
         row.amount,
         row.is_received ? "入金済" : "未入金",
-        row.received_datetime ? new Date(row.received_datetime).toLocaleDateString("ja-JP") : "",
+        row.received_datetime ? formatDisplayDate(row.received_datetime) : "",
         row.contract_total_amount ?? "",
         row.project_phase,
         row.project_actual_date ?? "",

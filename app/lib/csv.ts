@@ -11,5 +11,7 @@ export function downloadCsv(filename: string, content: string): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  // Defer revoke: revoking on the same tick as click() can invalidate the blob URL before the
+  // browser starts the download (notably Firefox / large blobs), yielding an empty file.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

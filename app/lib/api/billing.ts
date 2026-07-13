@@ -5,6 +5,9 @@
 // going through the same `customFetch` mutator.
 
 import { customFetch } from "./custom-fetch";
+import { readList } from "./read-list";
+
+const FETCH_ALL_CONCURRENCY = 5;
 
 /** One denormalized billing-ledger row, mirroring BillingListEntrySerializer on the backend. */
 export interface BillingListEntry {
@@ -55,24 +58,41 @@ function buildUrl(params?: BillingListParams): string {
 export const billingList = (params?: BillingListParams): Promise<BillingListResponse> =>
   customFetch<BillingListResponse>(buildUrl(params), { method: "GET" });
 
-/** Walk all pages of /api/billing/ so the view can filter and sum the full set client-side.
- * Sequential (the ledger is bounded); stops on a non-200, the last page, or an empty page. */
+/** Fetch every page of /api/billing/ so the view can filter and sum the full set client-side.
+ * Page 1 is fetched first (for the count + page size), then the remaining pages concurrently.
+ * Throws on any non-200 so a partial fetch surfaces as an error (the view shows its error state)
+ * instead of silently truncating the ledger and under-reporting totals. */
 export async function fetchAllBillingEntries(
   params?: Omit<BillingListParams, "page">,
 ): Promise<BillingListEntry[]> {
-  const collected: BillingListEntry[] = [];
-  for (let page = 1; ; page += 1) {
-    const res = await billingList({ ...params, page });
-    if (res.status !== 200 || !res.data) break;
-    const { data } = res;
-    if (Array.isArray(data)) {
-      collected.push(...data);
-      break; // non-paginated response — everything is here
-    }
-    const results = data.results ?? [];
-    collected.push(...results);
-    const count = data.count ?? collected.length;
-    if (results.length === 0 || collected.length >= count) break;
+  const first = await billingList({ ...params, page: 1 });
+  if (first.status !== 200 || !first.data) {
+    throw new Error(`Failed to load billing entries (HTTP ${first.status})`);
   }
-  return collected;
+  if (Array.isArray(first.data)) return first.data; // non-paginated response — everything is here
+
+  const firstResults = first.data.results ?? [];
+  const count = first.data.count ?? firstResults.length;
+  const pageSize = firstResults.length;
+  if (!pageSize || count <= pageSize) return firstResults;
+
+  const remainingPages = Array.from({ length: Math.ceil(count / pageSize) - 1 }, (_, i) => i + 2);
+  const pages: BillingListEntry[][] = new Array(remainingPages.length);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(FETCH_ALL_CONCURRENCY, remainingPages.length) },
+    async () => {
+      while (cursor < remainingPages.length) {
+        const idx = cursor++;
+        const page = remainingPages[idx];
+        const res = await billingList({ ...params, page });
+        if (res.status !== 200 || !res.data) {
+          throw new Error(`Failed to load billing entries page ${page} (HTTP ${res.status})`);
+        }
+        pages[idx] = readList<BillingListEntry>(res.data);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return [...firstResults, ...pages.flat()];
 }

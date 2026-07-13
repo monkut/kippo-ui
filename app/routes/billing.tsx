@@ -5,7 +5,6 @@ import { useAuthGate } from "~/hooks/useAuthGate";
 import { type BillingListEntry, fetchAllBillingEntries } from "~/lib/api/billing";
 import {
   BILLING_TYPE_LABELS,
-  type BillingFilters,
   PRICING_BASIS_LABELS,
   type ProjectGroup,
   type ReceivedFilter,
@@ -18,30 +17,26 @@ import {
   sortGroups,
   summarize,
 } from "~/lib/billing-report";
+import { formatJpy } from "~/lib/currency";
 import { downloadCsv } from "~/lib/csv";
-import { formatDisplayDate } from "~/lib/dates";
+import { formatDateKey, formatDisplayDate } from "~/lib/dates";
 
 export function meta() {
   return [{ title: "プロジェクト請求一覧 - Kippo要件管理" }];
 }
 
-const formatJpy = (value: string | number | null | undefined): string => {
-  if (value === null || value === undefined || value === "") return "-";
-  const n = typeof value === "number" ? value : Number(value);
-  return Number.isNaN(n) ? "-" : `¥${n.toLocaleString("ja-JP")}`;
-};
-
 export default function Billing() {
   const { user, authLoading } = useAuthGate();
   // Deep-link support: KippoCustomerAdmin's per-month chart links here with ?month=YYYY-MM.
   const [searchParams] = useSearchParams();
+  const urlMonth = searchParams.get("month") ?? "";
   const [rows, setRows] = useState<BillingListEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [completedOnly, setCompletedOnly] = useState(false);
   const [received, setReceived] = useState<ReceivedFilter>("all");
-  const [month, setMonth] = useState(searchParams.get("month") ?? "");
+  const [month, setMonth] = useState(urlMonth);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Default sort: 契約終了日 (contract end date) ascending.
   const [sort, setSort] = useState<SortState>({ key: "contractEndDate", dir: "asc" });
@@ -67,11 +62,16 @@ export default function Billing() {
     };
   }, [user]);
 
-  const filters: BillingFilters = useMemo(
-    () => ({ search, completedOnly, received, month }),
-    [search, completedOnly, received, month],
+  // Keep the month filter in sync with the ?month= URL param when it changes (deep-link nav /
+  // back-forward). A manual dropdown change updates state only (not the URL), so this never fights it.
+  useEffect(() => {
+    setMonth(urlMonth);
+  }, [urlMonth]);
+
+  const filteredRows = useMemo(
+    () => filterBillingRows(rows, { search, completedOnly, received, month }),
+    [rows, search, completedOnly, received, month],
   );
-  const filteredRows = useMemo(() => filterBillingRows(rows, filters), [rows, filters]);
   const groups = useMemo<ProjectGroup[]>(
     () => sortGroups(groupByProject(filteredRows), sort),
     [filteredRows, sort],
@@ -100,7 +100,8 @@ export default function Billing() {
   }, []);
 
   const handleDownloadCsv = useCallback(() => {
-    const stamp = new Date().toISOString().slice(0, 10);
+    // formatDateKey is local (JST); toISOString would be UTC → off-by-one before 09:00 JST (issue #52).
+    const stamp = formatDateKey(new Date());
     // CSV stays one row per billing entry, in the on-screen (per-project) order.
     downloadCsv(`billing-${stamp}.csv`, buildBillingCsv(groups.flatMap((g) => g.entries)));
   }, [groups]);
