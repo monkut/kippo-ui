@@ -5,6 +5,7 @@ import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated/projects/projects";
 import type { KippoProject } from "~/lib/api/generated/models";
 import { readList } from "~/lib/api/read-list";
+import { formatJpy } from "~/lib/currency";
 import { useHiddenProjectCategories } from "~/hooks/useHiddenProjectCategories";
 
 const UNCATEGORIZED_LABEL = "未分類";
@@ -23,12 +24,6 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "total_revenue", label: "売上" },
   { key: "name", label: "名前" },
 ];
-
-const formatJpy = (value: string | null | undefined): string => {
-  if (value === null || value === undefined || value === "") return "-";
-  const n = Number(value);
-  return Number.isNaN(n) ? "-" : `¥${n.toLocaleString("ja-JP")}`;
-};
 
 // Month-end date ("2026-01-31") -> "2026年1月" (kippo#39 / T15).
 const formatBillingMonth = (monthEnd: string): string => {

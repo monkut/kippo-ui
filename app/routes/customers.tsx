@@ -16,6 +16,7 @@ import {
 } from "~/lib/api/generated/customers/customers";
 import { organizationsList } from "~/lib/api/generated/organizations/organizations";
 import { readList } from "~/lib/api/read-list";
+import { formatJpy } from "~/lib/currency";
 import { formatDisplayDate } from "~/lib/dates";
 import type {
   CustomerActiveProject,
@@ -27,12 +28,6 @@ import type {
 export function meta() {
   return [{ title: "顧客一覧 - Kippo要件管理" }];
 }
-
-const formatJpy = (value: string | number | null | undefined): string => {
-  if (value === null || value === undefined || value === "") return "-";
-  const n = typeof value === "number" ? value : Number(value);
-  return Number.isNaN(n) ? "-" : `¥${n.toLocaleString("ja-JP")}`;
-};
 
 /** Org list defensively (endpoint returns {organizations} at runtime, typed as {results}). */
 function extractOrganizations(data: unknown): Organization[] {

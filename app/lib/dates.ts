@@ -5,7 +5,9 @@
 
 /** Format a datetime/date value for display in ja-JP locale, or "-" when empty. */
 export function formatDisplayDate(value: string | null | undefined): string {
-  return value ? new Date(value).toLocaleDateString("ja-JP") : "-";
+  // Pin to JST so a UTC instant (e.g. an ISO received_datetime) renders the Japan-local date
+  // regardless of the viewer's timezone (per the JST display convention).
+  return value ? new Date(value).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }) : "-";
 }
 
 // Format a Date as YYYY-MM-DD using local-time components.
