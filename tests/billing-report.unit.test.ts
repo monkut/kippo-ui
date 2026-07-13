@@ -6,6 +6,7 @@ import {
   buildBillingCsv,
   filterBillingRows,
   groupByProject,
+  sortGroups,
   summarize,
 } from "~/lib/billing-report";
 
@@ -165,6 +166,52 @@ describe("groupByProject", () => {
     expect(alpha.totals.amount).toBe(2000000); // summed billing entries (folded-up display)
     expect(alpha.totals.receivedAmount).toBe(1000000);
     expect(groups[1].totals.amount).toBe(500000);
+  });
+});
+
+describe("sortGroups", () => {
+  const groups = groupByProject([
+    entry({
+      id: 1,
+      project_id: "pa",
+      project_name: "Alpha",
+      contract_end_date: "2026-12-31",
+      amount: "100",
+      contract_total_amount: "100",
+    }),
+    entry({
+      id: 2,
+      project_id: "pb",
+      project_name: "Beta",
+      contract_end_date: "2026-06-30",
+      amount: "900",
+      contract_total_amount: "900",
+    }),
+  ]);
+
+  test("契約終了日 ascending (default) puts the earliest end date first", () => {
+    expect(
+      sortGroups(groups, { key: "contractEndDate", dir: "asc" }).map((g) => g.projectName),
+    ).toEqual(["Beta", "Alpha"]);
+  });
+
+  test("direction flips the order", () => {
+    expect(
+      sortGroups(groups, { key: "contractEndDate", dir: "desc" }).map((g) => g.projectName),
+    ).toEqual(["Alpha", "Beta"]);
+  });
+
+  test("numeric column (請求合計) sorts numerically", () => {
+    expect(sortGroups(groups, { key: "amount", dir: "asc" }).map((g) => g.projectName)).toEqual([
+      "Alpha",
+      "Beta",
+    ]);
+  });
+
+  test("does not mutate the input array", () => {
+    const before = groups.map((g) => g.projectName);
+    sortGroups(groups, { key: "amount", dir: "desc" });
+    expect(groups.map((g) => g.projectName)).toEqual(before);
   });
 });
 

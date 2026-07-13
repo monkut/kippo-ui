@@ -139,6 +139,67 @@ export function groupByProject(rows: BillingListEntry[]): ProjectGroup[] {
   );
 }
 
+export type SortKey =
+  | "contractEndDate"
+  | "projectName"
+  | "customerName"
+  | "phase"
+  | "billedTo"
+  | "method"
+  | "contractTotal"
+  | "count"
+  | "amount"
+  | "received"
+  | "unreceived";
+
+export interface SortState {
+  key: SortKey;
+  dir: "asc" | "desc";
+}
+
+function sortValue(g: ProjectGroup, key: SortKey): string | number {
+  switch (key) {
+    case "contractEndDate":
+      return g.contractEndDate ?? "9999-99-99"; // null (open-ended) sorts last ascending
+    case "projectName":
+      return g.projectName;
+    case "customerName":
+      return g.customerName ?? "";
+    case "phase":
+      return g.phase;
+    case "billedTo":
+      return g.billedTo;
+    case "method":
+      return `${g.billingType} ${g.pricingBasis}`;
+    case "contractTotal":
+      return Number(g.contractTotal ?? 0);
+    case "count":
+      return g.totals.count;
+    case "amount":
+      return g.totals.amount;
+    case "received":
+      return g.totals.receivedAmount;
+    case "unreceived":
+      return g.totals.unreceivedAmount;
+  }
+}
+
+/** Sort project master rows by the chosen column/direction; project name is the stable tiebreaker.
+ * The route applies the default (contractEndDate ascending). */
+export function sortGroups(groups: ProjectGroup[], sort: SortState): ProjectGroup[] {
+  const collator = new Intl.Collator("ja");
+  const factor = sort.dir === "asc" ? 1 : -1;
+  return [...groups].sort((a, b) => {
+    const va = sortValue(a, sort.key);
+    const vb = sortValue(b, sort.key);
+    const primary =
+      typeof va === "number" && typeof vb === "number"
+        ? va - vb
+        : collator.compare(String(va), String(vb));
+    return primary !== 0 ? primary * factor : collator.compare(a.projectName, b.projectName);
+  });
+}
+
 /** Distinct 請求月 present in the rows, newest first — drives the month filter dropdown. */
 export function availableMonths(rows: BillingListEntry[]): string[] {
   return [...new Set(rows.map(billingMonth).filter(Boolean))].sort((a, b) => b.localeCompare(a));

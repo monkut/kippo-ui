@@ -141,7 +141,7 @@ describe("Billing route", () => {
 
     // 契約終了日 is the first column, showing the contract end date on the master row.
     const firstHeader = container.querySelector("thead th");
-    expect(firstHeader?.textContent).toBe("契約終了日");
+    expect(firstHeader?.textContent).toContain("契約終了日");
     expect(container.textContent).toContain("2026/9/30");
 
     // One master row per project → two fold toggles, both collapsed initially.
@@ -212,5 +212,44 @@ describe("Billing route", () => {
     // Only the 2026-08 entry survives the deep-linked month filter.
     expect(container.textContent).toContain("¥222");
     expect(container.textContent).not.toContain("¥111");
+  });
+
+  test("columns are sortable; default 契約終了日 ascending; a header click re-sorts", async () => {
+    api.rows = [
+      row({
+        id: 1,
+        project_id: "pa",
+        project_name: "Alpha",
+        contract_end_date: "2026-12-31",
+        amount: "100",
+        contract_total_amount: "100",
+      }),
+      row({
+        id: 2,
+        project_id: "pb",
+        project_name: "Beta",
+        contract_end_date: "2026-06-30",
+        amount: "900",
+        contract_total_amount: "900",
+      }),
+    ];
+    auth.state = { user: { username: "me" }, isLoading: false };
+
+    root.render(<Billing />);
+    await flush();
+
+    const order = () => {
+      const t = container.textContent ?? "";
+      return t.indexOf("Alpha") < t.indexOf("Beta") ? "Alpha,Beta" : "Beta,Alpha";
+    };
+    // default: 契約終了日 ascending → Beta (2026-06-30) before Alpha (2026-12-31)
+    expect(order()).toBe("Beta,Alpha");
+
+    // click 請求合計 → sort by amount ascending → Alpha (¥100) before Beta (¥900)
+    const amountHeader = findButton(container, "請求合計");
+    expect(amountHeader).not.toBeNull();
+    amountHeader?.click();
+    await flush();
+    expect(order()).toBe("Alpha,Beta");
   });
 });

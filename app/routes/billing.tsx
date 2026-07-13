@@ -9,10 +9,13 @@ import {
   PRICING_BASIS_LABELS,
   type ProjectGroup,
   type ReceivedFilter,
+  type SortKey,
+  type SortState,
   availableMonths,
   buildBillingCsv,
   filterBillingRows,
   groupByProject,
+  sortGroups,
   summarize,
 } from "~/lib/billing-report";
 import { downloadCsv } from "~/lib/csv";
@@ -40,6 +43,8 @@ export default function Billing() {
   const [received, setReceived] = useState<ReceivedFilter>("all");
   const [month, setMonth] = useState(searchParams.get("month") ?? "");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Default sort: 契約終了日 (contract end date) ascending.
+  const [sort, setSort] = useState<SortState>({ key: "contractEndDate", dir: "asc" });
 
   useEffect(() => {
     if (!user) return;
@@ -67,7 +72,10 @@ export default function Billing() {
     [search, completedOnly, received, month],
   );
   const filteredRows = useMemo(() => filterBillingRows(rows, filters), [rows, filters]);
-  const groups = useMemo<ProjectGroup[]>(() => groupByProject(filteredRows), [filteredRows]);
+  const groups = useMemo<ProjectGroup[]>(
+    () => sortGroups(groupByProject(filteredRows), sort),
+    [filteredRows, sort],
+  );
   const totals = useMemo(() => summarize(filteredRows), [filteredRows]);
   const months = useMemo(() => {
     const available = availableMonths(rows);
@@ -82,6 +90,13 @@ export default function Billing() {
       else next.add(projectId);
       return next;
     });
+  }, []);
+
+  // Sort by the clicked column; re-clicking the active column flips direction, a new column starts asc.
+  const handleSort = useCallback((key: SortKey) => {
+    setSort((prev) =>
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
   }, []);
 
   const handleDownloadCsv = useCallback(() => {
@@ -185,17 +200,63 @@ export default function Billing() {
             <table className="min-w-full divide-y divide-gray-200 whitespace-nowrap text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-4 py-2">契約終了日</th>
-                  <th className="px-4 py-2">プロジェクト</th>
-                  <th className="px-4 py-2">顧客</th>
-                  <th className="px-4 py-2 text-center">完了</th>
-                  <th className="px-4 py-2">請求先</th>
-                  <th className="px-4 py-2">請求方法</th>
-                  <th className="px-4 py-2 text-right">契約金額</th>
-                  <th className="px-4 py-2 text-right">請求件数</th>
-                  <th className="px-4 py-2 text-right">請求合計</th>
-                  <th className="px-4 py-2 text-right">入金済</th>
-                  <th className="px-4 py-2 text-right">未入金</th>
+                  <SortHeader
+                    label="契約終了日"
+                    sortKey="contractEndDate"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortHeader
+                    label="プロジェクト"
+                    sortKey="projectName"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortHeader label="顧客" sortKey="customerName" sort={sort} onSort={handleSort} />
+                  <SortHeader
+                    label="完了"
+                    sortKey="phase"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="center"
+                  />
+                  <SortHeader label="請求先" sortKey="billedTo" sort={sort} onSort={handleSort} />
+                  <SortHeader label="請求方法" sortKey="method" sort={sort} onSort={handleSort} />
+                  <SortHeader
+                    label="契約金額"
+                    sortKey="contractTotal"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortHeader
+                    label="請求件数"
+                    sortKey="count"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortHeader
+                    label="請求合計"
+                    sortKey="amount"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortHeader
+                    label="入金済"
+                    sortKey="received"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <SortHeader
+                    label="未入金"
+                    sortKey="unreceived"
+                    sort={sort}
+                    onSort={handleSort}
+                    align="right"
+                  />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -229,6 +290,41 @@ function BillingSummaryBar({ totals }: { totals: ReturnType<typeof summarize> })
       <span className="text-green-700">入金済: {formatJpy(totals.receivedAmount)}</span>
       <span className="text-amber-700">未入金: {formatJpy(totals.unreceivedAmount)}</span>
     </div>
+  );
+}
+
+// Sortable column header: clicking toggles the sort; the active column shows ▲ (asc) / ▼ (desc).
+function SortHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  align,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: SortState;
+  onSort: (key: SortKey) => void;
+  align?: "right" | "center";
+}) {
+  const active = sort.key === sortKey;
+  const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "";
+  return (
+    <th
+      className={`px-4 py-2 ${alignClass}`}
+      aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 hover:text-gray-700"
+      >
+        {label}
+        <span className={active ? "text-gray-700" : "text-gray-300"}>
+          {active && sort.dir === "desc" ? "▼" : "▲"}
+        </span>
+      </button>
+    </th>
   );
 }
 
