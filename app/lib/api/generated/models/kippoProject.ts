@@ -66,6 +66,7 @@ export interface KippoProject {
   * `info` - info
   * `employee-referral` - 社員紹介
   * `customer-referral` - 顧客紹介
+  * `partner-introduction` - パートナー紹介
   * `continuation` - 継続 */
   lead_source?: typeof KippoProjectLeadSource[keyof typeof KippoProjectLeadSource];
   readonly lead_source_display: string;

@@ -12,6 +12,7 @@ export const LEAD_SOURCE_OPTIONS: { value: LeadSourceEnum; label: string }[] = [
   { value: "info", label: "info" },
   { value: "employee-referral", label: "社員紹介" },
   { value: "customer-referral", label: "顧客紹介" },
+  { value: "partner-introduction", label: "パートナー紹介" },
   { value: "continuation", label: "継続" },
 ];
 
