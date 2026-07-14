@@ -11,6 +11,7 @@
 * `info` - info
 * `employee-referral` - 社員紹介
 * `customer-referral` - 顧客紹介
+* `partner-introduction` - パートナー紹介
 * `continuation` - 継続
  */
 export type LeadSourceEnum = typeof LeadSourceEnum[keyof typeof LeadSourceEnum];
@@ -21,5 +22,6 @@ export const LeadSourceEnum = {
   info: 'info',
   'employee-referral': 'employee-referral',
   'customer-referral': 'customer-referral',
+  'partner-introduction': 'partner-introduction',
   continuation: 'continuation',
 } as const;
