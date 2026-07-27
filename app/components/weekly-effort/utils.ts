@@ -1,6 +1,5 @@
 import { formatDateKey } from "~/lib/dates";
 import type { KippoProject } from "~/lib/api/generated/models";
-import { formatProjectWithCustomer } from "~/lib/format-project";
 import type { SearchableSelectOption } from "~/components/searchable-select";
 import type { FormEntry } from "./types";
 
@@ -89,10 +88,9 @@ export function isProjectOpenForWeek(
 }
 
 /**
- * Build the project / non-project dropdown options for a given week, sorted by
- * the displayed label (`顧客名 ・ プロジェクト名`) so the list reads alphabetically
- * as rendered — sorting by project name alone looks unsorted once the customer
- * name is prepended.
+ * Build the project / non-project dropdown options for a given week, labeled
+ * `プロジェクト名 ・ 顧客名` and sorted by project name so the list reads
+ * alphabetically as rendered.
  */
 export function buildProjectOptions(
   projects: KippoProject[],
@@ -100,7 +98,7 @@ export function buildProjectOptions(
 ): { projectOptions: SearchableSelectOption[]; nonProjectOptions: SearchableSelectOption[] } {
   const toOption = (p: KippoProject): SearchableSelectOption => ({
     id: p.id,
-    label: formatProjectWithCustomer(p.name, p.customer_name),
+    label: p.customer_name ? `${p.name} ・ ${p.customer_name}` : p.name,
   });
   const byLabel = (a: SearchableSelectOption, b: SearchableSelectOption) =>
     a.label.localeCompare(b.label, "ja");

@@ -140,17 +140,17 @@ describe("buildProjectOptions", () => {
     } as unknown as KippoProject;
   }
 
-  test("sorts by the displayed label (customer ・ project), not the project name alone", () => {
+  test("labels options project-name-first and sorts by project name", () => {
     const projects = [
-      makeProject({ id: "a", name: "Alpha", customer_name: "Zeta商事" }),
-      makeProject({ id: "b", name: "Beta", customer_name: "Acme" }),
-      makeProject({ id: "c", name: "Gamma", customer_name: null }),
+      makeProject({ id: "a", name: "Gamma", customer_name: "Acme" }),
+      makeProject({ id: "b", name: "Alpha", customer_name: "Zeta商事" }),
+      makeProject({ id: "c", name: "Beta", customer_name: null }),
     ];
     const { projectOptions } = buildProjectOptions(projects, "2026-07-27");
     expect(projectOptions.map((o) => o.label)).toEqual([
-      "Acme ・ Beta",
-      "Gamma",
-      "Zeta商事 ・ Alpha",
+      "Alpha ・ Zeta商事",
+      "Beta",
+      "Gamma ・ Acme",
     ]);
   });
 
