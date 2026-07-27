@@ -1,8 +1,8 @@
 import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
-import { formatProjectWithCustomer } from "~/lib/format-project";
+import { SearchableSelect } from "~/components/searchable-select";
 import type { FormEntry } from "./types";
-import { computeMonthEffortPercents, isProjectOpenForWeek, normalizeDigits } from "./utils";
+import { buildProjectOptions, computeMonthEffortPercents, normalizeDigits } from "./utils";
 
 type WeeklyEffortFormProps = {
   entries: FormEntry[];
@@ -37,15 +37,8 @@ function WeeklyEffortFormImpl({
   onOpenHolidayModal,
   variant,
 }: WeeklyEffortFormProps) {
-  const { projectProjects, nonProjectProjects } = useMemo(
-    () => ({
-      projectProjects: projects
-        .filter((p) => p.category !== "non-project" && isProjectOpenForWeek(p, weekStart))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-      nonProjectProjects: projects
-        .filter((p) => p.category === "non-project" && isProjectOpenForWeek(p, weekStart))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    }),
+  const { projectOptions, nonProjectOptions } = useMemo(
+    () => buildProjectOptions(projects, weekStart),
     [projects, weekStart],
   );
 
@@ -98,22 +91,13 @@ function WeeklyEffortFormImpl({
             >
               {entry.filterType === "anon-project" ? "Non-Project" : "プロジェクト"}
             </label>
-            <select
+            <SearchableSelect
               id={`project-${entry.id}`}
               value={entry.projectId}
-              onChange={(e) => updateEntry(entry.id, "projectId", e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+              onChange={(id) => updateEntry(entry.id, "projectId", id)}
+              options={entry.filterType === "anon-project" ? nonProjectOptions : projectOptions}
               disabled={isSubmitting}
-            >
-              <option value="">-- 選択してください --</option>
-              {(entry.filterType === "anon-project" ? nonProjectProjects : projectProjects).map(
-                (p) => (
-                  <option key={p.id} value={p.id}>
-                    {formatProjectWithCustomer(p.name, p.customer_name)}
-                  </option>
-                ),
-              )}
-            </select>
+            />
           </div>
           <div className="w-24">
             <label
