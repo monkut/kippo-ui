@@ -1,5 +1,6 @@
 import { formatDateKey } from "~/lib/dates";
 import type { KippoProject } from "~/lib/api/generated/models";
+import type { SearchableSelectOption } from "~/components/searchable-select";
 import type { FormEntry } from "./types";
 
 /** Convert full-width digits (０-９) to half-width (0-9) and strip non-numeric characters */
@@ -84,6 +85,34 @@ export function isProjectOpenForWeek(
 ): boolean {
   if (!project?.closed_datetime) return true;
   return weekStart <= project.closed_datetime.split("T")[0];
+}
+
+/**
+ * Build the project / non-project dropdown options for a given week, labeled
+ * `プロジェクト名 ・ 顧客名` and sorted by project name so the list reads
+ * alphabetically as rendered.
+ */
+export function buildProjectOptions(
+  projects: KippoProject[],
+  weekStart: string,
+): { projectOptions: SearchableSelectOption[]; nonProjectOptions: SearchableSelectOption[] } {
+  const toOption = (p: KippoProject): SearchableSelectOption => ({
+    id: p.id,
+    label: p.customer_name ? `${p.name} ・ ${p.customer_name}` : p.name,
+  });
+  const byLabel = (a: SearchableSelectOption, b: SearchableSelectOption) =>
+    a.label.localeCompare(b.label, "ja");
+  const open = projects.filter((p) => isProjectOpenForWeek(p, weekStart));
+  return {
+    projectOptions: open
+      .filter((p) => p.category !== "non-project")
+      .map(toOption)
+      .sort(byLabel),
+    nonProjectOptions: open
+      .filter((p) => p.category === "non-project")
+      .map(toOption)
+      .sort(byLabel),
+  };
 }
 
 export function createEmptyEntry(filterType: "project" | "anon-project" = "project"): FormEntry {

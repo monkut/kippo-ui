@@ -1,6 +1,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { formatDateKey } from "~/lib/dates";
+import type { KippoProject } from "~/lib/api/generated/models";
 import {
+  buildProjectOptions,
   computeMonthEffortPercents,
   getMonthStart,
   getPreviousWeekStartDate,
@@ -123,5 +125,52 @@ describe("weekly-effort utils — JST date handling", () => {
       vi.setSystemTime(new Date(2026, 3, 24, 17, 0, 0));
       expect(getPreviousWeekStartDate()).toBe("2026-04-13");
     });
+  });
+});
+
+describe("buildProjectOptions", () => {
+  function makeProject(overrides: Partial<KippoProject>): KippoProject {
+    return {
+      id: "p",
+      name: "Project",
+      category: "ai-development",
+      customer_name: null,
+      closed_datetime: null,
+      ...overrides,
+    } as unknown as KippoProject;
+  }
+
+  test("labels options project-name-first and sorts by project name", () => {
+    const projects = [
+      makeProject({ id: "a", name: "Gamma", customer_name: "Acme" }),
+      makeProject({ id: "b", name: "Alpha", customer_name: "Zeta商事" }),
+      makeProject({ id: "c", name: "Beta", customer_name: null }),
+    ];
+    const { projectOptions } = buildProjectOptions(projects, "2026-07-27");
+    expect(projectOptions.map((o) => o.label)).toEqual([
+      "Alpha ・ Zeta商事",
+      "Beta",
+      "Gamma ・ Acme",
+    ]);
+  });
+
+  test("splits non-project category into its own sorted list", () => {
+    const projects = [
+      makeProject({ id: "a", name: "Sales", category: "non-project" }),
+      makeProject({ id: "b", name: "Dev", category: "ai-development" }),
+      makeProject({ id: "c", name: "Admin", category: "non-project" }),
+    ];
+    const { projectOptions, nonProjectOptions } = buildProjectOptions(projects, "2026-07-27");
+    expect(projectOptions.map((o) => o.id)).toEqual(["b"]);
+    expect(nonProjectOptions.map((o) => o.label)).toEqual(["Admin", "Sales"]);
+  });
+
+  test("excludes projects closed before the selected week", () => {
+    const projects = [
+      makeProject({ id: "open", name: "Open" }),
+      makeProject({ id: "closed", name: "Closed", closed_datetime: "2026-07-01T00:00:00+09:00" }),
+    ];
+    const { projectOptions } = buildProjectOptions(projects, "2026-07-27");
+    expect(projectOptions.map((o) => o.id)).toEqual(["open"]);
   });
 });
