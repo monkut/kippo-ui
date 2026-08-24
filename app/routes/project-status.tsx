@@ -10,8 +10,8 @@ import type {
   ProjectProgressStatusInline,
   SurveyUserInline,
 } from "~/lib/api/generated";
-import { projectsList } from "~/lib/api/generated";
-import { readList } from "~/lib/api/read-list";
+import { fetchActiveProjects } from "~/lib/active-projects";
+import { BILLING_TYPE_LABELS } from "~/lib/billing-report";
 import { formatDisplayDate } from "~/lib/dates";
 import { formatProjectWithCustomer } from "~/lib/format-project";
 import { useAuthGate } from "~/hooks/useAuthGate";
@@ -21,10 +21,6 @@ const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 export function meta() {
   return [{ title: "プロジェクト状況 - Kippo" }];
 }
-
-// Non-project rows are excluded server-side via the API's exclude_category filter
-// (kippo#36 moved the anon check from phase=="anon-project" to category=="non-project").
-const NON_PROJECT_CATEGORY = "non-project";
 
 export default function ProjectStatus() {
   const { user, authLoading } = useAuthGate();
@@ -47,33 +43,8 @@ export default function ProjectStatus() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await projectsList({
-        is_active: true,
-        exclude_category: NON_PROJECT_CATEGORY,
-      });
-      // Filter projects: display_as_active=True, is_closed=False (non-project excluded server-side)
-      const filteredProjects = readList<KippoProject>(response.data)
-        .filter((project) => project.display_as_active === true && project.is_closed === false)
-        // Sort by: -confidence (large to small), target_date (earliest to latest), name
-        .sort((a, b) => {
-          // First: confidence descending (large to small)
-          const confA = a.confidence ?? 0;
-          const confB = b.confidence ?? 0;
-          if (confB !== confA) return confB - confA;
-
-          // Second: target_date ascending (earliest to latest)
-          if (a.target_date && b.target_date) {
-            const dateCompare = a.target_date.localeCompare(b.target_date);
-            if (dateCompare !== 0) return dateCompare;
-          } else if (a.target_date) {
-            return -1;
-          } else if (b.target_date) {
-            return 1;
-          }
-
-          // Third: name ascending
-          return a.name.localeCompare(b.name);
-        });
+      // Rows, filters and ordering all mirror ActiveKippoProjectAdmin — see active-projects.ts.
+      const filteredProjects = await fetchActiveProjects();
       setProjects(filteredProjects);
       loadMonthlyCosts(filteredProjects);
     } catch (err) {
@@ -301,6 +272,18 @@ export function SurveyStatusIcon({ surveyUser }: { surveyUser: SurveyUserInline 
   );
 }
 
+/** 契約金額 as ¥1,234,567 — matches the admin's get_contract_total_amount_display. Blank at 0. */
+export function formatContractAmount(amount: string | number | null | undefined): string {
+  const value = Number(amount ?? 0);
+  if (!Number.isFinite(value) || value === 0) return "";
+  return `¥${value.toLocaleString("ja-JP")}`;
+}
+
+/** GITHUBプロジェクト link label — the final path segment, as the admin column shows. */
+export function githubProjectLabel(url: string): string {
+  return url.replace(/\/+$/, "").split("/").pop() ?? url;
+}
+
 interface ProjectSlideProps {
   project: KippoProject;
   monthlyCosts: ProjectMonthlyCost[] | undefined;
@@ -323,6 +306,14 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
           {project.customer_name && (
             <p className="mt-1 text-sm italic text-gray-500">{project.customer_name}</p>
           )}
+          {/* カテゴリ — admin changelist column */}
+          {project.category_label && (
+            <p className="mt-2">
+              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-700">
+                {project.category_label}
+              </span>
+            </p>
+          )}
         </div>
 
         {/* Dates */}
@@ -330,9 +321,34 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
           {formatDisplayDate(project.start_date)} - {formatDisplayDate(project.target_date)}
         </div>
 
-        {/* Project Status Display */}
+        {/* 請求方法 / 契約金額 — admin changelist columns. Both come from the contract, so the
+            row is omitted entirely for a project with no contract yet. */}
+        {(project.billing_types?.length > 0 || formatContractAmount(project.contract_amount)) && (
+          <div className="flex justify-center items-center gap-3 text-sm">
+            {project.billing_types?.map((billingType) => (
+              <span
+                key={billingType}
+                className="px-2 inline-flex leading-5 font-semibold rounded-full bg-purple-100 text-purple-800"
+              >
+                {BILLING_TYPE_LABELS[billingType] ?? billingType}
+              </span>
+            ))}
+            {formatContractAmount(project.contract_amount) && (
+              <span className="font-medium text-gray-700">
+                {formatContractAmount(project.contract_amount)}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Project Status Display — linked to the status detail page, as the admin column is */}
         <div className="space-y-2">
-          <ProjectStatusMeter status={project.projectstatus_display} />
+          <a
+            href={`${urlPrefix}/projects/project/${project.id}/status/`}
+            className="block hover:opacity-80 transition-opacity"
+          >
+            <ProjectStatusMeter status={project.projectstatus_display} />
+          </a>
         </div>
 
         {/* Latest Comment */}
@@ -371,6 +387,17 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
         <div className="pt-4 border-t border-gray-200">
           <div className="text-sm text-gray-500">{project.phase_display}</div>
           <div className="text-sm text-gray-500">{project.confidence}%</div>
+          {/* GITHUBプロジェクト — admin changelist column (label is the final path segment) */}
+          {project.github_project_html_url && (
+            <div className="mt-1 text-sm">
+              <a
+                href={project.github_project_html_url}
+                className="text-indigo-600 hover:text-indigo-800 hover:underline"
+              >
+                {githubProjectLabel(project.github_project_html_url)}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -379,6 +406,22 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
 
 // Threshold for "exceeding expected" status (same as backend PROJECT_STATUS_REPORT_EXCEEDING_THRESHOLD)
 const EXCEEDING_THRESHOLD = 15;
+
+/**
+ * Bar fill for the 稼働状況 meter: consumed effort over max(予算, consumed).
+ *
+ * Mirrors the admin's `<meter value=current_effort_hours max=max(allocated, current)>`
+ * (KippoProjectBaseAdmin.get_projectstatus_display). Returns 0 when nothing is logged.
+ */
+export function meterFillPercentage(
+  currentEffortHours: number | null | undefined,
+  allocatedEffortHours: number,
+): number {
+  const current = currentEffortHours ?? 0;
+  if (current <= 0) return 0;
+  const max = Math.max(allocatedEffortHours, current);
+  return (current / max) * 100;
+}
 
 interface ProjectStatusMeterProps {
   status: ProjectProgressStatusInline | null;
@@ -442,13 +485,16 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
         <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
       )}
 
-      {/* Progress bar - shows timeline progress (expected vs allocated) */}
+      {/* Progress bar — consumed effort, matching the admin's
+          <meter value=current max=max(allocated, current)>. The scale grows past 予算 once
+          current effort exceeds it, so an over-budget project stays visually distinct
+          instead of pinning at a full bar. */}
       <div className="flex justify-center">
         <div className="w-48 h-6 bg-gray-200 rounded-full overflow-hidden">
           <div
             className={`h-full ${getMeterColor()} transition-all duration-300`}
             style={{
-              width: `${Math.min((expected_effort_hours / allocated_effort_hours) * 100, 100)}%`,
+              width: `${meterFillPercentage(current_effort_hours, allocated_effort_hours)}%`,
             }}
           />
         </div>
