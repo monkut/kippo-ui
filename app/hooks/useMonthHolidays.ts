@@ -4,6 +4,7 @@ import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-h
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
 import { readList } from "~/lib/api/read-list";
 import { formatDateKey } from "~/lib/dates";
+import { personalHolidayQueryRange, personalHolidaysOverlapping } from "~/lib/holidays";
 import { monthDateRange } from "~/components/weekly-effort/utils";
 
 export type UseMonthHolidaysReturn = {
@@ -30,13 +31,19 @@ export function useMonthHolidays(weekStart: string, enabled: boolean): UseMonthH
     setIsLoadingMonthHolidays(true);
     try {
       const { dayGte, dayLte } = monthDateRange(dateStr);
+      // Personal holidays are queried over a widened window: the API filters on the
+      // START date, so a span beginning in a prior month would otherwise be missing
+      // even though it covers days in this one (#133). Overlap is re-checked here.
+      const personalRange = personalHolidayQueryRange(dayGte, dayLte);
 
       const [personalRes, publicRes] = await Promise.all([
-        personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+        personalHolidaysList({ day_gte: personalRange.dayGte, day_lte: personalRange.dayLte }),
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      setMonthPersonalHolidays(readList<PersonalHoliday>(personalRes.data));
+      setMonthPersonalHolidays(
+        personalHolidaysOverlapping(readList<PersonalHoliday>(personalRes.data), dayGte, dayLte),
+      );
       setMonthPublicHolidays(readList<PublicHoliday>(publicRes.data));
       lastFetchedMonthRef.current = dateStr.substring(0, 7);
     } catch {
@@ -61,9 +68,9 @@ export function useMonthHolidays(weekStart: string, enabled: boolean): UseMonthH
     endDate.setDate(endDate.getDate() + 6);
     const endStr = formatDateKey(endDate);
     return {
-      weekPersonalHolidays: monthPersonalHolidays.filter(
-        (h) => h.day >= weekStart && h.day <= endStr,
-      ),
+      // Overlap, not start-date containment: a span opening in the previous week
+      // still consumes days of this one (#133).
+      weekPersonalHolidays: personalHolidaysOverlapping(monthPersonalHolidays, weekStart, endStr),
       weekPublicHolidays: monthPublicHolidays.filter((h) => h.day >= weekStart && h.day <= endStr),
     };
   }, [weekStart, monthPersonalHolidays, monthPublicHolidays]);
