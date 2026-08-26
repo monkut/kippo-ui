@@ -6,6 +6,7 @@ import {
 import { publicHolidaysList } from "~/lib/api/generated/public-holidays/public-holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
 import { readList } from "~/lib/api/read-list";
+import { personalHolidayQueryRange, personalHolidaysOverlapping } from "~/lib/holidays";
 import { HolidayCalendar } from "./HolidayCalendar";
 import { monthDateRange } from "./utils";
 
@@ -29,13 +30,18 @@ export function HolidayModal({ open, initialDate, onClose, onHolidayCreated }: H
     setIsLoadingHolidays(true);
     try {
       const { dayGte, dayLte } = monthDateRange(dateStr);
+      // Widened lower bound so a span starting in a prior month is still returned
+      // and shown as taken — otherwise those days look free and invite a duplicate (#133).
+      const personalRange = personalHolidayQueryRange(dayGte, dayLte);
 
       const [personalRes, publicRes] = await Promise.all([
-        personalHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
+        personalHolidaysList({ day_gte: personalRange.dayGte, day_lte: personalRange.dayLte }),
         publicHolidaysList({ day_gte: dayGte, day_lte: dayLte }),
       ]);
 
-      setExistingPersonalHolidays(readList<PersonalHoliday>(personalRes.data));
+      setExistingPersonalHolidays(
+        personalHolidaysOverlapping(readList<PersonalHoliday>(personalRes.data), dayGte, dayLte),
+      );
       setPublicHolidays(readList<PublicHoliday>(publicRes.data));
     } catch {
       // Failed to fetch holidays, continue without them

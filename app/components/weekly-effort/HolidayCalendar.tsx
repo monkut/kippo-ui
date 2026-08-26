@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 import { formatDateKey } from "~/lib/dates";
+import { expandPersonalHolidayDates } from "~/lib/holidays";
 import type { PersonalHoliday, PublicHoliday } from "~/lib/api/generated/models";
 
 type HolidayCalendarProps = {
@@ -65,8 +66,9 @@ function HolidayCalendarImpl({
     return { year: y, month: m, weeks: weekGroups };
   }, [selectedDate]);
 
+  // Expanded over `duration` so every day of a multi-day holiday is marked (#133).
   const personalHolidayDates = useMemo(
-    () => new Set(personalHolidays.map((h) => h.day)),
+    () => expandPersonalHolidayDates(personalHolidays),
     [personalHolidays],
   );
   const publicHolidayDates = useMemo(

@@ -9,6 +9,7 @@ import { WeeklyEffortForm } from "~/components/weekly-effort/WeeklyEffortForm";
 import { HolidayModal } from "~/components/weekly-effort/HolidayModal";
 import { RequestUnlockModal } from "~/components/weekly-effort/RequestUnlockModal";
 import { createEmptyEntry, getPreviousWeekStartDate } from "~/components/weekly-effort/utils";
+import { formatPersonalHolidaySpan } from "~/lib/holidays";
 import type { FormEntry } from "~/components/weekly-effort/types";
 import { useWeeklyEffort } from "~/hooks/useWeeklyEffort";
 
@@ -175,7 +176,7 @@ export default function WeeklyEffort() {
                             key={`per-${h.id}`}
                             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                           >
-                            {h.day.substring(5)} {h.is_half ? "半休" : "全休"}
+                            {formatPersonalHolidaySpan(h)} {h.is_half ? "半休" : "全休"}
                           </span>
                         ))}
                       </div>
