@@ -37,9 +37,27 @@ function project(overrides: Partial<KippoProject> & { name: string }): KippoProj
 }
 
 describe("lib/active-projects — admin ordering parity", () => {
-  test("sorts by confidence descending", () => {
+  test("sorts by confidence descending within a phase", () => {
     const rows = [project({ name: "b", confidence: 90 }), project({ name: "a", confidence: 100 })];
     expect(rows.sort(compareActiveProjects).map((p) => p.name)).toEqual(["a", "b"]);
+  });
+
+  test("orders the pipeline 契約 → 口頭受注 → 提案 高 → 中 → 低 ahead of confidence", () => {
+    // every row carries the SAME confidence, so only the phase rank can produce this order
+    const rows = [
+      project({ name: "提案低", phase: "proposing-low", confidence: 99 }),
+      project({ name: "提案中", phase: "proposing-mid", confidence: 99 }),
+      project({ name: "提案高", phase: "proposing-high", confidence: 99 }),
+      project({ name: "口頭受注", phase: "verbal-order", confidence: 99 }),
+      project({ name: "契約稼働中", phase: "under-contract", confidence: 99 }),
+    ];
+    expect(rows.sort(compareActiveProjects).map((p) => p.name)).toEqual([
+      "契約稼働中",
+      "口頭受注",
+      "提案高",
+      "提案中",
+      "提案低",
+    ]);
   });
 
   test("breaks a confidence tie on 完了予定日 ascending, then name", () => {
@@ -62,10 +80,13 @@ describe("lib/active-projects — admin ordering parity", () => {
 
 describe("lib/active-projects — admin filter parity", () => {
   test("keeps only the phases the active-project changelist shows by default", () => {
-    expect([...ACTIVE_PROJECT_PHASES].sort()).toEqual([
-      "completed",
+    expect([...ACTIVE_PROJECT_PHASES]).toEqual([
       "under-contract",
+      "completed",
       "verbal-order",
+      "proposing-high",
+      "proposing-mid",
+      "proposing-low",
     ]);
 
     const kept = selectActiveProjects([
@@ -77,12 +98,13 @@ describe("lib/active-projects — admin filter parity", () => {
       project({ name: "lost", phase: "lost", confidence: 0 }),
     ]);
 
-    expect(kept.map((p) => p.name).sort()).toEqual(["contracted", "done", "verbal"]);
+    // KIT / 失注 are the only phases dropped
+    expect(kept.map((p) => p.name).sort()).toEqual(["contracted", "done", "proposing", "verbal"]);
   });
 
   test("口頭受注 lands directly after the 確度100% contracted block (kippo#56)", () => {
-    // 提案(低) rows can carry a manually-overridden confidence at or above 口頭受注's 99, which
-    // pushed 口頭受注 below them while the phase filter was missing.
+    // 提案 rows can carry a manually-overridden confidence at or above 口頭受注's 99; the phase
+    // rank keeps them below it regardless.
     const ordered = selectActiveProjects([
       project({ name: "提案低-100", phase: "proposing-low", confidence: 100 }),
       project({ name: "提案低-99", phase: "proposing-low", confidence: 99 }),
@@ -90,7 +112,12 @@ describe("lib/active-projects — admin filter parity", () => {
       project({ name: "契約稼働中", phase: "under-contract", confidence: 100 }),
     ]);
 
-    expect(ordered.map((p) => p.name)).toEqual(["契約稼働中", "口頭受注"]);
+    expect(ordered.map((p) => p.name)).toEqual([
+      "契約稼働中",
+      "口頭受注",
+      "提案低-100",
+      "提案低-99",
+    ]);
   });
 
   test("drops closed and non-active rows", () => {
