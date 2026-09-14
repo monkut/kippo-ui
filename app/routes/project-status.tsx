@@ -408,7 +408,8 @@ function ProjectSlide({ project, monthlyCosts }: ProjectSlideProps) {
 const EXCEEDING_THRESHOLD = 15;
 
 /**
- * Bar fill for the 稼働状況 meter: consumed effort over max(予算, consumed).
+ * Bar fill for the 稼働状況 meter: consumed effort over max(予算, consumed) — i.e. the budget
+ * ratio, capped at 100% once the project goes over budget.
  *
  * Mirrors the admin's `<meter value=current_effort_hours max=max(allocated, current)>`
  * (KippoProjectBaseAdmin.get_projectstatus_display). Returns 0 when nothing is logged.
@@ -501,9 +502,11 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
       )}
 
       {/* Progress bar — consumed effort, matching the admin's
-          <meter value=current max=max(allocated, current)>. The scale grows past 予算 once
-          current effort exceeds it, so an over-budget project stays visually distinct
-          instead of pinning at a full bar. */}
+          <meter value=current max=max(allocated, current)>. Because max grows to current once
+          effort exceeds 予算, the fill is effectively min(current/予算, 1): an over-budget project
+          renders the same full bar as one exactly on budget. What distinguishes the two is the
+          colour and the ±% above, both driven by difference_percentage (effort vs. SCHEDULE) —
+          not by this fill, whose denominator is the budget. */}
       <div className="flex justify-center">
         <div
           className={`w-48 h-6 bg-gray-200 rounded-full overflow-hidden ${
