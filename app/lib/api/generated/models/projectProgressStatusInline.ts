@@ -15,6 +15,8 @@ export interface ProjectProgressStatusInline {
   expected_effort_hours: number | null;
   /** @nullable */
   allocated_effort_hours: number | null;
+  /** True when allocated_effort_hours is estimated from a 納品/固定 contract (契約金額 ÷ 人日単価) because the project has no 割当工数(人日) entered. */
+  is_estimated_allocated_effort_hours: boolean;
   /** @nullable */
   difference_percentage: number | null;
 }

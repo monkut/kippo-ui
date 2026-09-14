@@ -49,6 +49,7 @@ import { customFetch } from '../../custom-fetch';
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -107,6 +108,7 @@ export const projectsList = async (params?: ProjectsListParams, options?: Reques
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -159,6 +161,7 @@ export const projectsCreate = async (kippoProjectRequest: KippoProjectRequest, o
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -210,6 +213,7 @@ export const projectsRetrieve = async (id: string, options?: RequestInit): Promi
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -263,6 +267,7 @@ export const projectsUpdate = async (id: string,
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -316,6 +321,7 @@ export const projectsPartialUpdate = async (id: string,
 
 **Filtering:**
 - is_active: Filter by display_as_active field (true/false)
+- phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
 - category: Include only the given category key (exact match)
 - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 

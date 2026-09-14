@@ -32,6 +32,7 @@ vi.mock("~/components/infra-cost-display", () => ({
 }));
 
 import ProjectStatus, {
+  allocatedEffortHoursTitle,
   formatContractAmount,
   githubProjectLabel,
   meterFillPercentage,
@@ -120,6 +121,49 @@ describe("project-status route", () => {
     expect(statusLink).toBeDefined();
   });
 
+  test("marks a contract-estimated budget with (見積) and a dashed meter track", async () => {
+    data.projects = [
+      {
+        ...contractedProject,
+        projectstatus_display: {
+          current_effort_hours: 40,
+          expected_effort_hours: 60,
+          allocated_effort_hours: 80,
+          is_estimated_allocated_effort_hours: true,
+          difference_percentage: -33.3,
+        },
+      } as unknown as KippoProject,
+    ];
+    auth.state = { user: { username: "me" }, isLoading: false };
+    root.render(<ProjectStatus />);
+    await flush();
+
+    expect(container.textContent).toContain("80h(見積)");
+    expect(container.querySelector(".border-dashed")).not.toBeNull();
+  });
+
+  test("leaves an entered budget unmarked", async () => {
+    data.projects = [
+      {
+        ...contractedProject,
+        projectstatus_display: {
+          current_effort_hours: 40,
+          expected_effort_hours: 60,
+          allocated_effort_hours: 80,
+          is_estimated_allocated_effort_hours: false,
+          difference_percentage: -33.3,
+        },
+      } as unknown as KippoProject,
+    ];
+    auth.state = { user: { username: "me" }, isLoading: false };
+    root.render(<ProjectStatus />);
+    await flush();
+
+    expect(container.textContent).toContain("80h");
+    expect(container.textContent).not.toContain("見積");
+    expect(container.querySelector(".border-dashed")).toBeNull();
+  });
+
   test("omits the contract row entirely for a project with no contract", async () => {
     data.projects = [
       { ...contractedProject, billing_types: [], contract_amount: "0" } as unknown as KippoProject,
@@ -139,6 +183,14 @@ describe("project-status formatting helpers", () => {
     expect(formatContractAmount(0)).toBe("");
     expect(formatContractAmount(null)).toBe("");
     expect(formatContractAmount(undefined)).toBe("");
+  });
+
+  test("allocatedEffortHoursTitle names the derivation that produced the budget", () => {
+    expect(allocatedEffortHoursTitle(true)).toContain("契約金額");
+    expect(allocatedEffortHoursTitle(false)).toContain("割当人日");
+    expect(allocatedEffortHoursTitle(false)).not.toContain("見積");
+    // absent on an older payload -> treated as an entered budget
+    expect(allocatedEffortHoursTitle(undefined)).toBe(allocatedEffortHoursTitle(false));
   });
 
   test("githubProjectLabel returns the final path segment", () => {

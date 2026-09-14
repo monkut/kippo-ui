@@ -423,6 +423,20 @@ export function meterFillPercentage(
   return (current / max) * 100;
 }
 
+/**
+ * Tooltip for the 予算 legend value.
+ *
+ * A project with no 割当人日 but a 納品/固定 contract gets its budget estimated from the contract
+ * amount (kippo: KippoProject.estimated_allocated_effort_hours), so the derivation the tooltip
+ * names has to follow which of the two produced the number.
+ */
+export function allocatedEffortHoursTitle(isEstimated: boolean | undefined): string {
+  if (isEstimated) {
+    return "予算(見積): 割当人日が未入力のため契約金額から算出（契約金額 ÷ 人日単価 × 1日の稼働時間）";
+  }
+  return "予算: プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）";
+}
+
 interface ProjectStatusMeterProps {
   status: ProjectProgressStatusInline | null;
 }
@@ -436,6 +450,7 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
     current_effort_hours,
     expected_effort_hours,
     allocated_effort_hours,
+    is_estimated_allocated_effort_hours,
     difference_percentage,
   } = status;
 
@@ -490,7 +505,11 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
           current effort exceeds it, so an over-budget project stays visually distinct
           instead of pinning at a full bar. */}
       <div className="flex justify-center">
-        <div className="w-48 h-6 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className={`w-48 h-6 bg-gray-200 rounded-full overflow-hidden ${
+            is_estimated_allocated_effort_hours ? "border border-dashed border-gray-400" : ""
+          }`}
+        >
           <div
             className={`h-full ${getMeterColor()} transition-all duration-300`}
             style={{
@@ -506,8 +525,8 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
           {Math.round(expected_effort_hours)}h
         </span>
         {" / "}
-        <span title="予算: プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）">
-          {allocated_effort_hours}h
+        <span title={allocatedEffortHoursTitle(is_estimated_allocated_effort_hours)}>
+          {allocated_effort_hours}h{is_estimated_allocated_effort_hours ? "(見積)" : ""}
         </span>
       </div>
     </div>

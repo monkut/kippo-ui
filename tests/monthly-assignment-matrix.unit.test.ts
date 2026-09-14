@@ -335,6 +335,7 @@ describe("getProjectEffortSpentDays", () => {
         current_effort_hours: 40,
         expected_effort_hours: null,
         allocated_effort_hours: 80,
+        is_estimated_allocated_effort_hours: false,
         difference_percentage: null,
       },
     });
