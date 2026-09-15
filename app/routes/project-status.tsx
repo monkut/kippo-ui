@@ -424,16 +424,23 @@ export function meterFillPercentage(
   return (current / max) * 100;
 }
 
+/** Marker appended to a 予算 value derived from a 納品/固定 contract rather than entered as 割当人日. */
+export const ESTIMATED_MARKER = "*";
+
 /**
  * Tooltip for the 予算 legend value.
  *
  * A project with no 割当人日 but a 納品/固定 contract gets its budget estimated from the contract
  * amount (kippo: KippoProject.estimated_allocated_effort_hours), so the derivation the tooltip
- * names has to follow which of the two produced the number.
+ * names has to follow which of the two produced the number. The estimated text leads with the
+ * same ESTIMATED_MARKER shown beside the value, so hovering explains what the marker means.
  */
 export function allocatedEffortHoursTitle(isEstimated: boolean | undefined): string {
   if (isEstimated) {
-    return "予算(見積): 割当人日が未入力のため契約金額から算出（契約金額 ÷ 人日単価 × 1日の稼働時間）";
+    return (
+      `${ESTIMATED_MARKER} 予算(見積): 割当人日が未入力のため、納品/固定契約の契約金額から算出した推定値です` +
+      "（契約金額 ÷ 人日単価 × 1日の稼働時間）"
+    );
   }
   return "予算: プロジェクト全体の予算工数（割当人日 × 1日の稼働時間）";
 }
@@ -528,8 +535,22 @@ function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
           {Math.round(expected_effort_hours)}h
         </span>
         {" / "}
-        <span title={allocatedEffortHoursTitle(is_estimated_allocated_effort_hours)}>
-          {allocated_effort_hours}h{is_estimated_allocated_effort_hours ? "(見積)" : ""}
+        <span
+          className={is_estimated_allocated_effort_hours ? "cursor-help" : undefined}
+          title={allocatedEffortHoursTitle(is_estimated_allocated_effort_hours)}
+        >
+          {allocated_effort_hours}h
+          {is_estimated_allocated_effort_hours ? (
+            /* <abbr> carries the explanation to assistive tech and on keyboard focus, not only
+               to a mouse hover; tabIndex makes the marker reachable without a pointer. */
+            <abbr
+              tabIndex={0}
+              className="font-semibold text-gray-600 no-underline"
+              title={allocatedEffortHoursTitle(true)}
+            >
+              <sup>{ESTIMATED_MARKER}</sup>
+            </abbr>
+          ) : null}
         </span>
       </div>
     </div>
