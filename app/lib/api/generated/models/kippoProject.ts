@@ -150,6 +150,7 @@ export interface KippoProject {
   problem_definition?: string;
   readonly meeting_calendar_url: string;
   readonly meeting_description_tag: string;
+  readonly projectsurvey_url: string;
   /** アンケートを発行したら更新してください */
   survey_issued?: boolean;
   readonly assignment_rates: readonly ProjectAssignmentRateInline[];

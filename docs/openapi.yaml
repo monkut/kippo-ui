@@ -2554,6 +2554,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -2598,6 +2599,15 @@ paths:
         schema:
           type: integer
       - in: query
+        name: phase
+        schema:
+          type: array
+          items:
+            type: string
+        description: Filter by phase key. Repeatable — pass the parameter once per
+          phase (e.g. ?phase=verbal-order&phase=under-contract) to match the admin's
+          multi-select フェーズ filter. Unknown keys match nothing.
+      - in: query
         name: search
         schema:
           type: string
@@ -2627,6 +2637,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -2672,6 +2683,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -2712,6 +2724,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -2764,6 +2777,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -2815,6 +2829,7 @@ paths:
 
         **Filtering:**
         - is_active: Filter by display_as_active field (true/false)
+        - phase: Include only the given phase key(s); repeatable, e.g. ?phase=verbal-order&phase=under-contract
         - category: Include only the given category key (exact match)
         - exclude_category: Exclude the given category key (exact match), e.g. drop non-project rows
 
@@ -8730,6 +8745,9 @@ components:
         meeting_description_tag:
           type: string
           readOnly: true
+        projectsurvey_url:
+          type: string
+          readOnly: true
         survey_issued:
           type: boolean
           title: アンケート発行済み
@@ -8795,6 +8813,7 @@ components:
       - phase_display
       - project_manager_username
       - projectstatus_display
+      - projectsurvey_url
       - slug
       - survey_users
       - total_revenue
@@ -11976,6 +11995,10 @@ components:
         allocated_effort_hours:
           type: integer
           nullable: true
+        is_estimated_allocated_effort_hours:
+          type: boolean
+          description: True when allocated_effort_hours is estimated from a 納品/固定
+            contract (契約金額 ÷ 人日単価) because the project has no 割当工数(人日) entered.
         difference_percentage:
           type: number
           format: double
@@ -11985,6 +12008,7 @@ components:
       - current_effort_hours
       - difference_percentage
       - expected_effort_hours
+      - is_estimated_allocated_effort_hours
     ProjectTechnicalRequirement:
       type: object
       properties:

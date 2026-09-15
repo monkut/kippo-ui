@@ -32,6 +32,10 @@ page?: number;
  */
 page_size?: number;
 /**
+ * Filter by phase key. Repeatable — pass the parameter once per phase (e.g. ?phase=verbal-order&phase=under-contract) to match the admin's multi-select フェーズ filter. Unknown keys match nothing.
+ */
+phase?: string[];
+/**
  * Case-insensitive substring match on the project name (for name-search pickers).
  */
 search?: string;
