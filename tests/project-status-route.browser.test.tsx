@@ -33,6 +33,7 @@ vi.mock("~/components/infra-cost-display", () => ({
 
 import ProjectStatus, {
   allocatedEffortHoursTitle,
+  ESTIMATED_MARKER,
   formatContractAmount,
   githubProjectLabel,
   meterFillPercentage,
@@ -121,7 +122,7 @@ describe("project-status route", () => {
     expect(statusLink).toBeDefined();
   });
 
-  test("marks a contract-estimated budget with (見積) and a dashed meter track", async () => {
+  test("marks a contract-estimated budget with an asterisk and a dashed meter track", async () => {
     data.projects = [
       {
         ...contractedProject,
@@ -138,8 +139,17 @@ describe("project-status route", () => {
     root.render(<ProjectStatus />);
     await flush();
 
-    expect(container.textContent).toContain("80h(見積)");
+    expect(container.textContent).toContain(`80h${ESTIMATED_MARKER}`);
     expect(container.querySelector(".border-dashed")).not.toBeNull();
+
+    // the asterisk carries the explanation on hover AND to assistive tech / keyboard focus
+    const marker = container.querySelector("abbr");
+    expect(marker?.textContent).toBe(ESTIMATED_MARKER);
+    expect(marker?.getAttribute("tabindex")).toBe("0");
+    const title = marker?.getAttribute("title") ?? "";
+    expect(title).toContain(ESTIMATED_MARKER);
+    expect(title).toContain("推定値");
+    expect(title).toContain("契約金額 ÷ 人日単価 × 1日の稼働時間");
   });
 
   test("leaves an entered budget unmarked", async () => {
@@ -160,7 +170,8 @@ describe("project-status route", () => {
     await flush();
 
     expect(container.textContent).toContain("80h");
-    expect(container.textContent).not.toContain("見積");
+    expect(container.textContent).not.toContain(ESTIMATED_MARKER);
+    expect(container.querySelector("abbr")).toBeNull();
     expect(container.querySelector(".border-dashed")).toBeNull();
   });
 
@@ -187,8 +198,11 @@ describe("project-status formatting helpers", () => {
 
   test("allocatedEffortHoursTitle names the derivation that produced the budget", () => {
     expect(allocatedEffortHoursTitle(true)).toContain("契約金額");
+    // the tooltip leads with the marker so hovering explains the asterisk itself
+    expect(allocatedEffortHoursTitle(true).startsWith(ESTIMATED_MARKER)).toBe(true);
     expect(allocatedEffortHoursTitle(false)).toContain("割当人日");
     expect(allocatedEffortHoursTitle(false)).not.toContain("見積");
+    expect(allocatedEffortHoursTitle(false)).not.toContain(ESTIMATED_MARKER);
     // absent on an older payload -> treated as an entered budget
     expect(allocatedEffortHoursTitle(undefined)).toBe(allocatedEffortHoursTitle(false));
   });
