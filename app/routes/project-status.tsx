@@ -11,10 +11,18 @@ import type {
   SurveyUserInline,
 } from "~/lib/api/generated";
 import { fetchActiveProjects } from "~/lib/active-projects";
+import { organizationsList } from "~/lib/api/generated/organizations/organizations";
 import { BILLING_TYPE_LABELS } from "~/lib/billing-report";
 import { formatDisplayDate } from "~/lib/dates";
 import { formatProjectWithCustomer } from "~/lib/format-project";
 import { useAuthGate } from "~/hooks/useAuthGate";
+import { type ListenerSyncState, useListenerFocusSync } from "~/hooks/useListenerFocusSync";
+import {
+  extractListenerConfigs,
+  type ListenerConfig,
+  readFocusSyncEnabled,
+  writeFocusSyncEnabled,
+} from "~/lib/listener";
 
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
@@ -31,6 +39,9 @@ export default function ProjectStatus() {
   const [monthlyCostsByProject, setMonthlyCostsByProject] = useState<
     Record<string, ProjectMonthlyCost[]>
   >({});
+  // organization id → listener config (kippo#66); empty when no organization has a listener.
+  const [listenerConfigs, setListenerConfigs] = useState<Record<string, ListenerConfig>>({});
+  const [focusSyncEnabled, setFocusSyncEnabled] = useState(readFocusSyncEnabled);
 
   useEffect(() => {
     if (user) {
@@ -47,11 +58,22 @@ export default function ProjectStatus() {
       const filteredProjects = await fetchActiveProjects();
       setProjects(filteredProjects);
       loadMonthlyCosts(filteredProjects);
+      loadListenerConfigs();
     } catch (err) {
       console.error("Failed to load projects:", err);
       setError("プロジェクトの読み込みに失敗しました");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadListenerConfigs = async () => {
+    try {
+      const response = await organizationsList();
+      setListenerConfigs(extractListenerConfigs(response.data));
+    } catch (err) {
+      // The slideshow works without the listener; only focus sync is lost.
+      console.error("Failed to load organizations for listener focus sync:", err);
     }
   };
 
@@ -90,6 +112,22 @@ export default function ProjectStatus() {
       setCurrentIndex(currentIndex + 1);
     }
   }, [currentIndex, projects.length]);
+
+  // Listener focus sync (monkut/kippo-ui#139). Hook stays above the early returns.
+  const listenerConfig = currentProject
+    ? (listenerConfigs[currentProject.organization] ?? null)
+    : null;
+  const listenerState = useListenerFocusSync(
+    listenerConfig,
+    currentProject?.id ?? null,
+    focusSyncEnabled,
+  );
+  const toggleFocusSync = useCallback(() => {
+    setFocusSyncEnabled((enabled) => {
+      writeFocusSyncEnabled(!enabled);
+      return !enabled;
+    });
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -179,9 +217,18 @@ export default function ProjectStatus() {
                 )}
               </div>
 
-              {/* Current position */}
-              <div className="text-sm text-gray-500">
-                {currentIndex + 1} / {projects.length}
+              {/* Current position + listener focus sync badge */}
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <span>
+                  {currentIndex + 1} / {projects.length}
+                </span>
+                {listenerConfig && (
+                  <ListenerSyncBadge
+                    state={listenerState}
+                    enabled={focusSyncEnabled}
+                    onToggle={toggleFocusSync}
+                  />
+                )}
               </div>
 
               {/* Next */}
@@ -225,6 +272,47 @@ export default function ProjectStatus() {
         </div>
       )}
     </Layout>
+  );
+}
+
+export const LISTENER_SYNC_LABELS: Record<ListenerSyncState, string> = {
+  off: "リスナー: オフ",
+  pending: "リスナー: 送信中",
+  synced: "リスナー: 同期中",
+  "no-session": "リスナー: セッションなし",
+  error: "リスナー: エラー",
+};
+
+const LISTENER_SYNC_CLASSES: Record<ListenerSyncState, string> = {
+  off: "bg-gray-100 text-gray-500",
+  pending: "bg-gray-100 text-gray-500",
+  synced: "bg-green-100 text-green-700",
+  "no-session": "bg-yellow-100 text-yellow-700",
+  error: "bg-red-100 text-red-700",
+};
+
+interface ListenerSyncBadgeProps {
+  state: ListenerSyncState;
+  enabled: boolean;
+  onToggle: () => void;
+}
+
+/** Click toggles sync for this browser; the colour says whether the listener took the last focus. */
+function ListenerSyncBadge({ state, enabled, onToggle }: ListenerSyncBadgeProps) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={enabled}
+      title={
+        enabled
+          ? "表示中のプロジェクトを kippo-listener に通知しています。クリックで停止"
+          : "kippo-listener への通知は停止中。クリックで再開"
+      }
+      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${LISTENER_SYNC_CLASSES[state]}`}
+    >
+      {LISTENER_SYNC_LABELS[state]}
+    </button>
   );
 }
 
