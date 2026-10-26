@@ -30,19 +30,29 @@ vi.mock("~/components/infra-cost-display", () => ({
   fetchAllMonthlyCostsForProject: () => Promise.resolve([]),
   InfraCostDisplay: () => null,
 }));
+// Organizations carry the listener URL + key (kiconiaworks/kippo#66); empty by default.
+const orgs = vi.hoisted(() => ({ organizations: [] as unknown[] }));
+vi.mock("~/lib/api/generated/organizations/organizations", () => ({
+  organizationsList: () =>
+    Promise.resolve({ status: 200, data: { organizations: orgs.organizations } }),
+}));
 
 import ProjectStatus, {
   allocatedEffortHoursTitle,
   ESTIMATED_MARKER,
   formatContractAmount,
   githubProjectLabel,
+  LISTENER_SYNC_LABELS,
   meterFillPercentage,
 } from "../app/routes/project-status";
+import { LISTENER_FOCUS_DEBOUNCE_MS } from "../app/hooks/useListenerFocusSync";
+import { LISTENER_FOCUS_SYNC_STORAGE_KEY } from "../app/lib/listener";
 
 const flush = () => new Promise((r) => setTimeout(r, 50));
 
 const contractedProject = {
   id: "proj-1",
+  organization: "org-1",
   name: "契約プロジェクト",
   customer_name: "顧客A",
   category_label: "AI開発",
@@ -69,6 +79,7 @@ describe("project-status route", () => {
   beforeEach(() => {
     auth.state = { user: null, isLoading: true };
     data.projects = [contractedProject];
+    orgs.organizations = [];
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -225,3 +236,113 @@ describe("project-status formatting helpers", () => {
     expect(meterFillPercentage(null, 100)).toBe(0);
   });
 });
+
+// Listener focus sync (monkut/kippo-ui#139): the displayed project is POSTed to the
+// organization's listener (URL + key from kippo#66) on mount and on every slide change.
+describe("project-status listener focus sync", () => {
+  let container: HTMLDivElement;
+  let root: ReturnType<typeof createRoot>;
+  const fetchMock = vi.fn();
+  const originalFetch = globalThis.fetch;
+
+  const secondProject = {
+    ...contractedProject,
+    id: "proj-2",
+    name: "二番目",
+  } as unknown as KippoProject;
+  const listenerOrg = {
+    id: "org-1",
+    name: "org",
+    github_organization_name: "org",
+    listener_api_url: "https://listener.example/",
+    listener_api_key: "key-1",
+  };
+
+  // the hook debounces, then awaits the POST; wait past both.
+  const settle = () => new Promise((r) => setTimeout(r, LISTENER_FOCUS_DEBOUNCE_MS + 100));
+  const postedProjectIds = () =>
+    fetchMock.mock.calls.map(
+      ([, init]) => JSON.parse((init as RequestInit).body as string).project_id,
+    );
+
+  beforeEach(() => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    data.projects = [contractedProject, secondProject];
+    orgs.organizations = [listenerOrg];
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    localStorage.removeItem(LISTENER_FOCUS_SYNC_STORAGE_KEY);
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    root.unmount();
+    container.remove();
+  });
+
+  test("posts the displayed project on mount and on arrow-key navigation", async () => {
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    expect(postedProjectIds()).toEqual(["proj-1"]);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://listener.example/sessions/current/focus");
+    expect((init.headers as Record<string, string>)["X-API-Key"]).toBe("key-1");
+    expect(container.textContent).toContain(LISTENER_SYNC_LABELS.synced);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await flush();
+    await settle();
+    expect(postedProjectIds()).toEqual(["proj-1", "proj-2"]);
+  });
+
+  test("shows セッションなし on 404 and keeps navigation working", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    expect(container.textContent).toContain(LISTENER_SYNC_LABELS["no-session"]);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await flush();
+    expect(container.textContent).toContain("二番目");
+  });
+
+  test("the badge toggles sync off for this browser and persists the choice", async () => {
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    const badge = findBadge(container);
+    expect(badge?.getAttribute("aria-pressed")).toBe("true");
+    badge?.click();
+    await flush();
+    expect(localStorage.getItem(LISTENER_FOCUS_SYNC_STORAGE_KEY)).toBe("off");
+    expect(container.textContent).toContain(LISTENER_SYNC_LABELS.off);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await flush();
+    await settle();
+    expect(postedProjectIds()).toEqual(["proj-1"]); // nothing posted while off
+  });
+
+  test("without a listener on the organization nothing is posted and no badge renders", async () => {
+    orgs.organizations = [{ ...listenerOrg, listener_api_url: "" }];
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(findBadge(container)).toBeNull();
+  });
+});
+
+function findBadge(container: HTMLElement): HTMLButtonElement | null {
+  return (
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
+      (b.textContent ?? "").startsWith("リスナー"),
+    ) ?? null
+  );
+}
