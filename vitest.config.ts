@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -18,7 +19,9 @@ export default defineConfig({
         },
       },
       {
-        plugins: [react(), tsconfigPaths()],
+        // Tailwind is needed so browser tests that import `app/app.css` can
+        // assert on real computed styles (e.g. sticky table headers).
+        plugins: [tailwindcss(), react(), tsconfigPaths()],
         test: {
           include: ["tests/**/*.browser.{test,spec}.{ts,tsx}"],
           name: "browser",
