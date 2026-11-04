@@ -101,28 +101,32 @@ function MonthlyAssignmentMatrixImpl({
   }
 
   return (
-    <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <HeaderRow users={visibleUsers} sortConfig={sortConfig} onSort={handleSort} />
-          <UserTotalsRow users={visibleUsers} userTotals={matrix.userTotals} />
-        </thead>
-        <tbody>
-          {sortedRows.map((row) => (
-            <ProjectRow
-              key={row.project.id}
-              row={row}
-              users={visibleUsers}
-              editableMonth={editableMonth}
-              onCellClick={onCellClick}
-              assignmentByCell={assignmentByCell}
-              confirmation={projectConfirmation.get(row.project.id)}
-              onBulkSetConfirmed={onBulkSetConfirmed}
-              isSaving={isSaving}
-            />
-          ))}
-        </tbody>
-      </table>
+    <section className="bg-white shadow rounded-lg p-6">
+      {/* Bounded-height scroll container: the column header + ユーザー月合計 rows stay
+          pinned (sticky thead) while the project rows scroll beneath them. */}
+      <div className={`overflow-auto ${MATRIX_SCROLL_MAX_HEIGHT}`}>
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10 bg-white">
+            <HeaderRow users={visibleUsers} sortConfig={sortConfig} onSort={handleSort} />
+            <UserTotalsRow users={visibleUsers} userTotals={matrix.userTotals} />
+          </thead>
+          <tbody>
+            {sortedRows.map((row) => (
+              <ProjectRow
+                key={row.project.id}
+                row={row}
+                users={visibleUsers}
+                editableMonth={editableMonth}
+                onCellClick={onCellClick}
+                assignmentByCell={assignmentByCell}
+                confirmation={projectConfirmation.get(row.project.id)}
+                onBulkSetConfirmed={onBulkSetConfirmed}
+                isSaving={isSaving}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
       <Legend />
     </section>
   );
@@ -523,6 +527,14 @@ function PercentageCell({
   );
 }
 
+/** Max height of the scrollable matrix body; leaves room for the layout header,
+ * notice banner, month picker and toolbar above the card. */
+const MATRIX_SCROLL_MAX_HEIGHT = "max-h-[calc(100vh-18rem)]";
+
+/** Bottom rule of the sticky ユーザー月合計 row. Drawn as an inset shadow per cell
+ * because `border-collapse` table borders stay behind when a sticky <thead> scrolls. */
+const TOTALS_ROW_CELL_BORDER = "shadow-[inset_0_-2px_0_0_#d1d5db]";
+
 function UserTotalsRow({
   users,
   userTotals,
@@ -531,8 +543,11 @@ function UserTotalsRow({
   userTotals: Map<string, number>;
 }) {
   return (
-    <tr className="border-b-2 border-gray-300 bg-gray-50 text-xs">
-      <td colSpan={FIXED_HEADER_COL_COUNT} className="py-2 pr-4 text-gray-500 font-medium">
+    <tr className="bg-gray-50 text-xs">
+      <td
+        colSpan={FIXED_HEADER_COL_COUNT}
+        className={`py-2 pr-4 text-gray-500 font-medium ${TOTALS_ROW_CELL_BORDER}`}
+      >
         ユーザー月合計
       </td>
       {users.map((user) => {
@@ -541,7 +556,7 @@ function UserTotalsRow({
         return (
           <td
             key={user.user_id}
-            className={`py-2 px-1 text-center font-medium ${overAllocated ? "text-red-700" : "text-gray-700"}`}
+            className={`py-2 px-1 text-center font-medium ${TOTALS_ROW_CELL_BORDER} ${overAllocated ? "text-red-700" : "text-gray-700"}`}
             title={overAllocated ? `${total}% — 100%を超えています` : undefined}
           >
             {total}%{overAllocated ? " ⚠" : ""}

@@ -3,6 +3,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 import { MonthlyAssignmentMatrix } from "../app/components/project-assignments/MonthlyAssignmentMatrix";
+// Real Tailwind styles: the sticky-header test asserts on computed CSS.
+import "../app/app.css";
 import type {
   KippoProject,
   OrganizationMemberDetail,
@@ -236,5 +238,57 @@ describe("MonthlyAssignmentMatrix — 月合計 (人日) breakdown tooltip on th
     expect(title).toContain("Spent Project Staff Days: 10");
     // still tells the user the value is clickable
     expect(title).toContain("プロジェクトステータス");
+  });
+});
+
+describe("MonthlyAssignmentMatrix — sticky header rows", () => {
+  let container: HTMLDivElement;
+  let root: ReturnType<typeof createRoot>;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    root.unmount();
+    container.remove();
+  });
+
+  // The column header + ユーザー月合計 rows stay pinned at the top of the matrix
+  // while the project rows scroll beneath them inside a bounded-height container.
+  test("thead (header + ユーザー月合計) stays pinned while project rows scroll", async () => {
+    const projects = Array.from({ length: 60 }, (_, i) =>
+      makeProject({ id: `p-${i}`, name: `Project ${i}` }),
+    );
+    renderMatrix(root, {
+      projects,
+      assignments: [makeAssignment({ project: "p-0", user: "u-1", percentage: 50 })],
+      members: [makeMember({ user_id: "u-1", display_name: "Alice" })],
+    });
+
+    const thead = await waitFor(() => container.querySelector<HTMLElement>("thead"));
+    expect(thead).not.toBeNull();
+    if (!thead) return;
+    expect(getComputedStyle(thead).position).toBe("sticky");
+    expect(thead.textContent).toContain("ユーザー月合計");
+
+    const scroller = thead.closest<HTMLElement>("div");
+    expect(scroller).not.toBeNull();
+    if (!scroller) return;
+    expect(getComputedStyle(scroller).overflowY).toBe("auto");
+    expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+
+    const headTopBefore = thead.getBoundingClientRect().top;
+    const firstRow = container.querySelector<HTMLElement>("tbody tr");
+    const rowTopBefore = firstRow?.getBoundingClientRect().top ?? 0;
+
+    scroller.scrollTop = 300;
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+    // Project rows moved up; the header rows did not.
+    expect(firstRow?.getBoundingClientRect().top ?? 0).toBeLessThan(rowTopBefore);
+    expect(Math.abs(thead.getBoundingClientRect().top - headTopBefore)).toBeLessThan(1);
   });
 });
