@@ -36,6 +36,13 @@ export type MatrixCellClickArgs = {
 const FIXED_HEADER_COL_COUNT = 7;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
+/** Per-user column: wide enough for a "100%" chip, with a rule on the first
+ * column separating the project metadata from the allocation grid. */
+const USER_COL_CLASS = "min-w-[3.25rem]";
+const USER_COL_FIRST_CLASS = "border-l border-gray-200";
+const userColClass = (index: number) =>
+  index === 0 ? `${USER_COL_CLASS} ${USER_COL_FIRST_CLASS}` : USER_COL_CLASS;
+
 function MonthlyAssignmentMatrixImpl({
   projects,
   assignments,
@@ -200,13 +207,13 @@ function HeaderRow({
         className="py-2 px-3 min-w-[5rem] text-right whitespace-nowrap"
         titleHint="月の合計工数 (人日)。各セルの % × 担当者の当月稼働可能日数 の合計です。"
       />
-      {users.map((user) => (
+      {users.map((user, index) => (
         <th
           key={user.user_id}
-          className="py-2 px-1 text-left align-bottom h-32 min-w-[1.75rem] normal-case tracking-normal"
+          className={`py-2 px-1 text-center align-bottom h-32 normal-case tracking-normal ${userColClass(index)}`}
         >
           <span
-            className="[writing-mode:sideways-lr] inline-block text-[11px] font-medium text-gray-700 whitespace-nowrap"
+            className="[writing-mode:sideways-lr] inline-block text-xs font-medium text-gray-800 whitespace-nowrap"
             title={
               typeof user.available_work_days === "number"
                 ? `${user.display_name} — 当月稼働可能 ${user.available_work_days}人日`
@@ -305,7 +312,7 @@ function ProjectRow({
       <td className="py-2 pr-4">
         <CopyableProjectId projectId={row.project.id} />
       </td>
-      <td className="py-2 pr-4 whitespace-nowrap text-xs text-gray-700">
+      <td className="py-2 pr-4 whitespace-nowrap text-gray-700">
         {row.project.customer_name ?? "—"}
       </td>
       <td className="py-2 pr-4 whitespace-nowrap">
@@ -324,10 +331,10 @@ function ProjectRow({
           (details)
         </a>
       </td>
-      <td className="py-2 px-3 text-xs text-gray-600">{row.project.start_date ?? "—"}</td>
-      <td className="py-2 px-3 text-xs text-gray-600">{row.project.target_date ?? "—"}</td>
+      <td className="py-2 px-3 text-gray-600 tabular-nums">{row.project.start_date ?? "—"}</td>
+      <td className="py-2 px-3 text-gray-600 tabular-nums">{row.project.target_date ?? "—"}</td>
       <td
-        className="py-2 px-3 text-right font-medium text-gray-700 whitespace-nowrap"
+        className="py-2 px-3 text-right font-medium text-gray-700 whitespace-nowrap tabular-nums"
         title={cellTitle}
       >
         {typeof row.rowEffortDays === "number" ? (
@@ -346,8 +353,8 @@ function ProjectRow({
           "—"
         )}
       </td>
-      {users.map((user) => (
-        <td key={user.user_id} className="py-2 px-1 text-center">
+      {users.map((user, index) => (
+        <td key={user.user_id} className={`py-2 px-1 text-center ${userColClass(index)}`}>
           <PercentageCell
             cell={row.cells.get(user.user_id)}
             user={user}
@@ -450,7 +457,7 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
       type="button"
       onClick={handleCopy}
       title={copied ? "コピーしました" : `${projectId} (クリックでコピー)`}
-      className="text-[11px] font-mono text-gray-500 hover:text-indigo-600 cursor-pointer"
+      className="text-xs font-mono text-gray-500 hover:text-indigo-600 cursor-pointer"
     >
       {copied ? "✓ コピー済" : `${idPrefix}…`}
     </button>
@@ -502,7 +509,7 @@ function PercentageCell({
     user.available_work_days,
   );
   const tooltip = isClickable ? baseTooltip : `${baseTooltip}\n${PAST_MONTH_LOCKED_TITLE}`;
-  const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style.className}`;
+  const sharedClass = `inline-flex items-center justify-center min-w-[2.75rem] px-1.5 py-0.5 rounded text-sm font-medium tabular-nums ${style.className}`;
 
   if (!isClickable) {
     return (
@@ -550,13 +557,13 @@ function UserTotalsRow({
       >
         ユーザー月合計
       </td>
-      {users.map((user) => {
+      {users.map((user, index) => {
         const total = userTotals.get(user.user_id) ?? 0;
         const overAllocated = total > MAX_PERCENTAGE_PER_MONTH;
         return (
           <td
             key={user.user_id}
-            className={`py-2 px-1 text-center font-medium ${TOTALS_ROW_CELL_BORDER} ${overAllocated ? "text-red-700" : "text-gray-700"}`}
+            className={`py-2 px-1 text-center font-medium tabular-nums whitespace-nowrap ${TOTALS_ROW_CELL_BORDER} ${userColClass(index)} ${overAllocated ? "text-red-700" : "text-gray-700"}`}
             title={overAllocated ? `${total}% — 100%を超えています` : undefined}
           >
             {total}%{overAllocated ? " ⚠" : ""}
