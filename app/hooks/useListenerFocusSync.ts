@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { type ListenerConfig, postListenerFocus } from "~/lib/listener";
 
-export type ListenerSyncState = "off" | "pending" | "synced" | "no-session" | "error";
+export type ListenerSyncState =
+  | "off"
+  | "pending"
+  | "synced"
+  | "no-session"
+  | "not-listed"
+  | "error";
 
 export const LISTENER_FOCUS_DEBOUNCE_MS = 300;
 

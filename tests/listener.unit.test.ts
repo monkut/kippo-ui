@@ -44,10 +44,14 @@ describe("postListenerFocus", () => {
     expect(JSON.parse(init.body)).toEqual({ project_id: "proj-1", source: "ui" });
   });
 
-  test("maps 404 to no-session, other failures and exceptions to error, never throws", async () => {
+  test("maps 404 to no-session, 409 to not-listed, other failures and exceptions to error, never throws", async () => {
     const notFound = vi.fn().mockResolvedValue({ ok: false, status: 404 });
     expect(await postListenerFocus(config, "p", notFound as unknown as typeof fetch)).toBe(
       "no-session",
+    );
+    const notListed = vi.fn().mockResolvedValue({ ok: false, status: 409 });
+    expect(await postListenerFocus(config, "p", notListed as unknown as typeof fetch)).toBe(
+      "not-listed",
     );
     const unauthorized = vi.fn().mockResolvedValue({ ok: false, status: 401 });
     expect(await postListenerFocus(config, "p", unauthorized as unknown as typeof fetch)).toBe(
