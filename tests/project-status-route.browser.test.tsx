@@ -312,6 +312,14 @@ describe("project-status listener focus sync", () => {
     expect(container.textContent).toContain("二番目");
   });
 
+  test("shows 対象外 on 409 (project not in the listener session)", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 409 });
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    expect(container.textContent).toContain(LISTENER_SYNC_LABELS["not-listed"]);
+  });
+
   test("the badge toggles sync off for this browser and persists the choice", async () => {
     root.render(<ProjectStatus />);
     await flush();

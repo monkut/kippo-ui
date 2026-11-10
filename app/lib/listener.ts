@@ -13,7 +13,7 @@ export interface ListenerConfig {
 }
 
 /** POST outcome, surfaced as the badge state in the slideshow header. */
-export type ListenerFocusResult = "ok" | "no-session" | "error";
+export type ListenerFocusResult = "ok" | "no-session" | "not-listed" | "error";
 
 export const LISTENER_FOCUS_SYNC_STORAGE_KEY = "listenerFocusSync";
 export const LISTENER_FOCUS_PATH = "/sessions/current/focus";
@@ -71,8 +71,9 @@ export function writeFocusSyncEnabled(enabled: boolean): void {
 
 /**
  * Tell the listener which project is on screen. Fire-and-forget semantics: never throws,
- * never blocks navigation. 404 = no open session on the listener (or the project is not in
- * it), which is the normal state outside a meeting.
+ * never blocks navigation. 404 = no open session on the listener, the normal state outside a
+ * meeting. 409 = the project is not in the open session (added in kippo after it started); the
+ * listener keeps that talk unassigned.
  */
 export async function postListenerFocus(
   config: ListenerConfig,
@@ -88,6 +89,7 @@ export async function postListenerFocus(
     });
     if (response.ok) return "ok";
     if (response.status === 404) return "no-session";
+    if (response.status === 409) return "not-listed";
     return "error";
   } catch {
     return "error";

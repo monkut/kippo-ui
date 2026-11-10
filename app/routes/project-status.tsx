@@ -280,6 +280,7 @@ export const LISTENER_SYNC_LABELS: Record<ListenerSyncState, string> = {
   pending: "リスナー: 送信中",
   synced: "リスナー: 同期中",
   "no-session": "リスナー: セッションなし",
+  "not-listed": "リスナー: 対象外",
   error: "リスナー: エラー",
 };
 
@@ -288,6 +289,7 @@ const LISTENER_SYNC_CLASSES: Record<ListenerSyncState, string> = {
   pending: "bg-gray-100 text-gray-500",
   synced: "bg-green-100 text-green-700",
   "no-session": "bg-yellow-100 text-yellow-700",
+  "not-listed": "bg-yellow-100 text-yellow-700",
   error: "bg-red-100 text-red-700",
 };
 
