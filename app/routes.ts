@@ -13,5 +13,6 @@ export default [
   route("projects/:id/requirements/:reqId", "routes/projects.$id.requirements.$reqId.tsx"),
   route("project-status", "routes/project-status.tsx"),
   route("weekly-effort", "routes/weekly-effort.tsx"),
+  route("weekly-effort/yearly", "routes/weekly-effort.yearly.tsx"),
   route("billing", "routes/billing.tsx"),
 ] satisfies RouteConfig;

@@ -5,10 +5,12 @@ import type {
   MonthlyAssignmentsListParams,
   ProjectMonthlyAssignment,
   ProjectsListParams,
+  ProjectsWeeklyeffortListParams,
+  ProjectWeeklyEffort,
 } from "./generated/models";
 import { customersList } from "./generated/customers/customers";
 import { monthlyAssignmentsList } from "./generated/monthly-assignments/monthly-assignments";
-import { projectsList } from "./generated/projects/projects";
+import { projectsList, projectsWeeklyeffortList } from "./generated/projects/projects";
 
 const FETCH_ALL_CONCURRENCY = 5;
 
@@ -64,4 +66,12 @@ export function fetchAllCustomers(
   params?: Omit<CustomersListParams, "page">,
 ): Promise<KippoCustomer[]> {
   return fetchAllPaginated(customersList, { ...params } as CustomersListParams);
+}
+
+export function fetchAllWeeklyEfforts(
+  params: Omit<ProjectsWeeklyeffortListParams, "page">,
+): Promise<ProjectWeeklyEffort[]> {
+  return fetchAllPaginated(projectsWeeklyeffortList, {
+    ...params,
+  } as ProjectsWeeklyeffortListParams);
 }

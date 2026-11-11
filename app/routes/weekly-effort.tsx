@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { WeekCalendar } from "~/components/weekly-effort/WeekCalendar";
@@ -137,6 +138,15 @@ export default function WeeklyEffort() {
   return (
     <Layout title="KIPPO プロジェクト週間稼働量">
       <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="flex justify-end">
+          <Link
+            to="/weekly-effort/yearly"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            年間稼働実績を見る
+          </Link>
+        </div>
+
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="text-sm text-red-800">{error}</div>
