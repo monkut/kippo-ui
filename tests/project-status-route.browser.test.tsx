@@ -42,6 +42,7 @@ import ProjectStatus, {
   ESTIMATED_MARKER,
   formatContractAmount,
   githubProjectLabel,
+  LISTENER_CLOSE_LABEL,
   LISTENER_SYNC_LABELS,
   meterFillPercentage,
 } from "../app/routes/project-status";
@@ -320,13 +321,14 @@ describe("project-status listener focus sync", () => {
     expect(container.textContent).toContain(LISTENER_SYNC_LABELS["not-listed"]);
   });
 
-  test("the badge toggles sync off for this browser and persists the choice", async () => {
+  test("the dot carries the status text and its panel toggles sync off for this browser", async () => {
     root.render(<ProjectStatus />);
     await flush();
     await settle();
-    const badge = findBadge(container);
-    expect(badge?.getAttribute("aria-pressed")).toBe("true");
-    badge?.click();
+    expect(findDot(container)?.getAttribute("aria-label")).toBe(LISTENER_SYNC_LABELS.synced);
+    const toggle = findButton(container, "同期を停止");
+    expect(toggle?.getAttribute("aria-pressed")).toBe("true");
+    toggle?.click();
     await flush();
     expect(localStorage.getItem(LISTENER_FOCUS_SYNC_STORAGE_KEY)).toBe("off");
     expect(container.textContent).toContain(LISTENER_SYNC_LABELS.off);
@@ -343,14 +345,58 @@ describe("project-status listener focus sync", () => {
     await flush();
     await settle();
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(findBadge(container)).toBeNull();
+    expect(findDot(container)).toBeNull();
   });
+
+  test("セッション終了 ends the listener session after confirmation and shows セッションなし", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    findButton(container, LISTENER_CLOSE_LABEL)?.click();
+    await flush();
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
+    expect(url).toBe("https://listener.example/sessions/current/end");
+    expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>)["X-API-Key"]).toBe("key-1");
+    expect(findDot(container)?.getAttribute("aria-label")).toBe(LISTENER_SYNC_LABELS["no-session"]);
+    expect(findButton(container, LISTENER_CLOSE_LABEL)).toBeNull(); // no open session any more
+    confirmSpy.mockRestore();
+  });
+
+  test("セッション終了 does nothing when the confirmation is cancelled", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    findButton(container, LISTENER_CLOSE_LABEL)?.click();
+    await flush();
+    expect(postedUrls()).toEqual(["https://listener.example/sessions/current/focus"]);
+    expect(findDot(container)?.getAttribute("aria-label")).toBe(LISTENER_SYNC_LABELS.synced);
+    confirmSpy.mockRestore();
+  });
+
+  test("セッション終了 is offered only while a session is open", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+    root.render(<ProjectStatus />);
+    await flush();
+    await settle();
+    expect(findDot(container)).not.toBeNull();
+    expect(findButton(container, LISTENER_CLOSE_LABEL)).toBeNull();
+  });
+
+  const postedUrls = () => fetchMock.mock.calls.map(([url]) => url as string);
 });
 
-function findBadge(container: HTMLElement): HTMLButtonElement | null {
+function findDot(container: HTMLElement): HTMLElement | null {
+  return container.querySelector<HTMLElement>('[role="status"]');
+}
+
+function findButton(container: HTMLElement, text: string): HTMLButtonElement | null {
   return (
-    Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
-      (b.textContent ?? "").startsWith("リスナー"),
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+      (b) => (b.textContent ?? "").trim() === text,
     ) ?? null
   );
 }

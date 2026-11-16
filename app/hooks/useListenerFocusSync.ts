@@ -15,12 +15,14 @@ export const LISTENER_FOCUS_DEBOUNCE_MS = 300;
  * Report the displayed project to the listener whenever it changes (debounced so a fast
  * arrow-key run posts only the slide the facilitator lands on). "off" when there is no
  * listener for the project's organization or the facilitator switched sync off.
+ * The setter lets the caller record an outcome outside a focus POST (セッション終了); the next
+ * slide change posts again and replaces it.
  */
 export function useListenerFocusSync(
   config: ListenerConfig | null,
   projectId: string | null,
   enabled: boolean,
-): ListenerSyncState {
+): [ListenerSyncState, (state: ListenerSyncState) => void] {
   const [state, setState] = useState<ListenerSyncState>("off");
   const url = config?.url ?? "";
   const apiKey = config?.apiKey ?? "";
@@ -43,5 +45,5 @@ export function useListenerFocusSync(
     };
   }, [enabled, url, apiKey, projectId]);
 
-  return state;
+  return [state, setState];
 }
