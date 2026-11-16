@@ -15,8 +15,12 @@ export interface ListenerConfig {
 /** POST outcome, surfaced as the badge state in the slideshow header. */
 export type ListenerFocusResult = "ok" | "no-session" | "not-listed" | "error";
 
+/** セッション終了 outcome. "no-session" = nothing was open (already ended or auto-closed). */
+export type ListenerCloseResult = "closed" | "no-session" | "error";
+
 export const LISTENER_FOCUS_SYNC_STORAGE_KEY = "listenerFocusSync";
 export const LISTENER_FOCUS_PATH = "/sessions/current/focus";
+export const LISTENER_CLOSE_PATH = "/sessions/current/end";
 export const LISTENER_REQUEST_TIMEOUT_MS = 5000;
 
 interface OrganizationLike {
@@ -90,6 +94,29 @@ export async function postListenerFocus(
     if (response.ok) return "ok";
     if (response.status === 404) return "no-session";
     if (response.status === 409) return "not-listed";
+    return "error";
+  } catch {
+    return "error";
+  }
+}
+
+/**
+ * End the listener's open session (セッション終了 in the slideshow header). The listener ends
+ * it at once without summarising; its capture client stops at the next transcript POST, and
+ * pending talk can still be summarised on the dashboard. Never throws.
+ */
+export async function closeListenerSession(
+  config: ListenerConfig,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ListenerCloseResult> {
+  try {
+    const response = await fetchImpl(`${config.url}${LISTENER_CLOSE_PATH}`, {
+      method: "POST",
+      headers: { "X-API-Key": config.apiKey },
+      signal: AbortSignal.timeout(LISTENER_REQUEST_TIMEOUT_MS),
+    });
+    if (response.ok) return "closed";
+    if (response.status === 404) return "no-session";
     return "error";
   } catch {
     return "error";

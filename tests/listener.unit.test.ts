@@ -1,6 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
 import {
+  closeListenerSession,
   extractListenerConfigs,
+  LISTENER_CLOSE_PATH,
   LISTENER_FOCUS_PATH,
   postListenerFocus,
 } from "../app/lib/listener";
@@ -59,5 +61,28 @@ describe("postListenerFocus", () => {
     );
     const down = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
     expect(await postListenerFocus(config, "p", down as unknown as typeof fetch)).toBe("error");
+  });
+});
+
+describe("closeListenerSession", () => {
+  const config = { url: "https://listener.example", apiKey: "secret" };
+  const respond = (init: object) => vi.fn().mockResolvedValue(init) as unknown as typeof fetch;
+
+  test("POSTs to current/end with the API key and reports closed", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    expect(await closeListenerSession(config, fetchImpl as unknown as typeof fetch)).toBe("closed");
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe(`https://listener.example${LISTENER_CLOSE_PATH}`);
+    expect(init.method).toBe("POST");
+    expect(init.headers["X-API-Key"]).toBe("secret");
+  });
+
+  test("maps 404 to no-session, other failures and exceptions to error, never throws", async () => {
+    expect(await closeListenerSession(config, respond({ ok: false, status: 404 }))).toBe(
+      "no-session",
+    );
+    expect(await closeListenerSession(config, respond({ ok: false, status: 401 }))).toBe("error");
+    const down = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    expect(await closeListenerSession(config, down as unknown as typeof fetch)).toBe("error");
   });
 });
