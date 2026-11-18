@@ -19,7 +19,6 @@ export type ProjectAssignmentMutations = {
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
-  bulkSetConfirmed: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
   /** Create a KippoProject from its required fields (organization + name).
    * `columnset` is resolved from the org's default columnset on the backend. */
   createProject: (payload: KippoProjectRequest) => Promise<boolean>;
@@ -83,18 +82,6 @@ export function useProjectAssignmentMutations(
   // Month-level confirm / unconfirm (kippo#23): sequential PATCHes, same
   // constraint as bulkCreateAssignments — no bulk endpoint. Backend post_save
   // (kippo#17, merged via monkut/kippo#288) drives auto-extension on each row.
-  const bulkSetConfirmed = useCallback(
-    (ids: number[], isConfirmed: boolean) =>
-      wrap(
-        async () => {
-          for (const id of ids) {
-            await monthlyAssignmentsPartialUpdate(id, { is_confirmed: isConfirmed });
-          }
-        },
-        isConfirmed ? "月の確定に失敗しました" : "月の確定解除に失敗しました",
-      ),
-    [wrap],
-  );
 
   const createProject = useCallback(
     (payload: KippoProjectRequest) =>
@@ -112,7 +99,6 @@ export function useProjectAssignmentMutations(
     updateAssignment,
     deleteAssignment,
     bulkCreateAssignments,
-    bulkSetConfirmed,
     createProject,
   };
 }

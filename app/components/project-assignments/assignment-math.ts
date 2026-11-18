@@ -49,55 +49,6 @@ export function filterAssignmentsToVisibleProjects(
   return assignments.filter((a) => visibleIds.has(a.project));
 }
 
-/** Count assignments split by `is_confirmed` for the page-level confirm/unconfirm
- * action (kippo#23). Callers pre-filter `assignments` to the displayed month —
- * `useMonthlyAssignments` already returns only rows for the current month, and
- * excluded usernames are stripped at the same layer. */
-export function countAssignmentsByConfirmation(assignments: ProjectMonthlyAssignment[]): {
-  confirmed: number;
-  unconfirmed: number;
-} {
-  let confirmed = 0;
-  let unconfirmed = 0;
-  for (const assignment of assignments) {
-    if (assignment.is_confirmed) {
-      confirmed += 1;
-    } else {
-      unconfirmed += 1;
-    }
-  }
-  return { confirmed, unconfirmed };
-}
-
-export type ProjectConfirmation = { ids: number[]; confirmed: number; total: number };
-
-/** Per-project confirmation state for the displayed month, keyed by project id.
- * `ids` are every assignment row for the project (all users), so the 確定 column
- * can flip the whole project at once. */
-export function buildProjectConfirmation(
-  assignments: ProjectMonthlyAssignment[],
-): Map<string, ProjectConfirmation> {
-  const map = new Map<string, ProjectConfirmation>();
-  for (const a of assignments) {
-    let entry = map.get(a.project);
-    if (!entry) {
-      entry = { ids: [], confirmed: 0, total: 0 };
-      map.set(a.project, entry);
-    }
-    entry.ids.push(a.id);
-    entry.total += 1;
-    if (a.is_confirmed) entry.confirmed += 1;
-  }
-  return map;
-}
-
-/** A project row is fully confirmed (locked) once it has ≥1 assignment and every
- * one is confirmed. An empty project (no assignments) is never "confirmed", so it
- * stays editable. */
-export function isProjectRowConfirmed(c: ProjectConfirmation | undefined): boolean {
-  return c !== undefined && c.total > 0 && c.confirmed === c.total;
-}
-
 export function assignmentDisplayName(assignment: ProjectMonthlyAssignment): string {
   return assignment.user_display_name?.trim() || assignment.user_username;
 }

@@ -72,7 +72,7 @@ function useAcceptPattern({
     if (pattern.members.length === 0) return;
     if (
       !window.confirm(
-        `${pattern.label} を採用しますか? ${pattern.members.length} 人 × 各月の割当が未確定として登録されます。`,
+        `${pattern.label} を採用しますか? ${pattern.members.length} 人 × 各月の割当が登録されます。`,
       )
     ) {
       return;
@@ -205,7 +205,7 @@ function Header({ project }: { project: KippoProject | null }) {
         </div>
       )}
       <p className="text-xs text-gray-500 mt-1">
-        プロジェクトの完了予測日に近い順に表示されます。採用すると、未確定の割当として登録されます。
+        プロジェクトの完了予測日に近い順に表示されます。採用すると、割当として登録されます。
       </p>
     </div>
   );

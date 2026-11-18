@@ -66,8 +66,6 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
   const effortUsernames = useEffortUsernames(state.project);
-  const handleToggleConfirmed = (a: ProjectMonthlyAssignment) =>
-    state.updateAssignment(a.id, { is_confirmed: !(a.is_confirmed ?? false) });
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -87,7 +85,6 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
             onAddClick={() => setAddOpen(true)}
             onSuggestClick={() => setSuggestOpen(true)}
             onCellClick={setEditTarget}
-            onToggleConfirmed={handleToggleConfirmed}
           />
         </>
       )}

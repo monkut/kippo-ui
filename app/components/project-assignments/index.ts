@@ -12,11 +12,8 @@ export { addMonths, firstOfMonth, firstOfNextMonth, formatMonth } from "~/lib/da
 export {
   buildGrid,
   buildMonthlyMatrix,
-  buildProjectConfirmation,
-  countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
   flattenPatternToAssignmentRequests,
-  isProjectRowConfirmed,
   MATRIX_CONFIDENCE_RULE,
   MATRIX_MIN_CONFIDENCE,
   unassignedMemberNames,
@@ -28,5 +25,4 @@ export type {
   MonthlyMatrix,
   MonthlyMatrixRow,
   MonthlyMatrixUser,
-  ProjectConfirmation,
 } from "./utils";

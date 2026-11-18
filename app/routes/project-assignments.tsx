@@ -162,8 +162,6 @@ export default function ProjectAssignmentsMonthly() {
             hideUnassigned={hideUnassigned}
             editableMonth={editableMonth}
             onCellClick={handleCellClick}
-            onBulkSetConfirmed={mutations.bulkSetConfirmed}
-            isSaving={mutations.isSaving}
           />
         )}
       </div>

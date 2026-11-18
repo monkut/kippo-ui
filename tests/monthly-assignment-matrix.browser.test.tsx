@@ -85,7 +85,7 @@ function renderMatrix(
   );
 }
 
-describe("MonthlyAssignmentMatrix — #21 F4: unconfirmed cell styling", () => {
+describe("MonthlyAssignmentMatrix — cell styling", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
@@ -100,31 +100,11 @@ describe("MonthlyAssignmentMatrix — #21 F4: unconfirmed cell styling", () => {
     container.remove();
   });
 
-  test("unconfirmed cell renders gray (bg-gray-50 + dashed gray border)", async () => {
+  // 確定 no longer changes display (kiconiaworks/kippo#69 D1): both values share one palette.
+  test.each([true, false])("is_confirmed=%s cell uses the indigo palette", async (isConfirmed) => {
     renderMatrix(root, {
       projects: [makeProject()],
-      assignments: [makeAssignment({ percentage: 25, is_confirmed: false })],
-      members: [makeMember({ user_id: "u-1", display_name: "Alice" })],
-    });
-
-    const cell = await waitFor(() =>
-      Array.from(container.querySelectorAll<HTMLSpanElement>("td span")).find((s) =>
-        s.textContent?.includes("%"),
-      ),
-    );
-    expect(cell?.textContent).toContain("25%");
-    expect(cell?.className).toContain("bg-gray-50");
-    expect(cell?.className).toContain("text-gray-600");
-    expect(cell?.className).toContain("border-dashed");
-    expect(cell?.className).toContain("border-gray-300");
-    // Negative: must not carry the old indigo unconfirmed palette.
-    expect(cell?.className).not.toContain("bg-indigo-50");
-  });
-
-  test("confirmed cell still uses indigo palette", async () => {
-    renderMatrix(root, {
-      projects: [makeProject()],
-      assignments: [makeAssignment({ percentage: 50, is_confirmed: true })],
+      assignments: [makeAssignment({ percentage: 50, is_confirmed: isConfirmed })],
       members: [makeMember({ user_id: "u-1", display_name: "Alice" })],
     });
 
@@ -134,7 +114,7 @@ describe("MonthlyAssignmentMatrix — #21 F4: unconfirmed cell styling", () => {
       ),
     );
     expect(cell?.className).toContain("bg-indigo-100");
-    expect(cell?.className).toContain("text-indigo-800");
+    expect(cell?.className).not.toContain("border-dashed");
   });
 });
 
