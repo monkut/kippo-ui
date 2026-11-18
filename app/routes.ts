@@ -10,6 +10,7 @@ export default [
   route("projects/:id/summary", "routes/projects.$id.summary.tsx"),
   route("projects/:id/assignments", "routes/projects.$id.assignments.tsx"),
   route("project-assignments", "routes/project-assignments.tsx"),
+  route("my-assignments", "routes/my-assignments.tsx"),
   route("projects/:id/requirements/:reqId", "routes/projects.$id.requirements.$reqId.tsx"),
   route("project-status", "routes/project-status.tsx"),
   route("weekly-effort", "routes/weekly-effort.tsx"),
