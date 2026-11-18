@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { monthlyAssignmentsList } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import type {
   KippoProject,
@@ -55,10 +55,12 @@ type FetchData = {
   forecastError: string;
 };
 
-async function fetchAllForProject(projectId: string): Promise<FetchData> {
+async function fetchAllForProject(projectId: string, month: string): Promise<FetchData> {
+  // `month` is required: without it the list endpoint defaults to the current month (JST),
+  // so every other month would render empty (kiconiaworks/kippo#68).
   const [projectRes, assignmentsRes, forecastRes] = await Promise.all([
     projectsRetrieve(projectId),
-    monthlyAssignmentsList({ project: projectId }),
+    monthlyAssignmentsList({ project: projectId, month }),
     fetchForecastTolerating400(projectId),
   ]);
   return {
@@ -69,7 +71,11 @@ async function fetchAllForProject(projectId: string): Promise<FetchData> {
   };
 }
 
-export function useProjectAssignments(projectId: string | undefined): UseProjectAssignmentsState {
+/** `month` is the displayed first-of-month ISO date ("YYYY-MM-01"); assignments are fetched for it. */
+export function useProjectAssignments(
+  projectId: string | undefined,
+  month: string,
+): UseProjectAssignmentsState {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState<FetchData>({
@@ -79,18 +85,23 @@ export function useProjectAssignments(projectId: string | undefined): UseProject
     forecastError: "",
   });
 
+  // Ignore responses from superseded fetches when the month changes quickly.
+  const latestRequest = useRef(0);
+
   const fetchAll = useCallback(async () => {
     if (!projectId) return;
+    const requestId = ++latestRequest.current;
     setIsLoading(true);
     setError("");
     try {
-      setData(await fetchAllForProject(projectId));
+      const result = await fetchAllForProject(projectId, month);
+      if (requestId === latestRequest.current) setData(result);
     } catch {
-      setError("データの取得に失敗しました");
+      if (requestId === latestRequest.current) setError("データの取得に失敗しました");
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequest.current) setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, month]);
 
   const mutations = useProjectAssignmentMutations(fetchAll, setError);
 
