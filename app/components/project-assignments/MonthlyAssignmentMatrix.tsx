@@ -11,6 +11,7 @@ import {
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
   isProjectRowConfirmed,
+  MATRIX_CONFIDENCE_RULE,
   MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
@@ -184,6 +185,7 @@ function HeaderRow({
         sortConfig={sortConfig}
         onSort={onSort}
         className="py-2 pr-4 whitespace-nowrap"
+        titleHint={MATRIX_CONFIDENCE_RULE}
       />
       <SortableHeader
         label="開始日"

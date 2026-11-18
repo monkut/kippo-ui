@@ -6,12 +6,18 @@ import type {
 } from "~/lib/api/generated/models";
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
-import { EXCLUDED_USERNAMES, isProjectInMonthWindow } from "~/components/project-assignments/utils";
+import {
+  EXCLUDED_USERNAMES,
+  isProjectInMonthWindow,
+  MATRIX_MIN_CONFIDENCE,
+} from "~/components/project-assignments/utils";
 
 export type UseMonthlyAssignmentsState = {
   isLoading: boolean;
   error: string;
   projects: KippoProject[];
+  /** In-window projects hidden because 確度 < MATRIX_MIN_CONFIDENCE (kippo#71). */
+  hiddenLowConfidenceCount: number;
   assignments: ProjectMonthlyAssignment[];
   members: OrganizationMemberDetail[];
   /** Re-fetch assignments for the displayed month. Projects + members are
@@ -171,15 +177,19 @@ export function useMonthlyAssignments(month: string): UseMonthlyAssignmentsState
   // start_date <= last_day_of(month) AND (target_date == null OR target_date >= first_day_of(month)).
   // Projects with null target_date are open-ended and show indefinitely (#21 F3).
   // The outer `fetchAllProjects({ is_active: true })` still guards the candidate set.
-  const visibleProjects = useMemo(
-    () => projectsState.projects.filter((p) => isProjectInMonthWindow(p, month)),
-    [projectsState.projects, month],
-  );
+  // Of those, only 確度 >= MATRIX_MIN_CONFIDENCE is listed (kippo#71). Filter on `confidence`,
+  // not `phase`: confidence is user-overridable per project (kippo#56).
+  const { visibleProjects, hiddenLowConfidenceCount } = useMemo(() => {
+    const inWindow = projectsState.projects.filter((p) => isProjectInMonthWindow(p, month));
+    const visible = inWindow.filter((p) => (p.confidence ?? 0) >= MATRIX_MIN_CONFIDENCE);
+    return { visibleProjects: visible, hiddenLowConfidenceCount: inWindow.length - visible.length };
+  }, [projectsState.projects, month]);
 
   return {
     isLoading: projectsState.isLoading || membersState.isLoading || assignmentsState.isLoading,
     error: projectsState.error || membersState.error || assignmentsState.error,
     projects: visibleProjects,
+    hiddenLowConfidenceCount,
     assignments: assignmentsState.assignments,
     members: membersState.members,
     refresh: assignmentsState.refresh,
