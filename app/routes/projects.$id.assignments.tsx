@@ -21,7 +21,8 @@ export function meta() {
 export default function ProjectAssignments() {
   const { user, authLoading } = useAuthGate();
   const { id } = useParams();
-  const state = useProjectAssignments(id);
+  const [month, setMonth] = useState(() => firstOfMonth(new Date()));
+  const state = useProjectAssignments(id, month);
 
   if (authLoading) {
     return (
@@ -39,7 +40,7 @@ export default function ProjectAssignments() {
       projectCustomerName={state.project?.customer_name}
       projectId={id}
     >
-      <Body projectId={id} state={state} />
+      <Body projectId={id} state={state} month={month} onMonthChange={setMonth} />
     </Layout>
   );
 }
@@ -53,11 +54,17 @@ function useEffortUsernames(project: KippoProject | null): ReadonlySet<string> {
   );
 }
 
-function Body({ projectId, state }: { projectId: string | undefined; state: State }) {
+type BodyProps = {
+  projectId: string | undefined;
+  state: State;
+  month: string;
+  onMonthChange: (month: string) => void;
+};
+
+function Body({ projectId, state, month, onMonthChange }: BodyProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
-  const [month, setMonth] = useState(() => firstOfMonth(new Date()));
   const effortUsernames = useEffortUsernames(state.project);
   const handleToggleConfirmed = (a: ProjectMonthlyAssignment) =>
     state.updateAssignment(a.id, { is_confirmed: !(a.is_confirmed ?? false) });
@@ -67,7 +74,7 @@ function Body({ projectId, state }: { projectId: string | undefined; state: Stat
       {state.error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{state.error}</div>
       )}
-      <MonthPicker month={month} onChange={setMonth} />
+      <MonthPicker month={month} onChange={onMonthChange} />
       {state.isLoading ? (
         <LoadingPanel />
       ) : (
