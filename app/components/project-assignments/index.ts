@@ -17,6 +17,8 @@ export {
   filterAssignmentsToVisibleProjects,
   flattenPatternToAssignmentRequests,
   isProjectRowConfirmed,
+  MATRIX_CONFIDENCE_RULE,
+  MATRIX_MIN_CONFIDENCE,
   unassignedMemberNames,
 } from "./utils";
 export type {

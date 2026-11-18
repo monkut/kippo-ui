@@ -8,6 +8,8 @@ import {
   MonthPicker,
   MonthlyAssignmentMatrix,
   firstOfMonth,
+  MATRIX_CONFIDENCE_RULE,
+  MATRIX_MIN_CONFIDENCE,
   unassignedMemberNames,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
@@ -33,7 +35,7 @@ export default function ProjectAssignmentsMonthly() {
   const { user, authLoading } = useAuthGate();
   const [month, setMonth] = useState(() => firstOfMonth(new Date()));
   const [hideUnassigned, setHideUnassigned] = useHideUnassignedToggle();
-  const { isLoading, error, projects, assignments, members, refresh } =
+  const { isLoading, error, projects, hiddenLowConfidenceCount, assignments, members, refresh } =
     useMonthlyAssignments(month);
   const [mutationError, setMutationError] = useState("");
   const mutations = useProjectAssignmentMutations(refresh, setMutationError);
@@ -106,7 +108,7 @@ export default function ProjectAssignmentsMonthly() {
       <div className="space-y-6 w-full max-w-[90vw] mx-auto">
         <div className="rounded-md bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">
           注意: 当月の期間内 (start_date ≤ 月末 かつ target_date が空または ≥ 月初)
-          のアクティブプロジェクトを表示します。
+          のアクティブプロジェクトのうち、{MATRIX_CONFIDENCE_RULE}
         </div>
         <MonthPicker month={month} onChange={setMonth} />
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -120,6 +122,11 @@ export default function ProjectAssignmentsMonthly() {
               <span className="text-sm text-gray-600">
                 プロジェクト数:{" "}
                 <span className="font-semibold text-gray-900">{projects.length}</span>
+                {hiddenLowConfidenceCount > 0 && (
+                  <span className="ml-2 text-gray-500" title={MATRIX_CONFIDENCE_RULE}>
+                    (非表示 {hiddenLowConfidenceCount}件: 確度 &lt; {MATRIX_MIN_CONFIDENCE}%)
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -138,7 +145,8 @@ export default function ProjectAssignmentsMonthly() {
         {createdProjectName && (
           <div className="rounded-md bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
             プロジェクト「{createdProjectName}
-            」を作成しました。開始日や割当を設定すると当月のマトリクスに表示されます。
+            」を作成しました。開始日を設定し、確度を {MATRIX_MIN_CONFIDENCE}% 以上
+            (口頭受注・契約(稼働中)) にすると当月のマトリクスに表示されます。
           </div>
         )}
         {combinedError && (
