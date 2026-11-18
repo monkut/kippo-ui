@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Layout } from "~/components/layout";
 import {
-  AddAssignmentModal,
   CreateProjectModal,
   EditAssignmentModal,
   type MatrixCellClickArgs,
@@ -22,8 +21,6 @@ export function meta() {
   return [{ title: "月別プロジェクト割当 - Kippo" }];
 }
 
-type AddTarget = { projectId: string; userId: string; month: string };
-
 /** True when the displayed month is the current month or later — gates the
  * matrix's click-to-edit / click-to-add interactions (#22). Past months stay
  * read-only with a `過去月のためロック` tooltip. */
@@ -40,7 +37,6 @@ export default function ProjectAssignmentsMonthly() {
   const [mutationError, setMutationError] = useState("");
   const mutations = useProjectAssignmentMutations(refresh, setMutationError);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
-  const [addTarget, setAddTarget] = useState<AddTarget | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createdProjectName, setCreatedProjectName] = useState<string | null>(null);
 
@@ -55,17 +51,6 @@ export default function ProjectAssignmentsMonthly() {
     [projects, assignments, members],
   );
 
-  // Look up the project by id when the AddAssignmentModal is open so the
-  // user-picker can prioritize this project's weekly-effort members.
-  const addProject = useMemo(
-    () => (addTarget ? (projects.find((p) => p.id === addTarget.projectId) ?? null) : null),
-    [addTarget, projects],
-  );
-  const addEffortUsernames = useMemo(
-    () => new Set(addProject?.weekly_effort_users.map((u) => u.username) ?? []),
-    [addProject],
-  );
-
   // Customer name for the EditAssignmentModal — assignment.project_name is
   // already on the row, but customer_name has to come from the projects list.
   const editProject = useMemo(
@@ -73,13 +58,7 @@ export default function ProjectAssignmentsMonthly() {
     [editTarget, projects],
   );
 
-  const handleCellClick = (args: MatrixCellClickArgs) => {
-    if (args.assignment) {
-      setEditTarget(args.assignment);
-    } else {
-      setAddTarget({ projectId: args.project.id, userId: args.user.user_id, month });
-    }
-  };
+  const handleCellClick = (args: MatrixCellClickArgs) => setEditTarget(args.assignment);
 
   const handleCreateProject = async (payload: KippoProjectRequest) => {
     const ok = await mutations.createProject(payload);
@@ -171,82 +150,16 @@ export default function ProjectAssignmentsMonthly() {
         onClose={() => setCreateOpen(false)}
         onSubmit={handleCreateProject}
       />
-      <Modals
-        addTarget={addTarget}
-        addEffortUsernames={addEffortUsernames}
-        addProjectName={addProject?.name ?? null}
-        addCustomerName={addProject?.customer_name ?? null}
-        editTarget={editTarget}
-        editCustomerName={editProject?.customer_name ?? null}
-        isSaving={mutations.isSaving}
-        onCloseAdd={() => setAddTarget(null)}
-        onCloseEdit={() => setEditTarget(null)}
-        onCreate={mutations.createAssignment}
-        onUpdate={mutations.updateAssignment}
-        onDelete={mutations.deleteAssignment}
-      />
-    </Layout>
-  );
-}
-
-type ModalsProps = {
-  addTarget: AddTarget | null;
-  addEffortUsernames: ReadonlySet<string>;
-  addProjectName: string | null;
-  addCustomerName: string | null;
-  editTarget: ProjectMonthlyAssignment | null;
-  editCustomerName: string | null;
-  isSaving: boolean;
-  onCloseAdd: () => void;
-  onCloseEdit: () => void;
-  onCreate: React.ComponentProps<typeof AddAssignmentModal>["onSubmit"];
-  onUpdate: React.ComponentProps<typeof EditAssignmentModal>["onSave"];
-  onDelete: React.ComponentProps<typeof EditAssignmentModal>["onDelete"];
-};
-
-function Modals({
-  addTarget,
-  addEffortUsernames,
-  addProjectName,
-  addCustomerName,
-  editTarget,
-  editCustomerName,
-  isSaving,
-  onCloseAdd,
-  onCloseEdit,
-  onCreate,
-  onUpdate,
-  onDelete,
-}: ModalsProps) {
-  // Render AddAssignmentModal only when addTarget is set — its `useOrgMembers`
-  // hook fires on `open=true`, and we don't want to issue an HTTP request with
-  // a placeholder projectId just to satisfy the prop shape.
-  return (
-    <>
-      {addTarget && (
-        <AddAssignmentModal
-          open={true}
-          projectId={addTarget.projectId}
-          month={addTarget.month}
-          effortUsernames={addEffortUsernames}
-          isSaving={isSaving}
-          prefilledUserId={addTarget.userId}
-          projectName={addProjectName}
-          customerName={addCustomerName}
-          onClose={onCloseAdd}
-          onSubmit={onCreate}
-        />
-      )}
       <EditAssignmentModal
         open={editTarget !== null}
         assignment={editTarget}
-        customerName={editCustomerName}
-        isSaving={isSaving}
-        onClose={onCloseEdit}
-        onSave={onUpdate}
-        onDelete={onDelete}
+        customerName={editProject?.customer_name ?? null}
+        isSaving={mutations.isSaving}
+        onClose={() => setEditTarget(null)}
+        onSave={mutations.updateAssignment}
+        onDelete={mutations.deleteAssignment}
       />
-    </>
+    </Layout>
   );
 }
 

@@ -3187,6 +3187,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/AutoExtendResponse'
           description: ''
+  /api/projects/{project_id}/participants/:
+    post:
+      operationId: projects_participants_create
+      description: |-
+        Add a project participant (kippo#72).
+
+        Creates one unconfirmed ProjectMonthlyAssignment per month from the `start_date` month to the
+        `target_date` month (inclusive). Months where (project, user, month) already exists are skipped,
+        never overwritten. Auto-extend does not run.
+
+        Permission: organization-scoped like `auto_extend` — non-members get 403.
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectParticipantCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectParticipantCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectParticipantCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectParticipantResponse'
+          description: At least one month was created.
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectParticipantResponse'
+          description: Every month already existed; nothing was created.
+        '400':
+          description: Invalid body, user not in the project's organization, or project
+            start_date/target_date missing.
+        '403':
+          description: Caller is not a member of the project's organization.
+        '404':
+          description: Project not found.
   /api/projects/{project_pk}/billing-entries/:
     get:
       operationId: projects_billing_entries_list
@@ -3665,6 +3720,125 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/projects/{project_pk}/status-comments/:
+    get:
+      operationId: projects_status_comments_list
+      description: |-
+        Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+        ``/projects/{project_pk}/status-comments/``.
+
+        Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+        Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+        user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+        The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKippoProjectStatusCommentList'
+          description: ''
+    post:
+      operationId: projects_status_comments_create
+      description: |-
+        Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+        ``/projects/{project_pk}/status-comments/``.
+
+        Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+        Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+        user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+        The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+      parameters:
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KippoProjectStatusCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KippoProjectStatusCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KippoProjectStatusCommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectStatusComment'
+          description: ''
+  /api/projects/{project_pk}/status-comments/{id}/:
+    get:
+      operationId: projects_status_comments_retrieve
+      description: |-
+        Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+        ``/projects/{project_pk}/status-comments/``.
+
+        Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+        Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+        user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+        The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this kippo project status.
+        required: true
+      - in: path
+        name: project_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KippoProjectStatusComment'
+          description: ''
   /api/projects/weeklyeffort/:
     get:
       operationId: projects_weeklyeffort_list
@@ -9312,6 +9486,59 @@ components:
       required:
       - name
       - organization
+    KippoProjectStatusComment:
+      type: object
+      description: |-
+        A project's status comment (``KippoProjectStatus``, kippo#64), nested under
+        ``/projects/{project_pk}/status-comments/``.
+
+        ``project`` and ``created_by`` are bound from the route and the acting user, never the payload.
+        The author fields mirror ``KippoProjectSerializer.latest_comment`` so a client can render either.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+          readOnly: true
+        comment:
+          type: string
+          description: Current Status
+        created_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        created_by_display_name:
+          type: string
+          nullable: true
+          readOnly: true
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_by_display_name
+      - created_by_username
+      - created_datetime
+      - id
+      - project
+    KippoProjectStatusCommentRequest:
+      type: object
+      description: |-
+        A project's status comment (``KippoProjectStatus``, kippo#64), nested under
+        ``/projects/{project_pk}/status-comments/``.
+
+        ``project`` and ``created_by`` are bound from the route and the acting user, never the payload.
+        The author fields mirror ``KippoProjectSerializer.latest_comment`` so a client can render either.
+      properties:
+        comment:
+          type: string
+          minLength: 1
+          description: Current Status
+      required:
+      - comment
     KippoProjectUserStatisfactionResult:
       type: object
       description: |-
@@ -9469,9 +9696,18 @@ components:
           type: string
         github_organization_name:
           type: string
+        listener_api_url:
+          type: string
+          description: kiconia-kippo-listener API base URL; empty when the organization
+            has no listener (kippo#66).
+        listener_api_key:
+          type: string
+          description: kiconia-kippo-listener X-API-Key; empty when unset (kippo#66).
       required:
       - github_organization_name
       - id
+      - listener_api_key
+      - listener_api_url
       - name
     OrganizationListResponse:
       type: object
@@ -9783,6 +10019,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/KippoProjectOrganizationCategory'
+    PaginatedKippoProjectStatusCommentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectStatusComment'
     PaginatedKippoProjectUserStatisfactionResultList:
       type: object
       required:
@@ -10759,7 +11018,11 @@ components:
           type: string
     PatchedProjectMonthlyAssignmentRequest:
       type: object
-      description: Serializer for ProjectMonthlyAssignment model.
+      description: |-
+        Serializer for ProjectMonthlyAssignment model.
+
+        `is_confirmed` (確定) is deprecated (kippo#69 D3): kept for API compatibility only, carries no
+        behaviour, and is no longer gated or used to trigger auto-extend.
       properties:
         project:
           type: string
@@ -10790,7 +11053,9 @@ components:
           - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
-          description: Assignment is confirmed or not
+          description: 'Deprecated (kippo#69): no longer used. Kept for API compatibility;
+            defaults to false.'
+          deprecated: true
     PatchedProjectMonthlyCostRequest:
       type: object
       description: Serializer for ProjectMonthlyCost model.
@@ -11681,7 +11946,11 @@ components:
       - members
     ProjectMonthlyAssignment:
       type: object
-      description: Serializer for ProjectMonthlyAssignment model.
+      description: |-
+        Serializer for ProjectMonthlyAssignment model.
+
+        `is_confirmed` (確定) is deprecated (kippo#69 D3): kept for API compatibility only, carries no
+        behaviour, and is no longer gated or used to trigger auto-extend.
       properties:
         id:
           type: integer
@@ -11735,7 +12004,9 @@ components:
           - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
-          description: Assignment is confirmed or not
+          description: 'Deprecated (kippo#69): no longer used. Kept for API compatibility;
+            defaults to false.'
+          deprecated: true
         created_datetime:
           type: string
           format: date-time
@@ -11759,7 +12030,11 @@ components:
       - user_username
     ProjectMonthlyAssignmentRequest:
       type: object
-      description: Serializer for ProjectMonthlyAssignment model.
+      description: |-
+        Serializer for ProjectMonthlyAssignment model.
+
+        `is_confirmed` (確定) is deprecated (kippo#69 D3): kept for API compatibility only, carries no
+        behaviour, and is no longer gated or used to trigger auto-extend.
       properties:
         project:
           type: string
@@ -11790,7 +12065,9 @@ components:
           - $ref: '#/components/schemas/BlankEnum'
         is_confirmed:
           type: boolean
-          description: Assignment is confirmed or not
+          description: 'Deprecated (kippo#69): no longer used. Kept for API compatibility;
+            defaults to false.'
+          deprecated: true
       required:
       - percentage
       - project
@@ -11863,6 +12140,40 @@ components:
       - cost
       - project
       - service
+    ProjectParticipantCreateRequest:
+      type: object
+      description: Request body for POST /api/projects/{id}/participants/ (kippo#72).
+      properties:
+        user:
+          type: string
+          format: uuid
+        percentage:
+          type: integer
+          minimum: 0
+        role:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - percentage
+      - user
+    ProjectParticipantResponse:
+      type: object
+      description: Response body for POST /api/projects/{id}/participants/ (kippo#72).
+      properties:
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectMonthlyAssignment'
+        skipped_months:
+          type: array
+          items:
+            type: string
+            format: date
+      required:
+      - created
+      - skipped_months
     ProjectProblemDefinition:
       type: object
       properties:

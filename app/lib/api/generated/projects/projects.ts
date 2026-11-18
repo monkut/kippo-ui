@@ -15,9 +15,12 @@ import type {
   KippoProjectContract,
   KippoProjectContractRequest,
   KippoProjectRequest,
+  KippoProjectStatusComment,
+  KippoProjectStatusCommentRequest,
   PaginatedKippoProjectBillingEntryList,
   PaginatedKippoProjectContractList,
   PaginatedKippoProjectList,
+  PaginatedKippoProjectStatusCommentList,
   PaginatedProjectWeeklyEffortList,
   PatchedKippoProjectBillingEntryRequest,
   PatchedKippoProjectContractRequest,
@@ -25,12 +28,15 @@ import type {
   PatchedProjectWeeklyEffortRequest,
   ProjectForecastResponse,
   ProjectMembersResponse,
+  ProjectParticipantCreateRequest,
+  ProjectParticipantResponse,
   ProjectWeeklyEffort,
   ProjectWeeklyEffortRequest,
   ProjectsBillingEntriesListParams,
   ProjectsContractListParams,
   ProjectsGithubRepositoriesListParams,
   ProjectsListParams,
+  ProjectsStatusCommentsListParams,
   ProjectsWeeklyeffortListParams,
   SuggestAssignmentsRequestRequest,
   SuggestAssignmentsResponse,
@@ -758,6 +764,71 @@ export const projectsMonthlyAssignmentsAutoExtendCreate = async (projectId: stri
 
 
 /**
+ * Add a project participant (kippo#72).
+
+Creates one unconfirmed ProjectMonthlyAssignment per month from the `start_date` month to the
+`target_date` month (inclusive). Months where (project, user, month) already exists are skipped,
+never overwritten. Auto-extend does not run.
+
+Permission: organization-scoped like `auto_extend` — non-members get 403.
+ */
+export type projectsParticipantsCreateResponse200 = {
+  data: ProjectParticipantResponse
+  status: 200
+}
+
+export type projectsParticipantsCreateResponse201 = {
+  data: ProjectParticipantResponse
+  status: 201
+}
+
+export type projectsParticipantsCreateResponse400 = {
+  data: void
+  status: 400
+}
+
+export type projectsParticipantsCreateResponse403 = {
+  data: void
+  status: 403
+}
+
+export type projectsParticipantsCreateResponse404 = {
+  data: void
+  status: 404
+}
+
+export type projectsParticipantsCreateResponseSuccess = (projectsParticipantsCreateResponse200 | projectsParticipantsCreateResponse201) & {
+  headers: Headers;
+};
+export type projectsParticipantsCreateResponseError = (projectsParticipantsCreateResponse400 | projectsParticipantsCreateResponse403 | projectsParticipantsCreateResponse404) & {
+  headers: Headers;
+};
+
+export type projectsParticipantsCreateResponse = (projectsParticipantsCreateResponseSuccess | projectsParticipantsCreateResponseError)
+
+export const getProjectsParticipantsCreateUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/participants/`
+}
+
+export const projectsParticipantsCreate = async (projectId: string,
+    projectParticipantCreateRequest: ProjectParticipantCreateRequest, options?: RequestInit): Promise<projectsParticipantsCreateResponse> => {
+
+  return customFetch<projectsParticipantsCreateResponse>(getProjectsParticipantsCreateUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectParticipantCreateRequest,)
+  }
+);}
+
+
+/**
  * A project contract's billing-ledger entries (kippo#31), nested under
 ``/projects/{project_pk}/billing-entries/``.
 
@@ -1289,6 +1360,142 @@ export const projectsContractDestroy = async (projectPk: string,
   {
     ...options,
     method: 'DELETE'
+
+
+  }
+);}
+
+
+/**
+ * Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+``/projects/{project_pk}/status-comments/``.
+
+Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+ */
+export type projectsStatusCommentsListResponse200 = {
+  data: PaginatedKippoProjectStatusCommentList
+  status: 200
+}
+
+export type projectsStatusCommentsListResponseSuccess = (projectsStatusCommentsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsStatusCommentsListResponse = (projectsStatusCommentsListResponseSuccess)
+
+export const getProjectsStatusCommentsListUrl = (projectPk: string,
+    params?: ProjectsStatusCommentsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${projectPk}/status-comments/?${stringifiedParams}` : `/api/projects/${projectPk}/status-comments/`
+}
+
+export const projectsStatusCommentsList = async (projectPk: string,
+    params?: ProjectsStatusCommentsListParams, options?: RequestInit): Promise<projectsStatusCommentsListResponse> => {
+
+  return customFetch<projectsStatusCommentsListResponse>(getProjectsStatusCommentsListUrl(projectPk,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+``/projects/{project_pk}/status-comments/``.
+
+Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+ */
+export type projectsStatusCommentsCreateResponse201 = {
+  data: KippoProjectStatusComment
+  status: 201
+}
+
+export type projectsStatusCommentsCreateResponseSuccess = (projectsStatusCommentsCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type projectsStatusCommentsCreateResponse = (projectsStatusCommentsCreateResponseSuccess)
+
+export const getProjectsStatusCommentsCreateUrl = (projectPk: string,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/status-comments/`
+}
+
+export const projectsStatusCommentsCreate = async (projectPk: string,
+    kippoProjectStatusCommentRequest: KippoProjectStatusCommentRequest, options?: RequestInit): Promise<projectsStatusCommentsCreateResponse> => {
+
+  return customFetch<projectsStatusCommentsCreateResponse>(getProjectsStatusCommentsCreateUrl(projectPk),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kippoProjectStatusCommentRequest,)
+  }
+);}
+
+
+/**
+ * Status comments (``KippoProjectStatus``, kippo#64) for a project, nested under
+``/projects/{project_pk}/status-comments/``.
+
+Append-only like the admin inline: list (newest first), retrieve, create — no update/delete.
+Org-scoped via the project; ``project`` comes from the URL and ``created_by`` from the acting
+user. A closed project rejects new comments (mirrors ``LockWhenProjectClosedInlineMixin``).
+The newest comment is what ``/projects/{id}/`` exposes as ``latest_comment``.
+ */
+export type projectsStatusCommentsRetrieveResponse200 = {
+  data: KippoProjectStatusComment
+  status: 200
+}
+
+export type projectsStatusCommentsRetrieveResponseSuccess = (projectsStatusCommentsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type projectsStatusCommentsRetrieveResponse = (projectsStatusCommentsRetrieveResponseSuccess)
+
+export const getProjectsStatusCommentsRetrieveUrl = (projectPk: string,
+    id: number,) => {
+
+
+
+
+  return `/api/projects/${projectPk}/status-comments/${id}/`
+}
+
+export const projectsStatusCommentsRetrieve = async (projectPk: string,
+    id: number, options?: RequestInit): Promise<projectsStatusCommentsRetrieveResponse> => {
+
+  return customFetch<projectsStatusCommentsRetrieveResponse>(getProjectsStatusCommentsRetrieveUrl(projectPk,id),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

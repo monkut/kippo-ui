@@ -131,14 +131,13 @@ export type MonthlyAssignmentMatrixProps = {
    * false, cells render as read-only `<span>`s with a `過去月のためロック` tooltip,
    * matching the pre-#22 behavior. Default: false (read-only). */
   editableMonth?: boolean;
-  /** Click handler installed on each cell when `editableMonth` is true.
-   * Receives the (project, user, assignment | null) tuple needed to open
-   * either `EditAssignmentModal` (assignment != null) or `AddAssignmentModal`
-   * (assignment === null) at the matching (project, user, month) slot. */
+  /** Click handler installed on each filled cell when `editableMonth` is true; opens
+   * `EditAssignmentModal`. Empty cells are not clickable — participants are added on
+   * the project page (kiconiaworks/kippo#73). */
   onCellClick?: (args: {
     project: KippoProject;
     user: MonthlyMatrixUser;
-    assignment: ProjectMonthlyAssignment | null;
+    assignment: ProjectMonthlyAssignment;
   }) => void;
 };
 

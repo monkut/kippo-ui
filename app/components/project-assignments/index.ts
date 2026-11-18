@@ -1,4 +1,5 @@
 export { AddAssignmentModal } from "./AddAssignmentModal";
+export { AddParticipantModal } from "./AddParticipantModal";
 export { AssignmentsTable } from "./AssignmentsTable";
 export { CreateProjectModal } from "./CreateProjectModal";
 export { EditAssignmentModal } from "./EditAssignmentModal";

@@ -114,7 +114,7 @@ function ReadOnlyContext({
   );
 }
 
-function orderMembersForPicker(
+export function orderMembersForPicker(
   members: OrganizationMember[],
   effortUsernames: ReadonlySet<string>,
 ): OrganizationMember[] {
@@ -127,7 +127,7 @@ function orderMembersForPicker(
   });
 }
 
-function useDefaultUserSelection(
+export function useDefaultUserSelection(
   open: boolean,
   members: OrganizationMember[],
   userId: string,
@@ -186,7 +186,7 @@ async function fetchOrgMembers(
   }
 }
 
-function useOrgMembers(open: boolean, projectId: string) {
+export function useOrgMembers(open: boolean, projectId: string) {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [fetchError, setFetchError] = useState("");
@@ -252,7 +252,7 @@ function useAddAssignmentForm(open: boolean, prefilledUserId?: string) {
   return { userId, setUserId, percentage, setPercentage };
 }
 
-function ModalShell({
+export function ModalShell({
   title,
   onClose,
   children,
@@ -279,21 +279,21 @@ function ModalShell({
   );
 }
 
-function ErrorBanner({ message }: { message: string }) {
+export function ErrorBanner({ message }: { message: string }) {
   return <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{message}</div>;
 }
 
 function memberOptionLabel(
   member: OrganizationMember,
-  totals: Map<string, number>,
+  totals: Map<string, number> | undefined,
   effortUsernames: ReadonlySet<string>,
 ): string {
-  const total = totals.get(member.user_id) ?? 0;
   const prefix = effortUsernames.has(member.username) ? "★ " : "";
-  return `${prefix}${memberDisplayName(member)} (${total}%)`;
+  if (!totals) return `${prefix}${memberDisplayName(member)}`;
+  return `${prefix}${memberDisplayName(member)} (${totals.get(member.user_id) ?? 0}%)`;
 }
 
-function UserSelectField({
+export function UserSelectField({
   value,
   onChange,
   members,
@@ -305,7 +305,8 @@ function UserSelectField({
   value: string;
   onChange: (v: string) => void;
   members: OrganizationMember[];
-  totals: Map<string, number>;
+  /** Per-user monthly totals shown after each name; omit when no single month applies. */
+  totals?: Map<string, number>;
   effortUsernames: ReadonlySet<string>;
   disabled: boolean;
   isLoading: boolean;
@@ -315,7 +316,7 @@ function UserSelectField({
       <label htmlFor="add-assignment-user" className="block text-sm font-medium text-gray-700 mb-1">
         ユーザー{" "}
         <span className="text-xs font-normal text-gray-500">
-          (★ = この月の他プロジェクト割当合計)
+          {totals ? "(★ = この月の他プロジェクト割当合計)" : "(★ = 週間稼働量の登録者)"}
         </span>
       </label>
       <select
@@ -337,7 +338,7 @@ function UserSelectField({
   );
 }
 
-function PercentageField({
+export function PercentageField({
   value,
   onChange,
   disabled,
@@ -367,7 +368,7 @@ function PercentageField({
   );
 }
 
-function ModalActions({
+export function ModalActions({
   onCancel,
   onSubmit,
   isSaving,

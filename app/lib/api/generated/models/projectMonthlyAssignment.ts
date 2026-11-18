@@ -9,6 +9,9 @@ import type { ProjectMonthlyAssignmentRole } from './projectMonthlyAssignmentRol
 
 /**
  * Serializer for ProjectMonthlyAssignment model.
+
+`is_confirmed` (確定) is deprecated (kippo#69 D3): kept for API compatibility only, carries no
+behaviour, and is no longer gated or used to trigger auto-extend.
  */
 export interface ProjectMonthlyAssignment {
   readonly id: number;
@@ -39,7 +42,10 @@ export interface ProjectMonthlyAssignment {
   * `project_manager` - project_manager
   * `tester` - tester */
   role?: typeof ProjectMonthlyAssignmentRole[keyof typeof ProjectMonthlyAssignmentRole];
-  /** Assignment is confirmed or not */
+  /**
+     * Deprecated (kippo#69): no longer used. Kept for API compatibility; defaults to false.
+     * @deprecated
+     */
   is_confirmed?: boolean;
   readonly created_datetime: string;
   readonly updated_datetime: string;

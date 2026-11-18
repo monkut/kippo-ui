@@ -13,6 +13,8 @@ const auth = vi.hoisted(() => ({
 const api = vi.hoisted(() => ({
   listCalls: [] as Array<{ project?: string; month?: string }>,
   rows: [] as unknown[],
+  project: {} as Record<string, unknown>,
+  participantCalls: [] as Array<{ projectId: string; payload: unknown }>,
 }));
 
 vi.mock("react-router", () => ({
@@ -34,10 +36,21 @@ vi.mock("~/lib/api/generated/monthly-assignments/monthly-assignments", async (im
 }));
 vi.mock("~/lib/api/generated/projects/projects", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  projectsRetrieve: async () => ({
+  projectsRetrieve: async () => ({ status: 200, data: api.project }),
+  projectsMembersRetrieve: async () => ({
     status: 200,
-    data: { id: "p1", name: "Proj", customer_name: "Cust", weekly_effort_users: [] },
+    data: { members: [{ user_id: "u-carol", username: "carol", display_name: "Carol" }] },
   }),
+  projectsParticipantsCreate: async (projectId: string, payload: unknown) => {
+    api.participantCalls.push({ projectId, payload });
+    return {
+      status: 201,
+      data: {
+        created: [{ month: "2026-12-01" }, { month: "2027-01-01" }],
+        skipped_months: ["2026-11-01"],
+      },
+    };
+  },
   projectsForecastRetrieve: async () => ({ status: 400, data: undefined }),
 }));
 
@@ -69,6 +82,8 @@ describe("ProjectAssignments route", () => {
   beforeEach(() => {
     auth.state = { user: null, isLoading: true };
     api.listCalls = [];
+    api.participantCalls = [];
+    api.project = { id: "p1", name: "Proj", customer_name: "Cust", weekly_effort_users: [] };
     api.rows = [row(1, currentMonth, "alice"), row(2, nextMonth, "bob")];
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -102,5 +117,47 @@ describe("ProjectAssignments route", () => {
     expect(api.listCalls.at(-1)).toEqual({ project: "p1", month: nextMonth });
     expect(container.textContent).toContain("bob");
     expect(container.textContent).not.toContain("この月の割当はまだ登録されていません");
+  });
+
+  // kiconiaworks/kippo#73: 参加者を追加 on the project page.
+  const participantButton = () =>
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
+      b.textContent?.includes("参加者を追加"),
+    );
+
+  test("参加者を追加 is disabled with a reason when the project period is not set", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.project = { ...api.project, start_date: "2026-11-01", target_date: null };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(participantButton()?.disabled).toBe(true);
+    expect(container.textContent).toContain("目標終了日を設定すると参加者を追加できます");
+  });
+
+  test("adds a participant over the project period and shows created / skipped months", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.project = { ...api.project, start_date: "2026-11-01", target_date: "2027-01-31" };
+    root.render(<ProjectAssignments />);
+    await flush();
+
+    const button = participantButton();
+    expect(button?.disabled).toBe(false);
+    button?.click();
+    await flush();
+    expect(container.textContent).toContain("プロジェクト期間 2026-11 〜 2027-01");
+
+    const submit = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+      (b) => b.textContent === "追加",
+    );
+    const listCallsBefore = api.listCalls.length;
+    submit?.click();
+    await flush();
+
+    expect(api.participantCalls).toEqual([
+      { projectId: "p1", payload: { user: "u-carol", percentage: 50, role: "" } },
+    ]);
+    expect(container.textContent).toContain("作成: 2か月 (2026-12 〜 2027-01)");
+    expect(container.textContent).toContain("登録済みのためスキップ: 1か月 (2026-11)");
+    expect(api.listCalls.length).toBeGreaterThan(listCallsBefore); // page refetched
   });
 });
