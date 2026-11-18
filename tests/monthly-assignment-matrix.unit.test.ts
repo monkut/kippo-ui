@@ -178,7 +178,7 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
     expect(m.userTotals.get("u-2")).toBe(40);
   });
 
-  test("sums duplicate user-project rows and downgrades is_confirmed when any contributor is unconfirmed", () => {
+  test("sums duplicate user-project rows", () => {
     const m = buildMonthlyMatrix(
       [makeProject("p-1", "P1")],
       [
@@ -188,7 +188,6 @@ describe("buildMonthlyMatrix: totals + edge cases", () => {
     );
     const cell = m.rows[0].cells.get("u-1");
     expect(cell?.percentage).toBe(55);
-    expect(cell?.isConfirmed).toBe(false);
   });
 
   test("falls back to username when display_name is empty", () => {

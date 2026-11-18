@@ -92,6 +92,9 @@ describe("ProjectAssignments route", () => {
     expect(api.listCalls.at(-1)).toEqual({ project: "p1", month: currentMonth });
     expect(container.textContent).toContain("alice");
     expect(container.textContent).not.toContain("bob");
+    // kiconiaworks/kippo#70: no 確定 column, toggle or 確定/未確定 legend on the project page.
+    expect(container.textContent).not.toContain("確定");
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull();
 
     clickButton(container, "次の月");
     await flush();

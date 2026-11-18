@@ -12,7 +12,6 @@ import {
 
 export type CellState = {
   percentage: number;
-  isConfirmed: boolean;
 };
 
 export type GridRow = {
@@ -27,14 +26,13 @@ export type Grid = {
   monthTotals: Map<string, number>;
 };
 
-/** Merge a duplicate (user, month/project) row: sum %, downgrade isConfirmed if any contributor is unconfirmed. */
+/** Merge a duplicate (user, month/project) row: sum %. */
 function mergeAssignmentCell(
   existing: CellState | undefined,
   assignment: ProjectMonthlyAssignment,
 ): CellState {
   return {
     percentage: (existing?.percentage ?? 0) + assignment.percentage,
-    isConfirmed: (existing?.isConfirmed ?? true) && (assignment.is_confirmed ?? false),
   };
 }
 
@@ -142,12 +140,6 @@ export type MonthlyAssignmentMatrixProps = {
     user: MonthlyMatrixUser;
     assignment: ProjectMonthlyAssignment | null;
   }) => void;
-  /** Flip every assignment of a project (for the displayed month) to `isConfirmed`.
-   * Wired to the per-row 確定 column checkbox. When omitted, the column renders
-   * disabled checkboxes (read-only confirmation state). */
-  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
-  /** Disables the 確定 checkboxes while a mutation is in flight. */
-  isSaving?: boolean;
 };
 
 /** User-selectable sort keys for the monthly assignment matrix column headers. */

@@ -2,11 +2,8 @@ import { describe, expect, test } from "vitest";
 import { firstOfNextMonth, formatMonth } from "~/lib/dates";
 import {
   buildGrid,
-  buildProjectConfirmation,
-  countAssignmentsByConfirmation,
   filterAssignmentsToVisibleProjects,
   flattenPatternToAssignmentRequests,
-  isProjectRowConfirmed,
 } from "~/components/project-assignments/utils";
 import type {
   ProjectAssignmentPattern,
@@ -143,18 +140,7 @@ describe("buildGrid: duplicate-row data anomaly path", () => {
 
     const cell = grid.byUser[0].cells.get("2026-06-01");
     expect(cell?.percentage).toBe(55);
-    // Cell is confirmed only when every contributing row is confirmed.
-    expect(cell?.isConfirmed).toBe(false);
     expect(grid.monthTotals.get("2026-06-01")).toBe(55);
-  });
-
-  test("preserves is_confirmed=true when all contributors confirmed", () => {
-    const grid = buildGrid([
-      makeAssignment({ user: "user-1", month: "2026-06-01", percentage: 25, is_confirmed: true }),
-      makeAssignment({ user: "user-1", month: "2026-06-01", percentage: 25, is_confirmed: true }),
-    ]);
-
-    expect(grid.byUser[0].cells.get("2026-06-01")?.isConfirmed).toBe(true);
   });
 });
 
@@ -244,60 +230,6 @@ describe("flattenPatternToAssignmentRequests: confirmation + edge cases", () => 
       members: [{ user_id: "user-1", is_past_member: true, monthly_percentages: {} }],
     });
     expect(flattenPatternToAssignmentRequests(pattern, "proj-1")).toEqual([]);
-  });
-});
-
-describe("countAssignmentsByConfirmation (kippo#23)", () => {
-  test("empty input returns zero counts", () => {
-    expect(countAssignmentsByConfirmation([])).toEqual({ confirmed: 0, unconfirmed: 0 });
-  });
-
-  test("counts confirmed and unconfirmed rows separately", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: true }),
-      makeAssignment({ id: 2, is_confirmed: true }),
-      makeAssignment({ id: 3, is_confirmed: false }),
-    ];
-    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 1 });
-  });
-
-  test("treats missing/falsy is_confirmed as unconfirmed", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: false }),
-      makeAssignment({ id: 2, is_confirmed: false }),
-    ];
-    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 0, unconfirmed: 2 });
-  });
-
-  test("all-confirmed input has unconfirmed=0 (disables 確定 button)", () => {
-    const rows = [
-      makeAssignment({ id: 1, is_confirmed: true }),
-      makeAssignment({ id: 2, is_confirmed: true }),
-    ];
-    expect(countAssignmentsByConfirmation(rows)).toEqual({ confirmed: 2, unconfirmed: 0 });
-  });
-});
-
-describe("buildProjectConfirmation + isProjectRowConfirmed (per-project 確定)", () => {
-  test("groups assignment ids per project with confirmed/total counts", () => {
-    const map = buildProjectConfirmation([
-      makeAssignment({ id: 1, project: "proj-a", is_confirmed: true }),
-      makeAssignment({ id: 2, project: "proj-a", is_confirmed: false }),
-      makeAssignment({ id: 3, project: "proj-b", is_confirmed: true }),
-    ]);
-    expect(map.get("proj-a")).toEqual({ ids: [1, 2], confirmed: 1, total: 2 });
-    expect(map.get("proj-b")).toEqual({ ids: [3], confirmed: 1, total: 1 });
-  });
-
-  test("isProjectRowConfirmed: true only when every row is confirmed", () => {
-    expect(isProjectRowConfirmed({ ids: [1, 2], confirmed: 2, total: 2 })).toBe(true);
-    expect(isProjectRowConfirmed({ ids: [1, 2], confirmed: 1, total: 2 })).toBe(false);
-    expect(isProjectRowConfirmed({ ids: [1], confirmed: 0, total: 1 })).toBe(false);
-  });
-
-  test("isProjectRowConfirmed: empty / missing project is never confirmed", () => {
-    expect(isProjectRowConfirmed(undefined)).toBe(false);
-    expect(isProjectRowConfirmed({ ids: [], confirmed: 0, total: 0 })).toBe(false);
   });
 });
 

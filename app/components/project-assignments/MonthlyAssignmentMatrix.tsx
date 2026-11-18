@@ -4,23 +4,19 @@ import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated
 import {
   buildCellTooltip,
   buildMonthlyMatrix,
-  buildProjectConfirmation,
+  ASSIGNMENT_CELL,
   type CellState,
-  CONFIRMED_CELL,
   formatRowMonthlyTotal,
   formatRowMonthlyTotalTooltip,
   getProjectEffortSpentDays,
-  isProjectRowConfirmed,
   MATRIX_CONFIDENCE_RULE,
   MAX_PERCENTAGE_PER_MONTH,
   type MonthlyAssignmentMatrixProps,
   type MonthlyMatrixRow,
   type MonthlyMatrixUser,
-  type ProjectConfirmation,
   type SortConfig,
   type SortKey,
   sortMatrixRows,
-  UNCONFIRMED_CELL,
 } from "./utils";
 
 /** Click target produced by a matrix cell — covers both edit (assignment != null)
@@ -33,8 +29,8 @@ export type MatrixCellClickArgs = {
   assignment: ProjectMonthlyAssignment | null;
 };
 
-// プロジェクトID, 顧客, プロジェクト名, 開始日, 終了日, 月合計, 確定
-const FIXED_HEADER_COL_COUNT = 7;
+// プロジェクトID, 顧客, プロジェクト名, 開始日, 終了日, 月合計
+const FIXED_HEADER_COL_COUNT = 6;
 const urlPrefix = import.meta.env.VITE_URL_PREFIX || "";
 
 /** Per-user column: wide enough for a "100%" chip, with a rule on the first
@@ -51,17 +47,11 @@ function MonthlyAssignmentMatrixImpl({
   hideUnassigned = false,
   editableMonth = false,
   onCellClick,
-  onBulkSetConfirmed,
-  isSaving = false,
 }: MonthlyAssignmentMatrixProps) {
   const matrix = useMemo(
     () => buildMonthlyMatrix(projects, assignments, members),
     [projects, assignments, members],
   );
-
-  // Per-project confirmation state (all users' rows for the displayed month), so
-  // the 確定 column can flip / lock a whole project row at once.
-  const projectConfirmation = useMemo(() => buildProjectConfirmation(assignments), [assignments]);
 
   // (project_id, user_id) → original ProjectMonthlyAssignment, used to resolve
   // the underlying record when a cell is clicked. The matrix builder merges
@@ -127,9 +117,6 @@ function MonthlyAssignmentMatrixImpl({
                 editableMonth={editableMonth}
                 onCellClick={onCellClick}
                 assignmentByCell={assignmentByCell}
-                confirmation={projectConfirmation.get(row.project.id)}
-                onBulkSetConfirmed={onBulkSetConfirmed}
-                isSaving={isSaving}
               />
             ))}
           </tbody>
@@ -159,12 +146,6 @@ function HeaderRow({
 }) {
   return (
     <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500 align-bottom">
-      <th
-        className="py-2 pr-3 text-center font-medium"
-        title="プロジェクト単位の確定。チェックでこのプロジェクトの当月割当をすべて確定し、行をロックします。"
-      >
-        確定
-      </th>
       <SortableHeader
         label="プロジェクトID"
         sortKey="id"
@@ -274,23 +255,13 @@ function ProjectRow({
   editableMonth,
   onCellClick,
   assignmentByCell,
-  confirmation,
-  onBulkSetConfirmed,
-  isSaving,
 }: {
   row: MonthlyMatrixRow;
   users: MonthlyMatrixUser[];
   editableMonth: boolean;
   onCellClick?: (args: MatrixCellClickArgs) => void;
   assignmentByCell: Map<string, ProjectMonthlyAssignment>;
-  confirmation: ProjectConfirmation | undefined;
-  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
-  isSaving: boolean;
 }) {
-  // A fully-confirmed project row is locked: its cells become read-only until the
-  // 確定 checkbox is unticked. Past months (editableMonth=false) stay locked too.
-  const rowConfirmed = isProjectRowConfirmed(confirmation);
-  const rowEditable = editableMonth && !rowConfirmed;
   const effortSpentDays = getProjectEffortSpentDays(row.project);
   const breakdownTooltip =
     typeof row.rowEffortDays === "number"
@@ -303,14 +274,6 @@ function ProjectRow({
   const cellTitle = breakdownTooltip ?? `% 合計: ${row.rowTotal}%`;
   return (
     <tr className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50">
-      <td className="py-2 pr-3 text-center">
-        <ConfirmToggle
-          confirmation={confirmation}
-          projectConfidence={row.project.confidence}
-          onBulkSetConfirmed={onBulkSetConfirmed}
-          isSaving={isSaving}
-        />
-      </td>
       <td className="py-2 pr-4">
         <CopyableProjectId projectId={row.project.id} />
       </td>
@@ -361,82 +324,13 @@ function ProjectRow({
             cell={row.cells.get(user.user_id)}
             user={user}
             project={row.project}
-            editableMonth={rowEditable}
+            editableMonth={editableMonth}
             onCellClick={onCellClick}
             assignmentByCell={assignmentByCell}
           />
         </td>
       ))}
     </tr>
-  );
-}
-
-const FULL_CONFIDENCE = 100;
-
-/** Binary per-project confirm toggle (switch): on = the project is confirmed
- * (every assignment confirmed → row locked), off = not confirmed. Clicking an off
- * toggle confirms the whole project; clicking an on toggle unconfirms it.
- *
- * Confirming is only allowed when the project's confidence (確度) is 100% — the
- * backend rejects it otherwise (HTTP 400). Unconfirming a confirmed row stays
- * allowed regardless of confidence. */
-function ConfirmToggle({
-  confirmation,
-  projectConfidence,
-  onBulkSetConfirmed,
-  isSaving,
-}: {
-  confirmation: ProjectConfirmation | undefined;
-  projectConfidence: number | undefined;
-  onBulkSetConfirmed?: (ids: number[], isConfirmed: boolean) => Promise<boolean>;
-  isSaving: boolean;
-}) {
-  // A project row is binary: confirmed only when every one of its assignment rows
-  // is confirmed. `total`/`confirmed` are an implementation detail of that check
-  // (confirmation is stored per assignment in the backend) and are not surfaced.
-  const total = confirmation?.total ?? 0;
-  const confirmed = confirmation?.confirmed ?? 0;
-  const isConfirmed = total > 0 && confirmed === total;
-
-  // Confirming requires 100% confidence; unconfirming a confirmed row is always allowed.
-  const confirmBlockedByConfidence = !isConfirmed && (projectConfidence ?? 0) !== FULL_CONFIDENCE;
-  const disabled = total === 0 || isSaving || !onBulkSetConfirmed || confirmBlockedByConfidence;
-  const title =
-    total === 0
-      ? "割当なし"
-      : confirmBlockedByConfidence
-        ? `プロジェクトの確度が100%でないため確定できません（現在 ${projectConfidence ?? 0}%）`
-        : isConfirmed
-          ? "確定済み（クリックで解除）"
-          : "未確定（クリックで確定）";
-
-  const handleClick = () => {
-    if (disabled || !confirmation) return;
-    void onBulkSetConfirmed?.(confirmation.ids, !isConfirmed);
-  };
-
-  const trackColor = disabled ? "bg-gray-200" : isConfirmed ? "bg-indigo-600" : "bg-gray-300";
-  const knobPosition = isConfirmed ? "translate-x-4" : "translate-x-0.5";
-
-  return (
-    // The title lives on the wrapper (not just the button) so the reason still shows
-    // on hover when the toggle is disabled — disabled <button>s don't surface their
-    // own title, and `disabled:pointer-events-none` lets the wrapper receive the hover.
-    <span title={title} className={`inline-flex ${disabled ? "cursor-not-allowed" : ""}`}>
-      <button
-        type="button"
-        aria-pressed={isConfirmed}
-        aria-label="プロジェクトの確定"
-        title={title}
-        disabled={disabled}
-        onClick={handleClick}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none ${trackColor}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${knobPosition}`}
-        />
-      </button>
-    </span>
   );
 }
 
@@ -503,7 +397,7 @@ function PercentageCell({
     );
   }
 
-  const style = cell.isConfirmed ? CONFIRMED_CELL : UNCONFIRMED_CELL;
+  const style = ASSIGNMENT_CELL;
   const baseTooltip = buildCellTooltip(
     user.display_name,
     style.title,
@@ -522,7 +416,7 @@ function PercentageCell({
   }
 
   // Hover layered on per-variant — matches AssignmentsTable's clickable cell.
-  const hoverClass = cell.isConfirmed ? "hover:bg-indigo-200" : "hover:bg-gray-100";
+  const hoverClass = "hover:bg-indigo-200";
   const assignment = assignmentByCell.get(`${project.id}::${user.user_id}`) ?? null;
   return (
     <button
@@ -579,14 +473,6 @@ function UserTotalsRow({
 function Legend() {
   return (
     <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-indigo-100 border border-indigo-200" />
-        確定済み
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-gray-50 border border-dashed border-gray-300" />
-        未確定 (予測)
-      </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="text-red-700 font-medium">⚠ 100%超</span>
         ユーザーの月合計が100%を超えると警告表示

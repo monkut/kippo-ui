@@ -1,12 +1,7 @@
 import { memo, useMemo } from "react";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { formatMonth } from "~/lib/dates";
-import {
-  assignmentDisplayName,
-  CONFIRMED_CELL,
-  MAX_PERCENTAGE_PER_MONTH,
-  UNCONFIRMED_CELL,
-} from "./utils";
+import { assignmentDisplayName, ASSIGNMENT_CELL, MAX_PERCENTAGE_PER_MONTH } from "./utils";
 
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
@@ -15,7 +10,6 @@ type AssignmentsTableProps = {
   onAddClick?: () => void;
   onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
-  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 function AssignmentsTableImpl({
@@ -25,7 +19,6 @@ function AssignmentsTableImpl({
   onAddClick,
   onSuggestClick,
   onCellClick,
-  onToggleConfirmed,
 }: AssignmentsTableProps) {
   const monthAssignments = useMemo(
     () =>
@@ -46,7 +39,6 @@ function AssignmentsTableImpl({
       onAddClick={onAddClick}
       onSuggestClick={onSuggestClick}
       onCellClick={onCellClick}
-      onToggleConfirmed={onToggleConfirmed}
     />
   );
 }
@@ -58,7 +50,6 @@ type PopulatedSectionProps = {
   onAddClick?: () => void;
   onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
-  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 function PopulatedSection({
@@ -68,7 +59,6 @@ function PopulatedSection({
   onAddClick,
   onSuggestClick,
   onCellClick,
-  onToggleConfirmed,
 }: PopulatedSectionProps) {
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
@@ -80,7 +70,6 @@ function PopulatedSection({
         monthAssignments={monthAssignments}
         isSaving={isSaving}
         onCellClick={onCellClick}
-        onToggleConfirmed={onToggleConfirmed}
       />
       <Legend />
     </section>
@@ -91,14 +80,12 @@ type AssignmentsBodyTableProps = {
   monthAssignments: ProjectMonthlyAssignment[];
   isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
-  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
 function AssignmentsBodyTable({
   monthAssignments,
   isSaving,
   onCellClick,
-  onToggleConfirmed,
 }: AssignmentsBodyTableProps) {
   const monthTotal = monthAssignments.reduce((sum, a) => sum + a.percentage, 0);
   return (
@@ -107,7 +94,6 @@ function AssignmentsBodyTable({
         <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
           <th className="py-2 pr-4">ユーザー</th>
           <th className="py-2 px-3 text-right min-w-[6rem]">割当</th>
-          <th className="py-2 px-3 text-center min-w-[5rem]">確定</th>
         </tr>
       </thead>
       <tbody>
@@ -117,7 +103,6 @@ function AssignmentsBodyTable({
             assignment={assignment}
             isSaving={isSaving}
             onCellClick={onCellClick}
-            onToggleConfirmed={onToggleConfirmed}
           />
         ))}
       </tbody>
@@ -125,7 +110,6 @@ function AssignmentsBodyTable({
         <tr className="border-t-2 border-gray-300 text-xs">
           <td className="py-2 pr-4 text-gray-500 font-medium">月合計</td>
           <MonthTotalCell total={monthTotal} />
-          <td />
         </tr>
       </tfoot>
     </table>
@@ -187,12 +171,10 @@ function UserRow({
   assignment,
   isSaving,
   onCellClick,
-  onToggleConfirmed,
 }: {
   assignment: ProjectMonthlyAssignment;
   isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
-  onToggleConfirmed?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
   return (
     <tr className="border-b border-gray-100 last:border-0">
@@ -201,9 +183,6 @@ function UserRow({
       </td>
       <td className="py-2 px-3 text-right">
         <PercentageCell assignment={assignment} onClick={onCellClick} />
-      </td>
-      <td className="py-2 px-3 text-center">
-        <ConfirmedToggle assignment={assignment} isSaving={isSaving} onToggle={onToggleConfirmed} />
       </td>
     </tr>
   );
@@ -228,14 +207,9 @@ function PercentageCell({
   assignment: ProjectMonthlyAssignment;
   onClick?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
-  const isConfirmed = assignment.is_confirmed ?? false;
-  // Hover classes layered on per-variant — base appearance lives in utils.ts
-  // (shared with MonthlyAssignmentMatrix) but only this clickable variant has hover.
-  const styles = isConfirmed
-    ? `${CONFIRMED_CELL.className} hover:bg-indigo-200`
-    : `${UNCONFIRMED_CELL.className} hover:bg-gray-100`;
-  const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`;
-  const tooltip = isConfirmed ? "確定済み (クリックで編集)" : "未確定 / 予測 (クリックで編集)";
+  // Hover layered on here — base appearance is shared with MonthlyAssignmentMatrix.
+  const sharedClass = `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${ASSIGNMENT_CELL.className} hover:bg-indigo-200`;
+  const tooltip = "クリックで編集";
 
   if (onClick) {
     return (
@@ -250,49 +224,15 @@ function PercentageCell({
     );
   }
   return (
-    <span
-      className={sharedClass}
-      title={isConfirmed ? CONFIRMED_CELL.title : UNCONFIRMED_CELL.title}
-    >
+    <span className={sharedClass} title={ASSIGNMENT_CELL.title}>
       {assignment.percentage}%
     </span>
-  );
-}
-
-function ConfirmedToggle({
-  assignment,
-  isSaving,
-  onToggle,
-}: {
-  assignment: ProjectMonthlyAssignment;
-  isSaving: boolean;
-  onToggle?: (assignment: ProjectMonthlyAssignment) => void;
-}) {
-  const isConfirmed = assignment.is_confirmed ?? false;
-  return (
-    <input
-      type="checkbox"
-      aria-label={`${assignmentDisplayName(assignment)} の割当を確定`}
-      checked={isConfirmed}
-      disabled={isSaving || !onToggle}
-      onChange={() => onToggle?.(assignment)}
-      title={isConfirmed ? "クリックで未確定に戻す" : "クリックで確定済みにする"}
-      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:cursor-not-allowed"
-    />
   );
 }
 
 function Legend() {
   return (
     <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-indigo-100 border border-indigo-200" />
-        確定済み
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block w-3 h-3 rounded bg-gray-50 border border-dashed border-gray-300" />
-        未確定 (予測)
-      </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="text-red-700 font-medium">⚠ 100%超</span>
         月合計が100%を超えると警告表示
