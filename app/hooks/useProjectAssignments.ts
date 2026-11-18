@@ -25,6 +25,7 @@ export type UseProjectAssignmentsState = {
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
+  addParticipant: ReturnType<typeof useProjectAssignmentMutations>["addParticipant"];
 };
 
 const FORECAST_400_MESSAGE =
@@ -123,5 +124,6 @@ export function useProjectAssignments(
     updateAssignment: mutations.updateAssignment,
     deleteAssignment: mutations.deleteAssignment,
     bulkCreateAssignments: mutations.bulkCreateAssignments,
+    addParticipant: mutations.addParticipant,
   };
 }

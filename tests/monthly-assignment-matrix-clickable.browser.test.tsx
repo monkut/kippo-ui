@@ -96,7 +96,7 @@ function cellButtonByText(container: HTMLElement, text: string): HTMLButtonEleme
   );
 }
 
-describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
+describe("MonthlyAssignmentMatrix — #22 click-to-edit (add moved to project page, #73)", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
 
@@ -139,7 +139,7 @@ describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
     expect(args.assignment?.percentage).toBe(50);
   });
 
-  test("clicking an empty cell calls onCellClick with assignment=null", async () => {
+  test("an empty cell is not clickable and points to the project page (kippo#73)", async () => {
     const onCellClick = vi.fn();
     renderMatrix(root, {
       projects: [project],
@@ -149,16 +149,14 @@ describe("MonthlyAssignmentMatrix — #22 click-to-edit/add", () => {
       onCellClick,
     });
 
-    // Bob's column has no assignment → renders as a placeholder button "—".
-    const emptyBtn = await waitFor(() => cellButtonByText(container, "—"));
-    expect(emptyBtn).not.toBeNull();
-    emptyBtn?.click();
-
-    expect(onCellClick).toHaveBeenCalledTimes(1);
-    const args = onCellClick.mock.calls[0][0];
-    expect(args.project.id).toBe("p-1");
-    expect(args.user.user_id).toBe("u-2"); // Bob
-    expect(args.assignment).toBeNull();
+    await waitFor(() => cellButtonByText(container, "50%"));
+    // Bob's column has no assignment → a static "—" span, no add button.
+    expect(cellButtonByText(container, "—")).toBeNull();
+    const emptySpan = Array.from(container.querySelectorAll("td span")).find(
+      (s) => s.textContent?.trim() === "—",
+    );
+    expect(emptySpan?.getAttribute("title")).toBe("参加者はプロジェクトページで追加");
+    expect(onCellClick).not.toHaveBeenCalled();
   });
 
   test("past-month cells render as <span>, no button, no click", async () => {

@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import { Layout } from "~/components/layout";
 import {
   AddAssignmentModal,
+  AddParticipantModal,
   AssignmentsTable,
   EditAssignmentModal,
   firstOfMonth,
@@ -65,6 +66,7 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
+  const [participantOpen, setParticipantOpen] = useState(false);
   const effortUsernames = useEffortUsernames(state.project);
 
   return (
@@ -78,6 +80,11 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
       ) : (
         <>
           <ForecastBar forecast={state.forecast} forecastError={state.forecastError} />
+          <AddParticipantButton
+            project={state.project}
+            disabled={state.isSaving}
+            onClick={() => setParticipantOpen(true)}
+          />
           <AssignmentsTable
             assignments={state.assignments}
             month={month}
@@ -100,6 +107,53 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
         editTarget={editTarget}
         setEditTarget={setEditTarget}
       />
+      {state.project && (
+        <AddParticipantModal
+          open={participantOpen}
+          project={state.project}
+          effortUsernames={effortUsernames}
+          isSaving={state.isSaving}
+          onClose={() => setParticipantOpen(false)}
+          onSubmit={(payload) =>
+            state.project ? state.addParticipant(state.project.id, payload) : Promise.resolve(null)
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/** The participant endpoint needs both dates to know the project period (kippo#72 D6). */
+function missingPeriodReason(project: KippoProject | null): string | null {
+  if (!project) return "プロジェクトを読み込めませんでした";
+  const missing = [!project.start_date && "開始日", !project.target_date && "目標終了日"].filter(
+    Boolean,
+  );
+  return missing.length > 0 ? `${missing.join("と")}を設定すると参加者を追加できます` : null;
+}
+
+function AddParticipantButton({
+  project,
+  disabled,
+  onClick,
+}: {
+  project: KippoProject | null;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const reason = missingPeriodReason(project);
+  return (
+    <div className="flex items-center justify-end gap-3">
+      {reason && <span className="text-xs text-gray-500">{reason}</span>}
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled || reason !== null}
+        title="プロジェクト期間の各月に割当を登録します"
+        className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        ＋ 参加者を追加
+      </button>
     </div>
   );
 }

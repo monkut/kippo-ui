@@ -19,14 +19,13 @@ import {
   sortMatrixRows,
 } from "./utils";
 
-/** Click target produced by a matrix cell — covers both edit (assignment != null)
- * and add (assignment === null) paths so callers can route to the right modal.
- * `assignment` is looked up by (project, user) from the month's raw list, NOT
- * from the merged CellState — modals need the original record's id. */
+/** Click target produced by a filled matrix cell (edit only — participants are added on the
+ * project page, kiconiaworks/kippo#73). `assignment` is looked up by (project, user) from the
+ * month's raw list, NOT from the merged CellState — the edit modal needs the record's id. */
 export type MatrixCellClickArgs = {
   project: KippoProject;
   user: MonthlyMatrixUser;
-  assignment: ProjectMonthlyAssignment | null;
+  assignment: ProjectMonthlyAssignment;
 };
 
 // プロジェクトID, 顧客, プロジェクト名, 開始日, 終了日, 月合計
@@ -361,6 +360,7 @@ function CopyableProjectId({ projectId }: { projectId: string }) {
 }
 
 const PAST_MONTH_LOCKED_TITLE = "過去月のためロック";
+const EMPTY_CELL_TITLE = "参加者はプロジェクトページで追加";
 
 function PercentageCell({
   cell,
@@ -377,23 +377,15 @@ function PercentageCell({
   onCellClick?: (args: MatrixCellClickArgs) => void;
   assignmentByCell: Map<string, ProjectMonthlyAssignment>;
 }) {
-  const isClickable = editableMonth && !!onCellClick;
+  const assignment = assignmentByCell.get(`${project.id}::${user.user_id}`) ?? null;
+  const isClickable = editableMonth && !!onCellClick && assignment !== null;
 
   if (!cell) {
-    // Empty slot: when the month is editable + a handler is wired, render a
-    // faint placeholder button so users can ADD a new assignment via the same
-    // single-click path. Otherwise (past months, or no handler) stay as the
-    // static `—` to match pre-#22 read-only behavior.
-    if (!isClickable) return <span className="text-gray-300">—</span>;
+    // Empty slot: participants are added on the project page (kippo#73), not here.
     return (
-      <button
-        type="button"
-        onClick={() => onCellClick?.({ project, user, assignment: null })}
-        title={`${user.display_name} に割当を追加`}
-        className="text-gray-300 hover:text-indigo-600 cursor-pointer"
-      >
+      <span className="text-gray-300" title={EMPTY_CELL_TITLE}>
         —
-      </button>
+      </span>
     );
   }
 
@@ -417,11 +409,10 @@ function PercentageCell({
 
   // Hover layered on per-variant — matches AssignmentsTable's clickable cell.
   const hoverClass = "hover:bg-indigo-200";
-  const assignment = assignmentByCell.get(`${project.id}::${user.user_id}`) ?? null;
   return (
     <button
       type="button"
-      onClick={() => onCellClick?.({ project, user, assignment })}
+      onClick={() => assignment && onCellClick?.({ project, user, assignment })}
       className={`${sharedClass} ${hoverClass} cursor-pointer`}
       title={tooltip}
     >

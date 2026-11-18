@@ -6,10 +6,12 @@ import {
 } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
 import type {
   KippoProjectRequest,
+  ProjectParticipantCreateRequest,
+  ProjectParticipantResponse,
   PatchedProjectMonthlyAssignmentRequest,
   ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
-import { projectsCreate } from "~/lib/api/generated/projects/projects";
+import { projectsCreate, projectsParticipantsCreate } from "~/lib/api/generated/projects/projects";
 import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 
 export type ProjectAssignmentMutations = {
@@ -19,6 +21,12 @@ export type ProjectAssignmentMutations = {
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
   bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
+  /** Add a project participant: one row per month over the project period (kippo#72).
+   * Resolves to the created rows + skipped months, or null on failure (error set). */
+  addParticipant: (
+    projectId: string,
+    payload: ProjectParticipantCreateRequest,
+  ) => Promise<ProjectParticipantResponse | null>;
   /** Create a KippoProject from its required fields (organization + name).
    * `columnset` is resolved from the org's default columnset on the backend. */
   createProject: (payload: KippoProjectRequest) => Promise<boolean>;
@@ -79,9 +87,17 @@ export function useProjectAssignmentMutations(
       }, "パターンの登録に失敗しました"),
     [wrap],
   );
-  // Month-level confirm / unconfirm (kippo#23): sequential PATCHes, same
-  // constraint as bulkCreateAssignments — no bulk endpoint. Backend post_save
-  // (kippo#17, merged via monkut/kippo#288) drives auto-extension on each row.
+  const addParticipant = useCallback(
+    async (projectId: string, payload: ProjectParticipantCreateRequest) => {
+      let result: ProjectParticipantResponse | null = null;
+      const ok = await wrap(async () => {
+        const response = throwOnError(await projectsParticipantsCreate(projectId, payload));
+        result = response.data as ProjectParticipantResponse;
+      }, "参加者の追加に失敗しました");
+      return ok ? result : null;
+    },
+    [wrap],
+  );
 
   const createProject = useCallback(
     (payload: KippoProjectRequest) =>
@@ -99,6 +115,7 @@ export function useProjectAssignmentMutations(
     updateAssignment,
     deleteAssignment,
     bulkCreateAssignments,
+    addParticipant,
     createProject,
   };
 }
