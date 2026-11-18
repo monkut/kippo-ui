@@ -5,7 +5,6 @@ import type {
   PatchedProjectMonthlyAssignmentRequest,
   ProjectForecastResponse,
   ProjectMonthlyAssignment,
-  ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
 import { projectsForecastRetrieve, projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import { readList } from "~/lib/api/read-list";
@@ -21,10 +20,8 @@ export type UseProjectAssignmentsState = {
   forecastError: string;
   assignments: ProjectMonthlyAssignment[];
   refresh: () => Promise<void>;
-  createAssignment: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
-  bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
   addParticipant: ReturnType<typeof useProjectAssignmentMutations>["addParticipant"];
 };
 
@@ -120,10 +117,8 @@ export function useProjectAssignments(
     forecastError: data.forecastError,
     assignments: data.assignments,
     refresh: fetchAll,
-    createAssignment: mutations.createAssignment,
     updateAssignment: mutations.updateAssignment,
     deleteAssignment: mutations.deleteAssignment,
-    bulkCreateAssignments: mutations.bulkCreateAssignments,
     addParticipant: mutations.addParticipant,
   };
 }

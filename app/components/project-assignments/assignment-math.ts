@@ -2,35 +2,8 @@ import type {
   KippoProject,
   OrganizationMember,
   OrganizationMemberDetail,
-  ProjectAssignmentPattern,
   ProjectMonthlyAssignment,
-  ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
-
-/** Flatten a suggested pattern into a list of ProjectMonthlyAssignmentRequest payloads.
- *
- * Each (member × month → percentage) becomes one row, posted as `is_confirmed=False`
- * (per kippo#224 C1: accepted patterns materialize as projections; PMs toggle to
- * confirmed manually).
- */
-export function flattenPatternToAssignmentRequests(
-  pattern: ProjectAssignmentPattern,
-  projectId: string,
-): ProjectMonthlyAssignmentRequest[] {
-  const requests: ProjectMonthlyAssignmentRequest[] = [];
-  for (const member of pattern.members) {
-    for (const [month, percentage] of Object.entries(member.monthly_percentages)) {
-      requests.push({
-        project: projectId,
-        user: member.user_id,
-        month,
-        percentage,
-        is_confirmed: false,
-      });
-    }
-  }
-  return requests;
-}
 
 export const MAX_PERCENTAGE_PER_MONTH = 100;
 

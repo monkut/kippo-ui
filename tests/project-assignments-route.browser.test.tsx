@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { addMonths, firstOfMonth } from "~/lib/dates";
+import { addMonths, firstOfMonth, formatMonth, lastOfMonth } from "~/lib/dates";
 
 // kiconiaworks/kippo#68: /projects/:id/assignments must request assignments for the displayed
 // month. Without `month` the list endpoint defaults to the current month, so other months render
@@ -119,6 +119,23 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).not.toContain("この月の割当はまだ登録されていません");
   });
 
+  // kiconiaworks/kippo#75 K1: no single-month add or suggested-team buttons on the project page.
+  test("does not render ＋ 割当を追加 or 候補パターンを生成", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(container.textContent).toContain("alice");
+    expect(container.textContent).not.toContain("割当を追加");
+    expect(container.textContent).not.toContain("候補パターンを生成");
+
+    api.rows = []; // empty month: still no add / suggest buttons
+    clickButton(container, "次の月");
+    await flush();
+    expect(container.textContent).toContain("この月の割当はまだ登録されていません");
+    expect(container.textContent).not.toContain("割当を追加");
+    expect(container.textContent).not.toContain("候補パターンを生成");
+  });
+
   // kiconiaworks/kippo#73: 参加者を追加 on the project page.
   const participantButton = () =>
     Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
@@ -134,9 +151,28 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).toContain("目標終了日を設定すると参加者を追加できます");
   });
 
-  test("adds a participant over the project period and shows created / skipped months", async () => {
+  // kiconiaworks/kippo#75 R1: rows are created only for the remaining period.
+  test("参加者を追加 is disabled with a reason when the project period has ended", async () => {
     auth.state = { user: { username: "me" }, isLoading: false };
-    api.project = { ...api.project, start_date: "2026-11-01", target_date: "2027-01-31" };
+    api.project = {
+      ...api.project,
+      start_date: addMonths(currentMonth, -6),
+      target_date: lastOfMonth(addMonths(currentMonth, -1)),
+    };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(participantButton()?.disabled).toBe(true);
+    expect(container.textContent).toContain("プロジェクト期間が終了しています");
+  });
+
+  test("adds a participant over the remaining period and shows created / skipped months", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    // Started two months ago: the remaining period starts at the current month.
+    api.project = {
+      ...api.project,
+      start_date: addMonths(currentMonth, -2),
+      target_date: lastOfMonth(addMonths(currentMonth, 2)),
+    };
     root.render(<ProjectAssignments />);
     await flush();
 
@@ -144,7 +180,9 @@ describe("ProjectAssignments route", () => {
     expect(button?.disabled).toBe(false);
     button?.click();
     await flush();
-    expect(container.textContent).toContain("プロジェクト期間 2026-11 〜 2027-01");
+    expect(container.textContent).toContain(
+      `残りの期間 ${formatMonth(currentMonth)} 〜 ${formatMonth(addMonths(currentMonth, 2))} の各月に同じ割当を登録します。登録済みの月は変更しません。`,
+    );
 
     const submit = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
       (b) => b.textContent === "追加",

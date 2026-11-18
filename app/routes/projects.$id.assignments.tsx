@@ -2,18 +2,17 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { Layout } from "~/components/layout";
 import {
-  AddAssignmentModal,
   AddParticipantModal,
   AssignmentsTable,
   EditAssignmentModal,
   firstOfMonth,
   ForecastBar,
   MonthPicker,
-  PatternPickerModal,
 } from "~/components/project-assignments";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { useAuthGate } from "~/hooks/useAuthGate";
+import { remainingPeriod } from "~/lib/dates";
 
 export function meta() {
   return [{ title: "プロジェクト割当 - Kippo" }];
@@ -41,7 +40,7 @@ export default function ProjectAssignments() {
       projectCustomerName={state.project?.customer_name}
       projectId={id}
     >
-      <Body projectId={id} state={state} month={month} onMonthChange={setMonth} />
+      <Body state={state} month={month} onMonthChange={setMonth} />
     </Layout>
   );
 }
@@ -56,15 +55,12 @@ function useEffortUsernames(project: KippoProject | null): ReadonlySet<string> {
 }
 
 type BodyProps = {
-  projectId: string | undefined;
   state: State;
   month: string;
   onMonthChange: (month: string) => void;
 };
 
-function Body({ projectId, state, month, onMonthChange }: BodyProps) {
-  const [addOpen, setAddOpen] = useState(false);
-  const [suggestOpen, setSuggestOpen] = useState(false);
+function Body({ state, month, onMonthChange }: BodyProps) {
   const [editTarget, setEditTarget] = useState<ProjectMonthlyAssignment | null>(null);
   const [participantOpen, setParticipantOpen] = useState(false);
   const effortUsernames = useEffortUsernames(state.project);
@@ -89,23 +85,18 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
             assignments={state.assignments}
             month={month}
             isSaving={state.isSaving}
-            onAddClick={() => setAddOpen(true)}
-            onSuggestClick={() => setSuggestOpen(true)}
             onCellClick={setEditTarget}
           />
         </>
       )}
-      <Modals
-        projectId={projectId}
-        state={state}
-        month={month}
-        effortUsernames={effortUsernames}
-        addOpen={addOpen}
-        setAddOpen={setAddOpen}
-        suggestOpen={suggestOpen}
-        setSuggestOpen={setSuggestOpen}
-        editTarget={editTarget}
-        setEditTarget={setEditTarget}
+      <EditAssignmentModal
+        open={editTarget !== null}
+        assignment={editTarget}
+        customerName={state.project?.customer_name ?? null}
+        isSaving={state.isSaving}
+        onClose={() => setEditTarget(null)}
+        onSave={state.updateAssignment}
+        onDelete={state.deleteAssignment}
       />
       {state.project && (
         <AddParticipantModal
@@ -123,13 +114,20 @@ function Body({ projectId, state, month, onMonthChange }: BodyProps) {
   );
 }
 
-/** The participant endpoint needs both dates to know the project period (kippo#72 D6). */
+/** The participant endpoint needs both dates to know the project period (kippo#72 D6), and rows
+ * are created only for the remaining period (kippo#75 R1), which is empty once the project ended. */
 function missingPeriodReason(project: KippoProject | null): string | null {
   if (!project) return "プロジェクトを読み込めませんでした";
   const missing = [!project.start_date && "開始日", !project.target_date && "目標終了日"].filter(
     Boolean,
   );
-  return missing.length > 0 ? `${missing.join("と")}を設定すると参加者を追加できます` : null;
+  if (missing.length > 0) return `${missing.join("と")}を設定すると参加者を追加できます`;
+  const remaining = remainingPeriod(
+    project.start_date,
+    project.target_date,
+    firstOfMonth(new Date()),
+  );
+  return remaining ? null : "プロジェクト期間が終了しています";
 }
 
 function AddParticipantButton({
@@ -149,74 +147,12 @@ function AddParticipantButton({
         type="button"
         onClick={onClick}
         disabled={disabled || reason !== null}
-        title="プロジェクト期間の各月に割当を登録します"
+        title="残りの期間の各月に割当を登録します"
         className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         ＋ 参加者を追加
       </button>
     </div>
-  );
-}
-
-type ModalsProps = {
-  projectId: string | undefined;
-  state: State;
-  month: string;
-  effortUsernames: ReadonlySet<string>;
-  addOpen: boolean;
-  setAddOpen: (open: boolean) => void;
-  suggestOpen: boolean;
-  setSuggestOpen: (open: boolean) => void;
-  editTarget: ProjectMonthlyAssignment | null;
-  setEditTarget: (target: ProjectMonthlyAssignment | null) => void;
-};
-
-function Modals({
-  projectId,
-  state,
-  month,
-  effortUsernames,
-  addOpen,
-  setAddOpen,
-  suggestOpen,
-  setSuggestOpen,
-  editTarget,
-  setEditTarget,
-}: ModalsProps) {
-  return (
-    <>
-      {projectId && (
-        <AddAssignmentModal
-          open={addOpen}
-          projectId={projectId}
-          month={month}
-          effortUsernames={effortUsernames}
-          isSaving={state.isSaving}
-          projectName={state.project?.name ?? null}
-          customerName={state.project?.customer_name ?? null}
-          onClose={() => setAddOpen(false)}
-          onSubmit={state.createAssignment}
-        />
-      )}
-      {projectId && (
-        <PatternPickerModal
-          open={suggestOpen}
-          projectId={projectId}
-          project={state.project}
-          onClose={() => setSuggestOpen(false)}
-          onAcceptPattern={state.bulkCreateAssignments}
-        />
-      )}
-      <EditAssignmentModal
-        open={editTarget !== null}
-        assignment={editTarget}
-        customerName={state.project?.customer_name ?? null}
-        isSaving={state.isSaving}
-        onClose={() => setEditTarget(null)}
-        onSave={state.updateAssignment}
-        onDelete={state.deleteAssignment}
-      />
-    </>
   );
 }
 

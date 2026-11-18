@@ -5,7 +5,7 @@ import type {
   ProjectParticipantResponse,
   RoleEnum,
 } from "~/lib/api/generated/models";
-import { formatMonth } from "~/lib/dates";
+import { firstOfMonth, formatMonth, remainingPeriod } from "~/lib/dates";
 import {
   ErrorBanner,
   ModalActions,
@@ -15,7 +15,7 @@ import {
   UserSelectField,
   useDefaultUserSelection,
   useOrgMembers,
-} from "./AddAssignmentModal";
+} from "./assignment-form";
 
 const DEFAULT_PERCENTAGE = 50;
 
@@ -39,7 +39,8 @@ type AddParticipantModalProps = {
 };
 
 /** 参加者を追加 (kiconiaworks/kippo#73): one request creates the user's monthly assignments for
- * every month of the project period (start_date … target_date); existing months are skipped. */
+ * each month of the remaining period (kippo#75 R1: the later of this month and the start_date month,
+ * through target_date); existing months are skipped. */
 export function AddParticipantModal({
   open,
   project,
@@ -69,7 +70,12 @@ export function AddParticipantModal({
 
   if (!open) return null;
 
-  const period = `${formatMonth(project.start_date ?? "")} 〜 ${formatMonth(project.target_date ?? "")}`;
+  const remaining = remainingPeriod(
+    project.start_date,
+    project.target_date,
+    firstOfMonth(new Date()),
+  );
+  const period = remaining ? `${formatMonth(remaining.from)} 〜 ${formatMonth(remaining.to)}` : "—";
 
   if (result) {
     return (
@@ -98,7 +104,7 @@ export function AddParticipantModal({
     <ModalShell title="参加者を追加" onClose={onClose}>
       {fetchError && <ErrorBanner message={fetchError} />}
       <p className="mb-4 text-sm text-gray-600">
-        プロジェクト期間 <span className="font-medium text-gray-900">{period}</span>{" "}
+        残りの期間 <span className="font-medium text-gray-900">{period}</span>{" "}
         の各月に同じ割当を登録します。登録済みの月は変更しません。
       </p>
       <div className="space-y-4">

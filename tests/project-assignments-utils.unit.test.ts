@@ -3,12 +3,8 @@ import { firstOfNextMonth, formatMonth } from "~/lib/dates";
 import {
   buildGrid,
   filterAssignmentsToVisibleProjects,
-  flattenPatternToAssignmentRequests,
 } from "~/components/project-assignments/utils";
-import type {
-  ProjectAssignmentPattern,
-  ProjectMonthlyAssignment,
-} from "~/lib/api/generated/models";
+import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 
 // Mirror of the kippo backend ProjectMonthlyAssignment shape for fixture brevity.
 function makeAssignment(overrides: Partial<ProjectMonthlyAssignment>): ProjectMonthlyAssignment {
@@ -165,71 +161,6 @@ describe("firstOfNextMonth", () => {
 
   test("zero-pads single-digit months", () => {
     expect(firstOfNextMonth(new Date(2026, 0, 15))).toBe("2026-02-01"); // Jan → Feb
-  });
-});
-
-function makePattern(overrides: Partial<ProjectAssignmentPattern> = {}): ProjectAssignmentPattern {
-  return {
-    pattern_ids: ["P1-max-reuse"],
-    label: "test",
-    estimated_completion: "2026-09-15",
-    infeasible: false,
-    conflicts: [],
-    members: [],
-    ...overrides,
-  };
-}
-
-describe("flattenPatternToAssignmentRequests: row generation", () => {
-  test("emits one request per (member × month) entry", () => {
-    const pattern = makePattern({
-      members: [
-        {
-          user_id: "user-1",
-          is_past_member: true,
-          monthly_percentages: { "2026-06-01": 50, "2026-07-01": 60 },
-        },
-        { user_id: "user-2", is_past_member: false, monthly_percentages: { "2026-06-01": 30 } },
-      ],
-    });
-    expect(flattenPatternToAssignmentRequests(pattern, "proj-1")).toHaveLength(3);
-  });
-
-  test("preserves project, user, month, percentage fields", () => {
-    const pattern = makePattern({
-      members: [
-        { user_id: "user-42", is_past_member: false, monthly_percentages: { "2026-08-01": 75 } },
-      ],
-    });
-    const [request] = flattenPatternToAssignmentRequests(pattern, "proj-99");
-    expect(request).toMatchObject({
-      project: "proj-99",
-      user: "user-42",
-      month: "2026-08-01",
-      percentage: 75,
-    });
-  });
-});
-
-describe("flattenPatternToAssignmentRequests: confirmation + edge cases", () => {
-  test("posts as is_confirmed=false (kippo#224 C1)", () => {
-    const pattern = makePattern({
-      members: [
-        { user_id: "user-1", is_past_member: true, monthly_percentages: { "2026-06-01": 50 } },
-      ],
-    });
-    expect(flattenPatternToAssignmentRequests(pattern, "proj-1")[0].is_confirmed).toBe(false);
-  });
-
-  test("returns empty array for an empty pattern", () => {
-    expect(flattenPatternToAssignmentRequests(makePattern({ members: [] }), "proj-1")).toEqual([]);
-  });
-
-  test("returns empty array when members have no monthly_percentages", () => {
-    const pattern = makePattern({
-      members: [{ user_id: "user-1", is_past_member: true, monthly_percentages: {} }],
-    });
-    expect(flattenPatternToAssignmentRequests(pattern, "proj-1")).toEqual([]);
   });
 });
 

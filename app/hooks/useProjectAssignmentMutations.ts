@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import {
-  monthlyAssignmentsCreate,
   monthlyAssignmentsDestroy,
   monthlyAssignmentsPartialUpdate,
 } from "~/lib/api/generated/monthly-assignments/monthly-assignments";
@@ -9,7 +8,6 @@ import type {
   ProjectParticipantCreateRequest,
   ProjectParticipantResponse,
   PatchedProjectMonthlyAssignmentRequest,
-  ProjectMonthlyAssignmentRequest,
 } from "~/lib/api/generated/models";
 import { projectsCreate, projectsParticipantsCreate } from "~/lib/api/generated/projects/projects";
 import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
@@ -17,11 +15,9 @@ import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
 export type ProjectAssignmentMutations = {
   isSaving: boolean;
   setError: (err: string) => void;
-  createAssignment: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
-  bulkCreateAssignments: (payloads: ProjectMonthlyAssignmentRequest[]) => Promise<boolean>;
-  /** Add a project participant: one row per month over the project period (kippo#72).
+  /** Add a project participant: one row per month over the remaining period (kippo#72, #75 R1).
    * Resolves to the created rows + skipped months, or null on failure (error set). */
   addParticipant: (
     projectId: string,
@@ -62,11 +58,6 @@ export function useProjectAssignmentMutations(
 ): ProjectAssignmentMutations {
   const { isSaving, wrap } = useWrap(refresh, setHookError);
 
-  const createAssignment = useCallback(
-    (payload: ProjectMonthlyAssignmentRequest) =>
-      wrap(() => monthlyAssignmentsCreate(payload), "割当の作成に失敗しました"),
-    [wrap],
-  );
   const updateAssignment = useCallback(
     (id: number, patch: PatchedProjectMonthlyAssignmentRequest) =>
       wrap(() => monthlyAssignmentsPartialUpdate(id, patch), "割当の更新に失敗しました"),
@@ -74,17 +65,6 @@ export function useProjectAssignmentMutations(
   );
   const deleteAssignment = useCallback(
     (id: number) => wrap(() => monthlyAssignmentsDestroy(id), "割当の削除に失敗しました"),
-    [wrap],
-  );
-  // Pattern-accept flow: post each row sequentially. The kippo backend has no bulk
-  // endpoint; on partial failure the rows already created remain (acceptable for v1).
-  const bulkCreateAssignments = useCallback(
-    (payloads: ProjectMonthlyAssignmentRequest[]) =>
-      wrap(async () => {
-        for (const payload of payloads) {
-          await monthlyAssignmentsCreate(payload);
-        }
-      }, "パターンの登録に失敗しました"),
     [wrap],
   );
   const addParticipant = useCallback(
@@ -111,10 +91,8 @@ export function useProjectAssignmentMutations(
   return {
     isSaving,
     setError: setHookError,
-    createAssignment,
     updateAssignment,
     deleteAssignment,
-    bulkCreateAssignments,
     addParticipant,
     createProject,
   };
