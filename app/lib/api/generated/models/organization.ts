@@ -17,4 +17,8 @@ export interface Organization {
   id: string;
   name: string;
   github_organization_name: string;
+  /** kiconia-kippo-listener API base URL; empty when the organization has no listener (kippo#66). */
+  listener_api_url: string;
+  /** kiconia-kippo-listener X-API-Key; empty when unset (kippo#66). */
+  listener_api_key: string;
 }
