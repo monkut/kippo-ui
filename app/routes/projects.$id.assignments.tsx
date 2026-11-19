@@ -8,6 +8,7 @@ import {
   firstOfMonth,
   ForecastBar,
   MonthPicker,
+  ParticipantsList,
 } from "~/components/project-assignments";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
@@ -81,6 +82,7 @@ function Body({ state, month, onMonthChange }: BodyProps) {
             disabled={state.isSaving}
             onClick={() => setParticipantOpen(true)}
           />
+          <ParticipantsList participants={state.participants} />
           <AssignmentsTable
             assignments={state.assignments}
             month={month}

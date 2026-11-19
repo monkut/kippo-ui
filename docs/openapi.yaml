@@ -3188,14 +3188,53 @@ paths:
                 $ref: '#/components/schemas/AutoExtendResponse'
           description: ''
   /api/projects/{project_id}/participants/:
+    get:
+      operationId: projects_participants_list
+      description: List the project's participants (kippo#75), ordered by username.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: project_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - projects
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectParticipantList'
+          description: ''
+        '403':
+          description: Caller is not a member of the project's organization.
+        '404':
+          description: Project not found.
     post:
       operationId: projects_participants_create
       description: |-
-        Add a project participant (kippo#72).
+        Add a project participant (kippo#72, kippo#75).
 
-        Creates one unconfirmed ProjectMonthlyAssignment per month from the `start_date` month to the
-        `target_date` month (inclusive). Months where (project, user, month) already exists are skipped,
-        never overwritten. Auto-extend does not run.
+        Creates the ProjectParticipant (when the user is not one yet) and one ProjectMonthlyAssignment per
+        remaining month: from the later of the current month (JST) and the `start_date` month, through the
+        `target_date` month (R1). Months where (project, user, month) already exists are skipped, never
+        overwritten; an existing participant's stored defaults are left unchanged. Auto-extend does not run.
 
         Permission: organization-scoped like `auto_extend` — non-members get 403.
       parameters:
@@ -10318,6 +10357,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectMonthlyCost'
+    PaginatedProjectParticipantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectParticipant'
     PaginatedProjectProblemDefinitionCommentList:
       type: object
       required:
@@ -12140,6 +12202,60 @@ components:
       - cost
       - project
       - service
+    ProjectParticipant:
+      type: object
+      description: 'A project participant (kippo#75): the parent of the user''s monthly
+        assignments on the project.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_username:
+          type: string
+          readOnly: true
+        user_display_name:
+          type: string
+          readOnly: true
+        percentage:
+          type: integer
+          readOnly: true
+          description: Default monthly workload percentage for this participant
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+          description: |-
+            Default billing-rate role for this participant's monthly assignments
+
+            * `developer` - developer
+            * `project_manager` - project_manager
+            * `tester` - tester
+        created_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_datetime
+      - id
+      - percentage
+      - project
+      - role
+      - updated_datetime
+      - user
+      - user_display_name
+      - user_username
     ProjectParticipantCreateRequest:
       type: object
       description: Request body for POST /api/projects/{id}/participants/ (kippo#72).

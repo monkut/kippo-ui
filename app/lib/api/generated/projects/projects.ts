@@ -21,6 +21,7 @@ import type {
   PaginatedKippoProjectContractList,
   PaginatedKippoProjectList,
   PaginatedKippoProjectStatusCommentList,
+  PaginatedProjectParticipantList,
   PaginatedProjectWeeklyEffortList,
   PatchedKippoProjectBillingEntryRequest,
   PatchedKippoProjectContractRequest,
@@ -36,6 +37,7 @@ import type {
   ProjectsContractListParams,
   ProjectsGithubRepositoriesListParams,
   ProjectsListParams,
+  ProjectsParticipantsListParams,
   ProjectsStatusCommentsListParams,
   ProjectsWeeklyeffortListParams,
   SuggestAssignmentsRequestRequest,
@@ -764,11 +766,68 @@ export const projectsMonthlyAssignmentsAutoExtendCreate = async (projectId: stri
 
 
 /**
- * Add a project participant (kippo#72).
+ * List the project's participants (kippo#75), ordered by username.
+ */
+export type projectsParticipantsListResponse200 = {
+  data: PaginatedProjectParticipantList
+  status: 200
+}
 
-Creates one unconfirmed ProjectMonthlyAssignment per month from the `start_date` month to the
-`target_date` month (inclusive). Months where (project, user, month) already exists are skipped,
-never overwritten. Auto-extend does not run.
+export type projectsParticipantsListResponse403 = {
+  data: void
+  status: 403
+}
+
+export type projectsParticipantsListResponse404 = {
+  data: void
+  status: 404
+}
+
+export type projectsParticipantsListResponseSuccess = (projectsParticipantsListResponse200) & {
+  headers: Headers;
+};
+export type projectsParticipantsListResponseError = (projectsParticipantsListResponse403 | projectsParticipantsListResponse404) & {
+  headers: Headers;
+};
+
+export type projectsParticipantsListResponse = (projectsParticipantsListResponseSuccess | projectsParticipantsListResponseError)
+
+export const getProjectsParticipantsListUrl = (projectId: string,
+    params?: ProjectsParticipantsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${projectId}/participants/?${stringifiedParams}` : `/api/projects/${projectId}/participants/`
+}
+
+export const projectsParticipantsList = async (projectId: string,
+    params?: ProjectsParticipantsListParams, options?: RequestInit): Promise<projectsParticipantsListResponse> => {
+
+  return customFetch<projectsParticipantsListResponse>(getProjectsParticipantsListUrl(projectId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * Add a project participant (kippo#72, kippo#75).
+
+Creates the ProjectParticipant (when the user is not one yet) and one ProjectMonthlyAssignment per
+remaining month: from the later of the current month (JST) and the `start_date` month, through the
+`target_date` month (R1). Months where (project, user, month) already exists are skipped, never
+overwritten; an existing participant's stored defaults are left unchanged. Auto-extend does not run.
 
 Permission: organization-scoped like `auto_extend` — non-members get 403.
  */

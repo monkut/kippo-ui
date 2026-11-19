@@ -5,6 +5,7 @@ export { EditAssignmentModal } from "./EditAssignmentModal";
 export { ForecastBar } from "./ForecastBar";
 export { MonthPicker } from "./MonthPicker";
 export { MonthlyAssignmentMatrix } from "./MonthlyAssignmentMatrix";
+export { ParticipantsList } from "./ParticipantsList";
 export type { MatrixCellClickArgs } from "./MonthlyAssignmentMatrix";
 export { addMonths, firstOfMonth, firstOfNextMonth, formatMonth } from "~/lib/dates";
 export {

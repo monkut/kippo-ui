@@ -5,8 +5,13 @@ import type {
   PatchedProjectMonthlyAssignmentRequest,
   ProjectForecastResponse,
   ProjectMonthlyAssignment,
+  ProjectParticipant,
 } from "~/lib/api/generated/models";
-import { projectsForecastRetrieve, projectsRetrieve } from "~/lib/api/generated/projects/projects";
+import {
+  projectsForecastRetrieve,
+  projectsParticipantsList,
+  projectsRetrieve,
+} from "~/lib/api/generated/projects/projects";
 import { readList } from "~/lib/api/read-list";
 import { useProjectAssignmentMutations } from "./useProjectAssignmentMutations";
 
@@ -19,6 +24,7 @@ export type UseProjectAssignmentsState = {
   forecast: ProjectForecastResponse | null;
   forecastError: string;
   assignments: ProjectMonthlyAssignment[];
+  participants: ProjectParticipant[];
   refresh: () => Promise<void>;
   updateAssignment: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   deleteAssignment: (id: number) => Promise<boolean>;
@@ -49,6 +55,7 @@ async function fetchForecastTolerating400(projectId: string): Promise<ForecastRe
 type FetchData = {
   project: KippoProject | null;
   assignments: ProjectMonthlyAssignment[];
+  participants: ProjectParticipant[];
   forecast: ProjectForecastResponse | null;
   forecastError: string;
 };
@@ -56,14 +63,16 @@ type FetchData = {
 async function fetchAllForProject(projectId: string, month: string): Promise<FetchData> {
   // `month` is required: without it the list endpoint defaults to the current month (JST),
   // so every other month would render empty (kiconiaworks/kippo#68).
-  const [projectRes, assignmentsRes, forecastRes] = await Promise.all([
+  const [projectRes, assignmentsRes, participantsRes, forecastRes] = await Promise.all([
     projectsRetrieve(projectId),
     monthlyAssignmentsList({ project: projectId, month }),
+    projectsParticipantsList(projectId),
     fetchForecastTolerating400(projectId),
   ]);
   return {
     project: projectRes.status === 200 ? projectRes.data : null,
     assignments: readList<ProjectMonthlyAssignment>(assignmentsRes.data),
+    participants: readList<ProjectParticipant>(participantsRes.data),
     forecast: forecastRes.status === 200 ? (forecastRes.data as ProjectForecastResponse) : null,
     forecastError: forecastRes.status === 400 ? FORECAST_400_MESSAGE : "",
   };
@@ -79,6 +88,7 @@ export function useProjectAssignments(
   const [data, setData] = useState<FetchData>({
     project: null,
     assignments: [],
+    participants: [],
     forecast: null,
     forecastError: "",
   });
@@ -116,6 +126,7 @@ export function useProjectAssignments(
     forecast: data.forecast,
     forecastError: data.forecastError,
     assignments: data.assignments,
+    participants: data.participants,
     refresh: fetchAll,
     updateAssignment: mutations.updateAssignment,
     deleteAssignment: mutations.deleteAssignment,

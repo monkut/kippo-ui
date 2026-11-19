@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   rows: [] as unknown[],
   project: {} as Record<string, unknown>,
   participantCalls: [] as Array<{ projectId: string; payload: unknown }>,
+  participants: [] as unknown[],
+  participantListCalls: 0,
 }));
 
 vi.mock("react-router", () => ({
@@ -41,6 +43,10 @@ vi.mock("~/lib/api/generated/projects/projects", async (importOriginal) => ({
     status: 200,
     data: { members: [{ user_id: "u-carol", username: "carol", display_name: "Carol" }] },
   }),
+  projectsParticipantsList: async () => {
+    api.participantListCalls += 1;
+    return { status: 200, data: api.participants };
+  },
   projectsParticipantsCreate: async (projectId: string, payload: unknown) => {
     api.participantCalls.push({ projectId, payload });
     return {
@@ -83,6 +89,8 @@ describe("ProjectAssignments route", () => {
     auth.state = { user: null, isLoading: true };
     api.listCalls = [];
     api.participantCalls = [];
+    api.participants = [];
+    api.participantListCalls = 0;
     api.project = { id: "p1", name: "Proj", customer_name: "Cust", weekly_effort_users: [] };
     api.rows = [row(1, currentMonth, "alice"), row(2, nextMonth, "bob")];
     container = document.createElement("div");
@@ -197,5 +205,66 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).toContain("作成: 2か月 (2026-12 〜 2027-01)");
     expect(container.textContent).toContain("登録済みのためスキップ: 1か月 (2026-11)");
     expect(api.listCalls.length).toBeGreaterThan(listCallsBefore); // page refetched
+  });
+
+  // kiconiaworks/kippo#75: participants list (month-independent defaults).
+  test("lists participants with their default percentage and role", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.participants = [
+      {
+        id: 1,
+        project: "p1",
+        user: "u-a",
+        user_username: "alice",
+        user_display_name: "Alice A",
+        percentage: 40,
+        role: "developer",
+      },
+      {
+        id: 2,
+        project: "p1",
+        user: "u-d",
+        user_username: "dave",
+        user_display_name: "",
+        percentage: 10,
+        role: "",
+      },
+    ];
+    root.render(<ProjectAssignments />);
+    await flush();
+
+    const section = Array.from(container.querySelectorAll("section")).find((s) =>
+      s.textContent?.startsWith("参加者 (2名)"),
+    );
+    expect(section).toBeDefined();
+    const rows = Array.from(section?.querySelectorAll("tbody tr") ?? []).map((tr) =>
+      Array.from(tr.querySelectorAll("td")).map((td) => td.textContent),
+    );
+    expect(rows).toEqual([
+      ["Alice A", "40%", "developer"],
+      ["dave", "10%", "(指定なし)"],
+    ]);
+  });
+
+  test("shows an empty participants message and refetches participants after adding one", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.project = {
+      ...api.project,
+      start_date: currentMonth,
+      target_date: lastOfMonth(addMonths(currentMonth, 1)),
+    };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(container.textContent).toContain("参加者 (0名)");
+    expect(container.textContent).toContain("参加者はまだいません。");
+
+    const callsBefore = api.participantListCalls;
+    participantButton()?.click();
+    await flush();
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
+      .find((b) => b.textContent === "追加")
+      ?.click();
+    await flush();
+    expect(api.participantListCalls).toBeGreaterThan(callsBefore);
   });
 });
