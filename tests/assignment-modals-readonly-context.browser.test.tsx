@@ -1,21 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { EditAssignmentModal } from "../app/components/project-assignments/EditAssignmentModal";
-import { AddAssignmentModal } from "../app/components/project-assignments/AddAssignmentModal";
 import type { ProjectMonthlyAssignment } from "../app/lib/api/generated/models";
 
-// Cell-click modals must show the (customer, project) pair as read-only context
+// The cell-click modal must show the (customer, project) pair as read-only context
 // so the operator can confirm which project they're acting on — matters most on
 // the cross-project matrix where the cell click is the only project signal.
-
-vi.mock("~/lib/api/generated/projects/projects", () => ({
-  projectsMembersRetrieve: vi.fn(async () => ({ status: 200, data: { members: [] } })),
-}));
-vi.mock("~/lib/api/pagination", () => ({
-  fetchAllMonthlyAssignments: vi.fn(async () => []),
-  fetchAllProjects: vi.fn(async () => []),
-}));
 
 function makeAssignment(over: Partial<ProjectMonthlyAssignment>): ProjectMonthlyAssignment {
   return {
@@ -105,69 +96,5 @@ describe("EditAssignmentModal — read-only project + customer context", () => {
     expect(text).toContain("プロジェクト:");
     expect(text).toContain("Project Beta");
     expect(text).not.toContain("顧客:");
-  });
-});
-
-describe("AddAssignmentModal — read-only project + customer context", () => {
-  let container: HTMLDivElement;
-  let root: ReturnType<typeof createRoot>;
-
-  beforeEach(() => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
-  });
-
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-  });
-
-  test("renders customer + project as read-only context", async () => {
-    root.render(
-      <AddAssignmentModal
-        open={true}
-        projectId="proj-1"
-        month="2026-06-01"
-        effortUsernames={new Set()}
-        isSaving={false}
-        projectName="Project Gamma"
-        customerName="Acme Corp"
-        onClose={() => {}}
-        onSubmit={async () => true}
-      />,
-    );
-
-    const text = await waitFor(() =>
-      container.textContent?.includes("プロジェクト") ? container.textContent : null,
-    );
-    expect(text).toContain("顧客:");
-    expect(text).toContain("Acme Corp");
-    expect(text).toContain("プロジェクト:");
-    expect(text).toContain("Project Gamma");
-  });
-
-  test("omits the context block when both props are null (backward-compat)", async () => {
-    root.render(
-      <AddAssignmentModal
-        open={true}
-        projectId="proj-1"
-        month="2026-06-01"
-        effortUsernames={new Set()}
-        isSaving={false}
-        projectName={null}
-        customerName={null}
-        onClose={() => {}}
-        onSubmit={async () => true}
-      />,
-    );
-
-    // The "ユーザー" field label always renders — wait for that, then assert no
-    // 顧客/プロジェクト rows leaked in.
-    const text = await waitFor(() =>
-      container.textContent?.includes("ユーザー") ? container.textContent : null,
-    );
-    expect(text).not.toContain("顧客:");
-    expect(text).not.toContain("プロジェクト:");
   });
 });

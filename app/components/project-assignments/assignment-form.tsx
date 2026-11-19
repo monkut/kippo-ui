@@ -1,118 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import type {
-  OrganizationMember,
-  ProjectMonthlyAssignmentRequest,
-} from "~/lib/api/generated/models";
+// Shared form pieces for the project-assignment modals (AddParticipantModal).
+import { useEffect, useState } from "react";
+import type { OrganizationMember } from "~/lib/api/generated/models";
 import { projectsMembersRetrieve } from "~/lib/api/generated/projects/projects";
-import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
-import { formatMonth } from "~/lib/dates";
 import { EXCLUDED_USERNAMES, memberDisplayName } from "./utils";
-
-type AddAssignmentModalProps = {
-  open: boolean;
-  projectId: string;
-  month: string; // first-of-month ISO date "YYYY-MM-01"
-  effortUsernames: ReadonlySet<string>;
-  isSaving: boolean;
-  onClose: () => void;
-  onSubmit: (payload: ProjectMonthlyAssignmentRequest) => Promise<boolean>;
-  /** Optional: pre-select a user in the picker. Used by the matrix-cell add
-   * path (#22) to skip the user-selection step when the caller already knows
-   * which (project, user, month) slot was clicked. The user picker remains
-   * editable so the operator can re-target without canceling. */
-  prefilledUserId?: string;
-  /** Display-only project + customer context. The new row's `project` FK is
-   * always `projectId`; these are read-only labels so the operator can confirm
-   * which project they're adding the assignment to (matters most on the
-   * cross-project matrix where the cell click is the only project signal). */
-  projectName?: string | null;
-  customerName?: string | null;
-};
-
-const DEFAULT_PERCENTAGE = 50;
-
-export function AddAssignmentModal(props: AddAssignmentModalProps) {
-  const {
-    open,
-    projectId,
-    month,
-    effortUsernames,
-    isSaving,
-    onClose,
-    onSubmit,
-    prefilledUserId,
-    projectName,
-    customerName,
-  } = props;
-  const { members, isLoadingMembers, fetchError } = useOrgMembers(open, projectId);
-  const totals = useMonthlyTotalsByUser(open, month);
-  const orderedMembers = useMemo(
-    () => orderMembersForPicker(members, effortUsernames),
-    [members, effortUsernames],
-  );
-  const form = useAddAssignmentForm(open, prefilledUserId);
-  useDefaultUserSelection(open, orderedMembers, form.userId, form.setUserId);
-
-  if (!open) return null;
-
-  const handleSubmit = async () => {
-    if (!form.userId) return;
-    const ok = await onSubmit({
-      project: projectId,
-      user: form.userId,
-      month,
-      percentage: form.percentage,
-      is_confirmed: false,
-    });
-    if (ok) onClose();
-  };
-
-  return (
-    <ModalShell title={`割当を追加 — ${formatMonth(month)}`} onClose={onClose}>
-      {fetchError && <ErrorBanner message={fetchError} />}
-      <ReadOnlyContext projectName={projectName} customerName={customerName} />
-      <Fields
-        form={form}
-        members={orderedMembers}
-        totals={totals}
-        effortUsernames={effortUsernames}
-        isSaving={isSaving}
-        isLoadingMembers={isLoadingMembers}
-      />
-      <ModalActions
-        onCancel={onClose}
-        onSubmit={handleSubmit}
-        isSaving={isSaving}
-        submitDisabled={orderedMembers.length === 0 || isLoadingMembers}
-        submitLabel="追加"
-      />
-    </ModalShell>
-  );
-}
-
-function ReadOnlyContext({
-  projectName,
-  customerName,
-}: {
-  projectName?: string | null;
-  customerName?: string | null;
-}) {
-  if (!projectName && !customerName) return null;
-  return (
-    <div className="mb-4 space-y-1 text-sm text-gray-600">
-      {customerName && (
-        <div>
-          <span className="font-medium">顧客:</span> {customerName}
-        </div>
-      )}
-      {projectName && (
-        <div>
-          <span className="font-medium">プロジェクト:</span> {projectName}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function orderMembersForPicker(
   members: OrganizationMember[],
@@ -139,37 +29,6 @@ export function useDefaultUserSelection(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, members]);
-}
-
-function Fields({
-  form,
-  members,
-  totals,
-  effortUsernames,
-  isSaving,
-  isLoadingMembers,
-}: {
-  form: ReturnType<typeof useAddAssignmentForm>;
-  members: OrganizationMember[];
-  totals: Map<string, number>;
-  effortUsernames: ReadonlySet<string>;
-  isSaving: boolean;
-  isLoadingMembers: boolean;
-}) {
-  return (
-    <div className="space-y-4">
-      <UserSelectField
-        value={form.userId}
-        onChange={form.setUserId}
-        members={members}
-        totals={totals}
-        effortUsernames={effortUsernames}
-        disabled={isSaving || isLoadingMembers}
-        isLoading={isLoadingMembers}
-      />
-      <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
-    </div>
-  );
 }
 
 async function fetchOrgMembers(
@@ -212,46 +71,6 @@ export function useOrgMembers(open: boolean, projectId: string) {
   return { members, isLoadingMembers, fetchError };
 }
 
-function useMonthlyTotalsByUser(open: boolean, month: string): Map<string, number> {
-  const [totals, setTotals] = useState<Map<string, number>>(new Map());
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchAllMonthlyAssignments({ month });
-        if (cancelled) return;
-        const next = new Map<string, number>();
-        for (const a of data) {
-          next.set(a.user, (next.get(a.user) ?? 0) + a.percentage);
-        }
-        setTotals(next);
-      } catch {
-        // Best-effort: leave totals empty if fetch fails.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, month]);
-
-  return totals;
-}
-
-function useAddAssignmentForm(open: boolean, prefilledUserId?: string) {
-  const [userId, setUserId] = useState("");
-  const [percentage, setPercentage] = useState(DEFAULT_PERCENTAGE);
-
-  useEffect(() => {
-    if (!open) return;
-    setUserId(prefilledUserId ?? "");
-    setPercentage(DEFAULT_PERCENTAGE);
-  }, [open, prefilledUserId]);
-
-  return { userId, setUserId, percentage, setPercentage };
-}
-
 export function ModalShell({
   title,
   onClose,
@@ -285,19 +104,16 @@ export function ErrorBanner({ message }: { message: string }) {
 
 function memberOptionLabel(
   member: OrganizationMember,
-  totals: Map<string, number> | undefined,
   effortUsernames: ReadonlySet<string>,
 ): string {
   const prefix = effortUsernames.has(member.username) ? "★ " : "";
-  if (!totals) return `${prefix}${memberDisplayName(member)}`;
-  return `${prefix}${memberDisplayName(member)} (${totals.get(member.user_id) ?? 0}%)`;
+  return `${prefix}${memberDisplayName(member)}`;
 }
 
 export function UserSelectField({
   value,
   onChange,
   members,
-  totals,
   effortUsernames,
   disabled,
   isLoading,
@@ -305,8 +121,6 @@ export function UserSelectField({
   value: string;
   onChange: (v: string) => void;
   members: OrganizationMember[];
-  /** Per-user monthly totals shown after each name; omit when no single month applies. */
-  totals?: Map<string, number>;
   effortUsernames: ReadonlySet<string>;
   disabled: boolean;
   isLoading: boolean;
@@ -314,10 +128,7 @@ export function UserSelectField({
   return (
     <div>
       <label htmlFor="add-assignment-user" className="block text-sm font-medium text-gray-700 mb-1">
-        ユーザー{" "}
-        <span className="text-xs font-normal text-gray-500">
-          {totals ? "(★ = この月の他プロジェクト割当合計)" : "(★ = 週間稼働量の登録者)"}
-        </span>
+        ユーザー <span className="text-xs font-normal text-gray-500">(★ = 週間稼働量の登録者)</span>
       </label>
       <select
         id="add-assignment-user"
@@ -330,7 +141,7 @@ export function UserSelectField({
         {!isLoading && members.length === 0 && <option value="">(対象ユーザーがいません)</option>}
         {members.map((member) => (
           <option key={member.user_id} value={member.user_id}>
-            {memberOptionLabel(member, totals, effortUsernames)}
+            {memberOptionLabel(member, effortUsernames)}
           </option>
         ))}
       </select>

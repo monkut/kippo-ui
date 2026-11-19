@@ -7,6 +7,7 @@ import {
   formatDisplayDate,
   formatMonth,
   lastOfMonth,
+  remainingPeriod,
 } from "~/lib/dates";
 
 // The unit project (vitest.config.ts) pins TZ=Asia/Tokyo so the local-time
@@ -62,6 +63,38 @@ describe("lib/dates", () => {
       expect(lastOfMonth("2026-02-01")).toBe("2026-02-28");
       expect(lastOfMonth("2028-02-01")).toBe("2028-02-29"); // leap year
       expect(lastOfMonth("2026-04-01")).toBe("2026-04-30");
+    });
+  });
+
+  describe("remainingPeriod (kiconiaworks/kippo#75 R1)", () => {
+    test("starts at the current month when the project already started", () => {
+      expect(remainingPeriod("2026-09-15", "2027-01-31", "2026-11-01")).toEqual({
+        from: "2026-11-01",
+        to: "2027-01-01",
+      });
+    });
+
+    test("starts at the start_date month when the project starts later", () => {
+      expect(remainingPeriod("2027-02-10", "2027-05-31", "2026-11-01")).toEqual({
+        from: "2027-02-01",
+        to: "2027-05-01",
+      });
+    });
+
+    test("includes the current month when it is the target month", () => {
+      expect(remainingPeriod("2026-01-01", "2026-11-30", "2026-11-01")).toEqual({
+        from: "2026-11-01",
+        to: "2026-11-01",
+      });
+    });
+
+    test("returns null when the target month has passed", () => {
+      expect(remainingPeriod("2026-01-01", "2026-10-31", "2026-11-01")).toBeNull();
+    });
+
+    test("returns null when a date is missing", () => {
+      expect(remainingPeriod(null, "2027-01-31", "2026-11-01")).toBeNull();
+      expect(remainingPeriod("2026-01-01", undefined, "2026-11-01")).toBeNull();
     });
   });
 });

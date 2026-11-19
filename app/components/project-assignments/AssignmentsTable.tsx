@@ -7,8 +7,6 @@ type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
   month: string; // first-of-month ISO date "YYYY-MM-01"
   isSaving: boolean;
-  onAddClick?: () => void;
-  onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
@@ -16,8 +14,6 @@ function AssignmentsTableImpl({
   assignments,
   month,
   isSaving,
-  onAddClick,
-  onSuggestClick,
   onCellClick,
 }: AssignmentsTableProps) {
   const monthAssignments = useMemo(
@@ -29,15 +25,13 @@ function AssignmentsTableImpl({
   );
 
   if (monthAssignments.length === 0) {
-    return <EmptyState month={month} onAddClick={onAddClick} onSuggestClick={onSuggestClick} />;
+    return <EmptyState month={month} />;
   }
   return (
     <PopulatedSection
       month={month}
       monthAssignments={monthAssignments}
       isSaving={isSaving}
-      onAddClick={onAddClick}
-      onSuggestClick={onSuggestClick}
       onCellClick={onCellClick}
     />
   );
@@ -47,8 +41,6 @@ type PopulatedSectionProps = {
   month: string;
   monthAssignments: ProjectMonthlyAssignment[];
   isSaving: boolean;
-  onAddClick?: () => void;
-  onSuggestClick?: () => void;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
@@ -56,16 +48,11 @@ function PopulatedSection({
   month,
   monthAssignments,
   isSaving,
-  onAddClick,
-  onSuggestClick,
   onCellClick,
 }: PopulatedSectionProps) {
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-lg font-medium text-gray-900">{formatMonth(month)} の割当</h2>
-        <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
-      </div>
+      <h2 className="text-lg font-medium text-gray-900 mb-4">{formatMonth(month)} の割当</h2>
       <AssignmentsBodyTable
         monthAssignments={monthAssignments}
         isSaving={isSaving}
@@ -116,54 +103,12 @@ function AssignmentsBodyTable({
   );
 }
 
-function EmptyState({
-  month,
-  onAddClick,
-  onSuggestClick,
-}: {
-  month: string;
-  onAddClick?: () => void;
-  onSuggestClick?: () => void;
-}) {
+function EmptyState({ month }: { month: string }) {
   return (
     <section className="bg-white shadow rounded-lg p-6">
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <h2 className="text-lg font-medium text-gray-900">{formatMonth(month)} の割当</h2>
-        <Toolbar onAddClick={onAddClick} onSuggestClick={onSuggestClick} />
-      </div>
+      <h2 className="text-lg font-medium text-gray-900 mb-2">{formatMonth(month)} の割当</h2>
       <p className="text-sm text-gray-500">この月の割当はまだ登録されていません。</p>
     </section>
-  );
-}
-
-function Toolbar({
-  onAddClick,
-  onSuggestClick,
-}: {
-  onAddClick?: () => void;
-  onSuggestClick?: () => void;
-}) {
-  return (
-    <div className="flex gap-2">
-      {onSuggestClick && (
-        <button
-          type="button"
-          onClick={onSuggestClick}
-          className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 rounded-md hover:bg-indigo-50"
-        >
-          候補パターンを生成
-        </button>
-      )}
-      {onAddClick && (
-        <button
-          type="button"
-          onClick={onAddClick}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-        >
-          + 割当を追加
-        </button>
-      )}
-    </div>
   );
 }
 

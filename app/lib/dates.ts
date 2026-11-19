@@ -51,3 +51,18 @@ export function lastOfMonth(monthStart: string): string {
   const dayStr = last.getDate().toString().padStart(2, "0");
   return `${year}-${monthStr}-${dayStr}`;
 }
+
+/** Remaining project period (kiconiaworks/kippo#75 R1): from the later of `currentMonth` and the
+ * `startDate` month, through the `targetDate` month — the months 参加者を追加 creates rows for.
+ * Months are "YYYY-MM-01". Returns null when a date is missing or the period has ended. */
+export function remainingPeriod(
+  startDate: string | null | undefined,
+  targetDate: string | null | undefined,
+  currentMonth: string,
+): { from: string; to: string } | null {
+  if (!startDate || !targetDate) return null;
+  const startMonth = `${formatMonth(startDate)}-01`;
+  const from = startMonth > currentMonth ? startMonth : currentMonth;
+  const to = `${formatMonth(targetDate)}-01`;
+  return from <= to ? { from, to } : null;
+}

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { ProjectMonthlyAssignment } from "~/lib/api/generated/models";
-import { addMonths, firstOfMonth } from "~/lib/dates";
+import { addMonths, firstOfMonth, formatMonth, lastOfMonth } from "~/lib/dates";
 
 // kiconiaworks/kippo#68: /projects/:id/assignments must request assignments for the displayed
 // month. Without `month` the list endpoint defaults to the current month, so other months render
@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   rows: [] as unknown[],
   project: {} as Record<string, unknown>,
   participantCalls: [] as Array<{ projectId: string; payload: unknown }>,
+  participants: [] as unknown[],
+  participantListCalls: 0,
 }));
 
 vi.mock("react-router", () => ({
@@ -41,6 +43,10 @@ vi.mock("~/lib/api/generated/projects/projects", async (importOriginal) => ({
     status: 200,
     data: { members: [{ user_id: "u-carol", username: "carol", display_name: "Carol" }] },
   }),
+  projectsParticipantsList: async () => {
+    api.participantListCalls += 1;
+    return { status: 200, data: api.participants };
+  },
   projectsParticipantsCreate: async (projectId: string, payload: unknown) => {
     api.participantCalls.push({ projectId, payload });
     return {
@@ -83,6 +89,8 @@ describe("ProjectAssignments route", () => {
     auth.state = { user: null, isLoading: true };
     api.listCalls = [];
     api.participantCalls = [];
+    api.participants = [];
+    api.participantListCalls = 0;
     api.project = { id: "p1", name: "Proj", customer_name: "Cust", weekly_effort_users: [] };
     api.rows = [row(1, currentMonth, "alice"), row(2, nextMonth, "bob")];
     container = document.createElement("div");
@@ -119,6 +127,23 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).not.toContain("この月の割当はまだ登録されていません");
   });
 
+  // kiconiaworks/kippo#75 K1: no single-month add or suggested-team buttons on the project page.
+  test("does not render ＋ 割当を追加 or 候補パターンを生成", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(container.textContent).toContain("alice");
+    expect(container.textContent).not.toContain("割当を追加");
+    expect(container.textContent).not.toContain("候補パターンを生成");
+
+    api.rows = []; // empty month: still no add / suggest buttons
+    clickButton(container, "次の月");
+    await flush();
+    expect(container.textContent).toContain("この月の割当はまだ登録されていません");
+    expect(container.textContent).not.toContain("割当を追加");
+    expect(container.textContent).not.toContain("候補パターンを生成");
+  });
+
   // kiconiaworks/kippo#73: 参加者を追加 on the project page.
   const participantButton = () =>
     Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((b) =>
@@ -134,9 +159,28 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).toContain("目標終了日を設定すると参加者を追加できます");
   });
 
-  test("adds a participant over the project period and shows created / skipped months", async () => {
+  // kiconiaworks/kippo#75 R1: rows are created only for the remaining period.
+  test("参加者を追加 is disabled with a reason when the project period has ended", async () => {
     auth.state = { user: { username: "me" }, isLoading: false };
-    api.project = { ...api.project, start_date: "2026-11-01", target_date: "2027-01-31" };
+    api.project = {
+      ...api.project,
+      start_date: addMonths(currentMonth, -6),
+      target_date: lastOfMonth(addMonths(currentMonth, -1)),
+    };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(participantButton()?.disabled).toBe(true);
+    expect(container.textContent).toContain("プロジェクト期間が終了しています");
+  });
+
+  test("adds a participant over the remaining period and shows created / skipped months", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    // Started two months ago: the remaining period starts at the current month.
+    api.project = {
+      ...api.project,
+      start_date: addMonths(currentMonth, -2),
+      target_date: lastOfMonth(addMonths(currentMonth, 2)),
+    };
     root.render(<ProjectAssignments />);
     await flush();
 
@@ -144,7 +188,9 @@ describe("ProjectAssignments route", () => {
     expect(button?.disabled).toBe(false);
     button?.click();
     await flush();
-    expect(container.textContent).toContain("プロジェクト期間 2026-11 〜 2027-01");
+    expect(container.textContent).toContain(
+      `残りの期間 ${formatMonth(currentMonth)} 〜 ${formatMonth(addMonths(currentMonth, 2))} の各月に同じ割当を登録します。登録済みの月は変更しません。`,
+    );
 
     const submit = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
       (b) => b.textContent === "追加",
@@ -159,5 +205,66 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).toContain("作成: 2か月 (2026-12 〜 2027-01)");
     expect(container.textContent).toContain("登録済みのためスキップ: 1か月 (2026-11)");
     expect(api.listCalls.length).toBeGreaterThan(listCallsBefore); // page refetched
+  });
+
+  // kiconiaworks/kippo#75: participants list (month-independent defaults).
+  test("lists participants with their default percentage and role", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.participants = [
+      {
+        id: 1,
+        project: "p1",
+        user: "u-a",
+        user_username: "alice",
+        user_display_name: "Alice A",
+        percentage: 40,
+        role: "developer",
+      },
+      {
+        id: 2,
+        project: "p1",
+        user: "u-d",
+        user_username: "dave",
+        user_display_name: "",
+        percentage: 10,
+        role: "",
+      },
+    ];
+    root.render(<ProjectAssignments />);
+    await flush();
+
+    const section = Array.from(container.querySelectorAll("section")).find((s) =>
+      s.textContent?.startsWith("参加者 (2名)"),
+    );
+    expect(section).toBeDefined();
+    const rows = Array.from(section?.querySelectorAll("tbody tr") ?? []).map((tr) =>
+      Array.from(tr.querySelectorAll("td")).map((td) => td.textContent),
+    );
+    expect(rows).toEqual([
+      ["Alice A", "40%", "developer"],
+      ["dave", "10%", "(指定なし)"],
+    ]);
+  });
+
+  test("shows an empty participants message and refetches participants after adding one", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    api.project = {
+      ...api.project,
+      start_date: currentMonth,
+      target_date: lastOfMonth(addMonths(currentMonth, 1)),
+    };
+    root.render(<ProjectAssignments />);
+    await flush();
+    expect(container.textContent).toContain("参加者 (0名)");
+    expect(container.textContent).toContain("参加者はまだいません。");
+
+    const callsBefore = api.participantListCalls;
+    participantButton()?.click();
+    await flush();
+    Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
+      .find((b) => b.textContent === "追加")
+      ?.click();
+    await flush();
+    expect(api.participantListCalls).toBeGreaterThan(callsBefore);
   });
 });
