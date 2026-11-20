@@ -95,7 +95,7 @@ function Body({ state, month, onMonthChange }: BodyProps) {
       <EditAssignmentModal
         open={editTarget !== null}
         assignment={editTarget}
-        customerName={state.project?.customer_name ?? null}
+        project={state.project}
         isSaving={state.isSaving}
         onClose={() => setEditTarget(null)}
         onSave={state.updateAssignment}

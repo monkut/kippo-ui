@@ -52,8 +52,7 @@ export default function ProjectAssignmentsMonthly() {
     [projects, assignments, members],
   );
 
-  // Customer name for the EditAssignmentModal — assignment.project_name is
-  // already on the row, but customer_name has to come from the projects list.
+  // The edited row's project for EditAssignmentModal (customer name, start / target dates).
   const editProject = useMemo(
     () => (editTarget ? (projects.find((p) => p.id === editTarget.project) ?? null) : null),
     [editTarget, projects],
@@ -154,7 +153,7 @@ export default function ProjectAssignmentsMonthly() {
       <EditAssignmentModal
         open={editTarget !== null}
         assignment={editTarget}
-        customerName={editProject?.customer_name ?? null}
+        project={editProject}
         isSaving={mutations.isSaving}
         onClose={() => setEditTarget(null)}
         onSave={mutations.updateAssignment}
