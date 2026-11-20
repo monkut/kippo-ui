@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
+import { useAssignmentEditContext } from "~/hooks/useAssignmentEditContext";
 import type {
+  KippoProject,
   PatchedProjectMonthlyAssignmentRequest,
   ProjectMonthlyAssignment,
 } from "~/lib/api/generated/models";
+import { formatMonth } from "~/lib/dates";
+import {
+  buildParticipantRows,
+  buildUserRows,
+  type ParticipantMonthRow,
+  sumPercentages,
+  type UserMonthRow,
+} from "./edit-context";
 
 type EditAssignmentModalProps = {
   open: boolean;
@@ -11,14 +21,15 @@ type EditAssignmentModalProps = {
   onClose: () => void;
   onSave: (id: number, patch: PatchedProjectMonthlyAssignmentRequest) => Promise<boolean>;
   onDelete: (id: number) => Promise<boolean>;
-  /** Customer name for the assignment's project. When null/undefined the
-   * customer row is omitted (callers without project context can pass null). */
-  customerName?: string | null;
+  /** The assignment's project: source of the customer name and the 期間 row. When null the
+   * customer row is omitted and the period shows as unset. */
+  project?: KippoProject | null;
 };
 
 export function EditAssignmentModal(props: EditAssignmentModalProps) {
-  const { open, assignment, isSaving, onClose, onSave, onDelete, customerName } = props;
+  const { open, assignment, isSaving, onClose, onSave, onDelete, project } = props;
   const form = useEditForm(open, assignment);
+  const context = useAssignmentEditContext(open ? assignment : null);
 
   if (!open || !assignment) return null;
 
@@ -37,10 +48,33 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
     if (ok) onClose();
   };
 
+  const month = formatMonth(assignment.month ?? "");
+  const participantRows = buildParticipantRows(
+    context.participants,
+    context.projectMonthRows,
+    assignment,
+    form.percentage,
+  );
+  const userRows = buildUserRows(context.userMonthRows, assignment, form.percentage);
+  const sectionState = { isLoading: context.isLoading, error: context.error };
+
   return (
     <ModalShell title="割当を編集" onClose={onClose}>
-      <ReadOnlyHeader assignment={assignment} customerName={customerName} />
-      <PercentageField value={form.percentage} onChange={form.setPercentage} disabled={isSaving} />
+      <ReadOnlyHeader assignment={assignment} project={project} month={month} />
+      <EditRow assignment={assignment}>
+        <PercentageField
+          value={form.percentage}
+          onChange={form.setPercentage}
+          disabled={isSaving}
+        />
+      </EditRow>
+      <ParticipantsSection month={month} rows={participantRows} {...sectionState} />
+      <UserAssignmentsSection
+        month={month}
+        userName={assignment.user_display_name || assignment.user_username}
+        rows={userRows}
+        {...sectionState}
+      />
       <ModalActions
         onDelete={handleDelete}
         onCancel={onClose}
@@ -63,28 +97,173 @@ function useEditForm(open: boolean, assignment: ProjectMonthlyAssignment | null)
 
 function ReadOnlyHeader({
   assignment,
-  customerName,
+  project,
+  month,
 }: {
   assignment: ProjectMonthlyAssignment;
-  customerName?: string | null;
+  project?: KippoProject | null;
+  month: string;
+}) {
+  const start = project?.start_date || "未設定";
+  const end = project?.target_date || "未設定";
+  return (
+    <dl className="mb-4 grid grid-cols-[6rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-sm text-gray-600">
+      {project?.customer_name && (
+        <>
+          <dt className="font-medium">顧客</dt>
+          <dd>{project.customer_name}</dd>
+        </>
+      )}
+      <dt className="font-medium">プロジェクト</dt>
+      <dd className="font-medium text-gray-900">{assignment.project_name}</dd>
+      <dt className="font-medium">期間</dt>
+      <dd>
+        {start} 〜 {end} <span className="text-gray-500">（開始日 〜 目標終了日）</span>
+      </dd>
+      <dt className="font-medium">月</dt>
+      <dd>{month}</dd>
+    </dl>
+  );
+}
+
+function EditRow({
+  assignment,
+  children,
+}: {
+  assignment: ProjectMonthlyAssignment;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 space-y-1 text-sm text-gray-600">
-      {customerName && (
-        <div>
-          <span className="font-medium">顧客:</span> {customerName}
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4 rounded-md border border-indigo-200 bg-indigo-50 p-4">
+      <div className="min-w-0">
+        <div className="text-xs text-gray-600">ユーザー</div>
+        <div className="font-medium text-gray-900">
+          {assignment.user_display_name}{" "}
+          <span className="font-normal text-gray-500">({assignment.user_username})</span>
         </div>
-      )}
-      <div>
-        <span className="font-medium">プロジェクト:</span> {assignment.project_name}
       </div>
-      <div>
-        <span className="font-medium">ユーザー:</span> {assignment.user_display_name}
-      </div>
-      <div>
-        <span className="font-medium">月:</span> {assignment.month}
-      </div>
+      {children}
     </div>
+  );
+}
+
+type SectionState = { isLoading: boolean; error: string };
+
+function SectionBody({ isLoading, error, children }: SectionState & { children: React.ReactNode }) {
+  if (isLoading) return <p className="text-sm text-gray-500">読み込み中...</p>;
+  if (error) return <p className="text-sm text-red-700">{error}</p>;
+  return <>{children}</>;
+}
+
+const TH = "px-3 py-1.5 font-medium border-b border-gray-200";
+const TD = "px-3 py-1.5 border-b border-gray-100";
+const editingRowClass = (isEditing: boolean) => (isEditing ? "bg-indigo-50" : "");
+const formatPercentage = (value: number | null) => (value === null ? "—" : `${value}%`);
+
+function EditingBadge() {
+  return (
+    <span className="ml-2 rounded border border-indigo-300 px-1 text-xs text-indigo-700">
+      編集中
+    </span>
+  );
+}
+
+function ParticipantsSection({
+  month,
+  rows,
+  ...state
+}: SectionState & { month: string; rows: ParticipantMonthRow[] }) {
+  return (
+    <section className="mb-5" aria-label="プロジェクト参加者">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h4 className="text-sm font-medium text-gray-900">プロジェクト参加者（{month}）</h4>
+        {!state.isLoading && !state.error && (
+          <span className="text-xs text-gray-500">{rows.length}名</span>
+        )}
+      </div>
+      <SectionBody {...state}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-left text-gray-600">
+                <th className={TH}>参加者</th>
+                <th className={TH}>ロール</th>
+                <th className={`${TH} text-right`}>既定</th>
+                <th className={`${TH} text-right`}>当月の割当</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.userId} className={editingRowClass(row.isEditing)}>
+                  <td className={`${TD} whitespace-nowrap text-gray-900`}>
+                    {row.name}
+                    {row.isEditing && <EditingBadge />}
+                  </td>
+                  <td className={`${TD} text-gray-600`}>{row.role || "(指定なし)"}</td>
+                  <td className={`${TD} text-right text-gray-500`}>
+                    {formatPercentage(row.defaultPercentage)}
+                  </td>
+                  <td className={`${TD} text-right font-medium tabular-nums`}>
+                    {formatPercentage(row.monthPercentage)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SectionBody>
+    </section>
+  );
+}
+
+function UserAssignmentsSection({
+  month,
+  userName,
+  rows,
+  ...state
+}: SectionState & { month: string; userName: string; rows: UserMonthRow[] }) {
+  const total = sumPercentages(rows);
+  const over = total > 100;
+  return (
+    <section aria-label="ユーザーの割当">
+      <h4 className="mb-2 text-sm font-medium text-gray-900">
+        {userName} の割当（{month}・全プロジェクト）
+      </h4>
+      <SectionBody {...state}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-left text-gray-600">
+              <th className={TH}>プロジェクト</th>
+              <th className={`${TH} text-right`}>割当</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.projectId} className={editingRowClass(row.isEditing)}>
+                <td className={`${TD} text-gray-900`}>
+                  {row.projectName}
+                  {row.isEditing && <EditingBadge />}
+                </td>
+                <td className={`${TD} text-right font-medium tabular-nums`}>{row.percentage}%</td>
+              </tr>
+            ))}
+            <tr>
+              <td className="px-3 py-2 font-medium">月合計</td>
+              <td
+                className={`px-3 py-2 text-right font-bold tabular-nums ${over ? "text-red-700" : "text-gray-900"}`}
+              >
+                {total}%{over ? " ⚠" : ""}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {over && (
+          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+            月合計が 100% を超えています（保存は可能）
+          </p>
+        )}
+      </SectionBody>
+    </section>
   );
 }
 
@@ -149,7 +328,7 @@ function ModalShell({
         className="fixed inset-0 bg-black bg-opacity-25 cursor-default"
       />
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
           {children}
         </div>
@@ -169,7 +348,7 @@ function PercentageField({
 }) {
   return (
     <div>
-      <label htmlFor="edit-assignment-pct" className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor="edit-assignment-pct" className="block text-xs font-medium text-gray-700 mb-1">
         割当 (%)
       </label>
       <input
@@ -182,7 +361,7 @@ function PercentageField({
         value={value}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
         disabled={disabled}
-        className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-28 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
   );
