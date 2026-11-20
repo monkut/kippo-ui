@@ -73,6 +73,15 @@ const row = (over: Partial<ProjectMonthlyAssignment>) =>
 
 const flush = () => new Promise((r) => setTimeout(r, 30));
 
+/** Poll until `probe` holds (the mocked fetches resolve later on a cold browser run). */
+async function waitUntil(probe: () => boolean, timeout = 2000) {
+  const start = Date.now();
+  while (!probe()) {
+    if (Date.now() - start > timeout) throw new Error("waitUntil timed out");
+    await flush();
+  }
+}
+
 function typeInto(input: HTMLInputElement, text: string) {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, text);
   input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -105,7 +114,8 @@ describe("AddParticipantModal user picker", () => {
         }}
       />,
     );
-    await flush();
+    // The field is disabled until the org members load.
+    await waitUntil(() => input()?.disabled === false);
   }
 
   async function search(text: string) {
