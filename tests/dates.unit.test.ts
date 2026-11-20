@@ -3,6 +3,7 @@ import {
   addMonths,
   firstOfMonth,
   firstOfNextMonth,
+  monthFromParam,
   formatDateKey,
   formatDisplayDate,
   formatMonth,
@@ -96,5 +97,18 @@ describe("lib/dates", () => {
       expect(remainingPeriod(null, "2027-01-31", "2026-11-01")).toBeNull();
       expect(remainingPeriod("2026-01-01", undefined, "2026-11-01")).toBeNull();
     });
+  });
+});
+
+describe("monthFromParam", () => {
+  test("maps YYYY-MM to the first of the month", () => {
+    expect(monthFromParam("2026-11")).toBe("2026-11-01");
+    expect(monthFromParam("2027-01")).toBe("2027-01-01");
+  });
+
+  test("rejects absent or malformed values", () => {
+    for (const value of [null, "", "2026-13", "2026-00", "2026-1", "2026-11-01", "abc"]) {
+      expect(monthFromParam(value)).toBeNull();
+    }
   });
 });

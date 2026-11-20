@@ -19,9 +19,9 @@ const api = vi.hoisted(() => ({
   participantListCalls: 0,
 }));
 
-vi.mock("react-router", () => ({
-  useNavigate: () => () => {},
-  useLocation: () => ({ pathname: "/projects/p1/assignments" }),
+// Real router (MemoryRouter) so ?month= is read from and written to the URL; only useParams / Link are stubbed.
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useParams: () => ({ id: "p1" }),
   Link: ({ children }: { children: unknown }) => children,
 }));
@@ -60,7 +60,15 @@ vi.mock("~/lib/api/generated/projects/projects", async (importOriginal) => ({
   projectsForecastRetrieve: async () => ({ status: 400, data: undefined }),
 }));
 
+import { MemoryRouter, useLocation } from "react-router";
 import ProjectAssignments from "../app/routes/projects.$id.assignments";
+
+const PAGE_PATH = "/projects/p1/assignments";
+
+/** Exposes the router's current ?query for URL assertions. */
+function LocationProbe() {
+  return <span data-testid="location-search">{useLocation().search}</span>;
+}
 
 const flush = () => new Promise((r) => setTimeout(r, 30));
 const currentMonth = firstOfMonth(new Date());
@@ -84,6 +92,17 @@ function clickButton(container: HTMLElement, label: string) {
 describe("ProjectAssignments route", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
+  let initialEntry: string;
+  // MemoryRouter reads initialEntries on its first render only; later renders keep its history.
+  const renderPage = () =>
+    root.render(
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <ProjectAssignments />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+  const locationSearch = () =>
+    container.querySelector('[data-testid="location-search"]')?.textContent ?? "";
 
   beforeEach(() => {
     auth.state = { user: null, isLoading: true };
@@ -93,6 +112,7 @@ describe("ProjectAssignments route", () => {
     api.participantListCalls = 0;
     api.project = { id: "p1", name: "Proj", customer_name: "Cust", weekly_effort_users: [] };
     api.rows = [row(1, currentMonth, "alice"), row(2, nextMonth, "bob")];
+    initialEntry = PAGE_PATH;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -104,12 +124,12 @@ describe("ProjectAssignments route", () => {
   });
 
   test("requests the displayed month and renders next month's row after switching", async () => {
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
     expect(container.textContent).toContain("読み込み中");
 
     auth.state = { user: { username: "me" }, isLoading: false };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
 
     expect(api.listCalls.at(-1)).toEqual({ project: "p1", month: currentMonth });
@@ -127,10 +147,44 @@ describe("ProjectAssignments route", () => {
     expect(container.textContent).not.toContain("この月の割当はまだ登録されていません");
   });
 
+  // Shareable link: the displayed month is kept in ?month=YYYY-MM.
+  test("writes the selected month to ?month= when the month changes", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    renderPage();
+    await flush();
+    expect(locationSearch()).toBe(""); // no param until the month is changed
+
+    clickButton(container, "次の月");
+    await flush();
+    expect(locationSearch()).toBe(`?month=${formatMonth(nextMonth)}`);
+
+    clickButton(container, "前の月");
+    await flush();
+    expect(locationSearch()).toBe(`?month=${formatMonth(currentMonth)}`);
+  });
+
+  test("opens the month from a shared ?month= link", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    initialEntry = `${PAGE_PATH}?month=${formatMonth(nextMonth)}`;
+    renderPage();
+    await flush();
+    expect(api.listCalls.at(-1)).toEqual({ project: "p1", month: nextMonth });
+    expect(container.textContent).toContain("bob");
+    expect(container.textContent).not.toContain("alice");
+  });
+
+  test("falls back to the current month for a malformed ?month=", async () => {
+    auth.state = { user: { username: "me" }, isLoading: false };
+    initialEntry = `${PAGE_PATH}?month=2026-13`;
+    renderPage();
+    await flush();
+    expect(api.listCalls.at(-1)).toEqual({ project: "p1", month: currentMonth });
+  });
+
   // kiconiaworks/kippo#75 K1: no single-month add or suggested-team buttons on the project page.
   test("does not render ＋ 割当を追加 or 候補パターンを生成", async () => {
     auth.state = { user: { username: "me" }, isLoading: false };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
     expect(container.textContent).toContain("alice");
     expect(container.textContent).not.toContain("割当を追加");
@@ -153,7 +207,7 @@ describe("ProjectAssignments route", () => {
   test("参加者を追加 is disabled with a reason when the project period is not set", async () => {
     auth.state = { user: { username: "me" }, isLoading: false };
     api.project = { ...api.project, start_date: "2026-11-01", target_date: null };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
     expect(participantButton()?.disabled).toBe(true);
     expect(container.textContent).toContain("目標終了日を設定すると参加者を追加できます");
@@ -167,7 +221,7 @@ describe("ProjectAssignments route", () => {
       start_date: addMonths(currentMonth, -6),
       target_date: lastOfMonth(addMonths(currentMonth, -1)),
     };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
     expect(participantButton()?.disabled).toBe(true);
     expect(container.textContent).toContain("プロジェクト期間が終了しています");
@@ -181,7 +235,7 @@ describe("ProjectAssignments route", () => {
       start_date: addMonths(currentMonth, -2),
       target_date: lastOfMonth(addMonths(currentMonth, 2)),
     };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
 
     const button = participantButton();
@@ -230,7 +284,7 @@ describe("ProjectAssignments route", () => {
         role: "",
       },
     ];
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
 
     const section = Array.from(container.querySelectorAll("section")).find((s) =>
@@ -253,7 +307,7 @@ describe("ProjectAssignments route", () => {
       start_date: currentMonth,
       target_date: lastOfMonth(addMonths(currentMonth, 1)),
     };
-    root.render(<ProjectAssignments />);
+    renderPage();
     await flush();
     expect(container.textContent).toContain("参加者 (0名)");
     expect(container.textContent).toContain("参加者はまだいません。");

@@ -22,6 +22,13 @@ export function formatMonth(month: string): string {
   return month.slice(0, 7);
 }
 
+const MONTH_PARAM_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** `?month=` value "YYYY-MM" → first-of-month ISO date "YYYY-MM-01"; null when absent or malformed. */
+export function monthFromParam(value: string | null): string | null {
+  return value && MONTH_PARAM_PATTERN.test(value) ? `${value}-01` : null;
+}
+
 export function firstOfMonth(reference: Date): string {
   const year = reference.getFullYear();
   const month = (reference.getMonth() + 1).toString().padStart(2, "0");

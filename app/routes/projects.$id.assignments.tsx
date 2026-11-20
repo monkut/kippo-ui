@@ -10,6 +10,7 @@ import {
   MonthPicker,
   ParticipantsList,
 } from "~/components/project-assignments";
+import { useMonthSearchParam } from "~/hooks/useMonthSearchParam";
 import { useProjectAssignments } from "~/hooks/useProjectAssignments";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { useAuthGate } from "~/hooks/useAuthGate";
@@ -22,7 +23,7 @@ export function meta() {
 export default function ProjectAssignments() {
   const { user, authLoading } = useAuthGate();
   const { id } = useParams();
-  const [month, setMonth] = useState(() => firstOfMonth(new Date()));
+  const [month, setMonth] = useMonthSearchParam();
   const state = useProjectAssignments(id, month);
 
   if (authLoading) {
