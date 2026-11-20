@@ -412,7 +412,7 @@ export const projectsForecastRetrieve = async (id: string, options?: RequestInit
 
 
 /**
- * Active members of the project's organization. Lists every KippoUser with an OrganizationMembership in the project's org, filtered by KippoUser.is_active=True. Used by kippo-ui's add-assignment picker so day-zero projects can pick from anyone in the org rather than only users already on the project.
+ * Active members of the project's organization. Lists every KippoUser with an OrganizationMembership in the project's org, filtered by KippoUser.is_active=True. The org's (unassigned) placeholder user is excluded. Used by kippo-ui's add-assignment picker so day-zero projects can pick from anyone in the org rather than only users already on the project.
  */
 export type projectsMembersRetrieveResponse200 = {
   data: ProjectMembersResponse
