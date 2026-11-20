@@ -12,6 +12,7 @@ import {
   unassignedMemberNames,
 } from "~/components/project-assignments";
 import { useHideUnassignedToggle } from "~/hooks/useHideUnassignedToggle";
+import { useMonthSearchParam } from "~/hooks/useMonthSearchParam";
 import { useMonthlyAssignments } from "~/hooks/useMonthlyAssignments";
 import { useProjectAssignmentMutations } from "~/hooks/useProjectAssignmentMutations";
 import type { KippoProjectRequest, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
@@ -30,7 +31,7 @@ export function isEditableMonth(displayedMonth: string, today: Date): boolean {
 
 export default function ProjectAssignmentsMonthly() {
   const { user, authLoading } = useAuthGate();
-  const [month, setMonth] = useState(() => firstOfMonth(new Date()));
+  const [month, setMonth] = useMonthSearchParam();
   const [hideUnassigned, setHideUnassigned] = useHideUnassignedToggle();
   const { isLoading, error, projects, hiddenLowConfidenceCount, assignments, members, refresh } =
     useMonthlyAssignments(month);
