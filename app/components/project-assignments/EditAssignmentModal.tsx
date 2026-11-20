@@ -6,13 +6,16 @@ import type {
   ProjectMonthlyAssignment,
 } from "~/lib/api/generated/models";
 import { formatMonth } from "~/lib/dates";
+import { buildParticipantRows, buildUserRows, type ParticipantMonthRow } from "./edit-context";
 import {
-  buildParticipantRows,
-  buildUserRows,
-  type ParticipantMonthRow,
-  sumPercentages,
-  type UserMonthRow,
-} from "./edit-context";
+  highlightRowClass,
+  RowBadge,
+  SectionBody,
+  type SectionState,
+  TD,
+  TH,
+  UserMonthAssignments,
+} from "./UserMonthAssignments";
 
 type EditAssignmentModalProps = {
   open: boolean;
@@ -69,7 +72,8 @@ export function EditAssignmentModal(props: EditAssignmentModalProps) {
         />
       </EditRow>
       <ParticipantsSection month={month} rows={participantRows} {...sectionState} />
-      <UserAssignmentsSection
+      <UserMonthAssignments
+        badgeLabel="編集中"
         month={month}
         userName={assignment.user_display_name || assignment.user_username}
         rows={userRows}
@@ -147,26 +151,7 @@ function EditRow({
   );
 }
 
-type SectionState = { isLoading: boolean; error: string };
-
-function SectionBody({ isLoading, error, children }: SectionState & { children: React.ReactNode }) {
-  if (isLoading) return <p className="text-sm text-gray-500">読み込み中...</p>;
-  if (error) return <p className="text-sm text-red-700">{error}</p>;
-  return <>{children}</>;
-}
-
-const TH = "px-3 py-1.5 font-medium border-b border-gray-200";
-const TD = "px-3 py-1.5 border-b border-gray-100";
-const editingRowClass = (isEditing: boolean) => (isEditing ? "bg-indigo-50" : "");
 const formatPercentage = (value: number | null) => (value === null ? "—" : `${value}%`);
-
-function EditingBadge() {
-  return (
-    <span className="ml-2 rounded border border-indigo-300 px-1 text-xs text-indigo-700">
-      編集中
-    </span>
-  );
-}
 
 function ParticipantsSection({
   month,
@@ -194,10 +179,10 @@ function ParticipantsSection({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.userId} className={editingRowClass(row.isEditing)}>
+                <tr key={row.userId} className={highlightRowClass(row.isEditing)}>
                   <td className={`${TD} whitespace-nowrap text-gray-900`}>
                     {row.name}
-                    {row.isEditing && <EditingBadge />}
+                    {row.isEditing && <RowBadge label="編集中" />}
                   </td>
                   <td className={`${TD} text-gray-600`}>{row.role || "(指定なし)"}</td>
                   <td className={`${TD} text-right text-gray-500`}>
@@ -211,57 +196,6 @@ function ParticipantsSection({
             </tbody>
           </table>
         </div>
-      </SectionBody>
-    </section>
-  );
-}
-
-function UserAssignmentsSection({
-  month,
-  userName,
-  rows,
-  ...state
-}: SectionState & { month: string; userName: string; rows: UserMonthRow[] }) {
-  const total = sumPercentages(rows);
-  const over = total > 100;
-  return (
-    <section aria-label="ユーザーの割当">
-      <h4 className="mb-2 text-sm font-medium text-gray-900">
-        {userName} の割当（{month}・全プロジェクト）
-      </h4>
-      <SectionBody {...state}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-left text-gray-600">
-              <th className={TH}>プロジェクト</th>
-              <th className={`${TH} text-right`}>割当</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.projectId} className={editingRowClass(row.isEditing)}>
-                <td className={`${TD} text-gray-900`}>
-                  {row.projectName}
-                  {row.isEditing && <EditingBadge />}
-                </td>
-                <td className={`${TD} text-right font-medium tabular-nums`}>{row.percentage}%</td>
-              </tr>
-            ))}
-            <tr>
-              <td className="px-3 py-2 font-medium">月合計</td>
-              <td
-                className={`px-3 py-2 text-right font-bold tabular-nums ${over ? "text-red-700" : "text-gray-900"}`}
-              >
-                {total}%{over ? " ⚠" : ""}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        {over && (
-          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
-            月合計が 100% を超えています（保存は可能）
-          </p>
-        )}
       </SectionBody>
     </section>
   );

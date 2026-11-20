@@ -5,6 +5,7 @@ import type {
   ProjectParticipantResponse,
   RoleEnum,
 } from "~/lib/api/generated/models";
+import { useMonthAssignmentRows } from "~/hooks/useMonthAssignmentRows";
 import { firstOfMonth, formatMonth, remainingPeriod } from "~/lib/dates";
 import {
   ErrorBanner,
@@ -12,10 +13,12 @@ import {
   ModalShell,
   orderMembersForPicker,
   PercentageField,
-  UserSelectField,
-  useDefaultUserSelection,
+  UserSearchField,
   useOrgMembers,
 } from "./assignment-form";
+import { buildUserRows } from "./edit-context";
+import { memberDisplayName } from "./utils";
+import { UserMonthAssignments } from "./UserMonthAssignments";
 
 const DEFAULT_PERCENTAGE = 50;
 
@@ -66,15 +69,17 @@ export function AddParticipantModal({
     setRole("");
     setResult(null);
   }, [open]);
-  useDefaultUserSelection(open, orderedMembers, userId, setUserId);
-
-  if (!open) return null;
-
   const remaining = remainingPeriod(
     project.start_date,
     project.target_date,
     firstOfMonth(new Date()),
   );
+  // The selected user's assignments are shown for the first month the participant is added to.
+  const firstMonth = open ? (remaining?.from ?? null) : null;
+  const monthRows = useMonthAssignmentRows(firstMonth);
+
+  if (!open) return null;
+
   const period = remaining ? `${formatMonth(remaining.from)} 〜 ${formatMonth(remaining.to)}` : "—";
 
   if (result) {
@@ -94,6 +99,8 @@ export function AddParticipantModal({
     );
   }
 
+  const selectedMember = orderedMembers.find((m) => m.user_id === userId);
+
   const handleSubmit = async () => {
     if (!userId) return;
     const response = await onSubmit({ user: userId, percentage, role });
@@ -108,7 +115,7 @@ export function AddParticipantModal({
         の各月に同じ割当を登録します。登録済みの月は変更しません。
       </p>
       <div className="space-y-4">
-        <UserSelectField
+        <UserSearchField
           value={userId}
           onChange={setUserId}
           members={orderedMembers}
@@ -118,15 +125,70 @@ export function AddParticipantModal({
         />
         <PercentageField value={percentage} onChange={setPercentage} disabled={isSaving} />
         <RoleField value={role} onChange={setRole} disabled={isSaving} />
+        {selectedMember && firstMonth && (
+          <SelectedUserMonth
+            project={project}
+            month={firstMonth}
+            userId={selectedMember.user_id}
+            userName={memberDisplayName(selectedMember)}
+            percentage={percentage}
+            monthRows={monthRows}
+          />
+        )}
       </div>
       <ModalActions
         onCancel={onClose}
         onSubmit={handleSubmit}
         isSaving={isSaving}
-        submitDisabled={orderedMembers.length === 0 || isLoadingMembers}
+        submitDisabled={!selectedMember || isLoadingMembers}
         submitLabel="追加"
       />
     </ModalShell>
+  );
+}
+
+/** The selected user's assignments in the first added month, with the new percentage on this
+ * project. A month the user already has on this project is skipped by the add, so its saved
+ * percentage is shown instead. */
+function SelectedUserMonth({
+  project,
+  month,
+  userId,
+  userName,
+  percentage,
+  monthRows,
+}: {
+  project: KippoProject;
+  month: string;
+  userId: string;
+  userName: string;
+  percentage: number;
+  monthRows: ReturnType<typeof useMonthAssignmentRows>;
+}) {
+  const userRows = monthRows.rows.filter((r) => r.user === userId);
+  const existing = userRows.find((r) => r.project === project.id);
+  const rows = buildUserRows(
+    userRows,
+    { project: project.id, project_name: project.name },
+    existing?.percentage ?? percentage,
+  );
+  return (
+    <div>
+      <UserMonthAssignments
+        month={formatMonth(month)}
+        userName={userName}
+        rows={rows}
+        badgeLabel={existing ? "登録済み" : "追加"}
+        isLoading={monthRows.isLoading}
+        error={monthRows.error}
+      />
+      {existing && (
+        <p className="mt-2 text-xs text-gray-600">
+          {formatMonth(month)} はこのプロジェクトに登録済みのため変更されません（
+          {existing.percentage}%）。
+        </p>
+      )}
+    </div>
   );
 }
 

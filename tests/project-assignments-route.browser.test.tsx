@@ -83,6 +83,20 @@ const row = (id: number, month: string, user_username: string) =>
     is_confirmed: false,
   }) as unknown as ProjectMonthlyAssignment;
 
+/** Choose a user in the 参加者を追加 search field (combobox). */
+async function pickUser(container: HTMLElement, label: string) {
+  const input = container.querySelector<HTMLInputElement>("#add-assignment-user");
+  if (!input) throw new Error("user field not found");
+  input.focus();
+  await flush();
+  const option = Array.from(container.querySelectorAll('[role="option"]')).find((o) =>
+    o.textContent?.includes(label),
+  );
+  if (!option) throw new Error(`user option ${label} not found`);
+  option.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  await flush();
+}
+
 function clickButton(container: HTMLElement, label: string) {
   const button = container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
   if (!button) throw new Error(`button ${label} not found`);
@@ -246,6 +260,7 @@ describe("ProjectAssignments route", () => {
       `残りの期間 ${formatMonth(currentMonth)} 〜 ${formatMonth(addMonths(currentMonth, 2))} の各月に同じ割当を登録します。登録済みの月は変更しません。`,
     );
 
+    await pickUser(container, "Carol");
     const submit = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
       (b) => b.textContent === "追加",
     );
@@ -315,6 +330,7 @@ describe("ProjectAssignments route", () => {
     const callsBefore = api.participantListCalls;
     participantButton()?.click();
     await flush();
+    await pickUser(container, "Carol");
     Array.from(container.querySelectorAll<HTMLButtonElement>("button"))
       .find((b) => b.textContent === "追加")
       ?.click();

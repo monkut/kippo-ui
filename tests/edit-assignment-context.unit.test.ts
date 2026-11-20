@@ -67,7 +67,7 @@ describe("buildParticipantRows", () => {
 });
 
 describe("buildUserRows", () => {
-  test("puts the edited project first with the form value, others by percentage", () => {
+  test("puts the target project first with the form value, others by percentage", () => {
     const editing = row({});
     const rows = buildUserRows(
       [
