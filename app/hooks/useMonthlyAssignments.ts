@@ -7,7 +7,7 @@ import type {
 import { organizationsMembersRetrieve } from "~/lib/api/generated/organizations/organizations";
 import { fetchAllMonthlyAssignments, fetchAllProjects } from "~/lib/api/pagination";
 import {
-  EXCLUDED_USERNAMES,
+  isExcludedUsername,
   isProjectInMonthWindow,
   MATRIX_MIN_CONFIDENCE,
 } from "~/components/project-assignments/utils";
@@ -106,7 +106,7 @@ function useMembersForMonth(
     (async () => {
       try {
         const orgMembers = await fetchOrgMembersForProjects(projects, month);
-        if (alive) setMembers(orgMembers.filter((m) => !EXCLUDED_USERNAMES.has(m.username)));
+        if (alive) setMembers(orgMembers.filter((m) => !isExcludedUsername(m.username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {
@@ -138,7 +138,7 @@ function useAssignmentsForMonth(month: string) {
     setIsLoading(true);
     try {
       const data = await fetchAllMonthlyAssignments({ month });
-      setAssignments(data.filter((a) => !EXCLUDED_USERNAMES.has(a.user_username)));
+      setAssignments(data.filter((a) => !isExcludedUsername(a.user_username)));
       setError("");
     } catch {
       setError(FETCH_ERROR);
@@ -153,7 +153,7 @@ function useAssignmentsForMonth(month: string) {
     (async () => {
       try {
         const data = await fetchAllMonthlyAssignments({ month });
-        if (alive) setAssignments(data.filter((a) => !EXCLUDED_USERNAMES.has(a.user_username)));
+        if (alive) setAssignments(data.filter((a) => !isExcludedUsername(a.user_username)));
       } catch {
         if (alive) setError(FETCH_ERROR);
       } finally {

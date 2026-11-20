@@ -63,15 +63,19 @@ export function buildParticipantRows(
     );
 }
 
-/** The edited user's rows for the month on every project, the edited project first with the
- * unsaved form value. */
+/** The project whose percentage the modal is changing: the edited row's project (割当の編集) or
+ * the project a participant is being added to (参加者を追加). */
+export type TargetProject = { project: string; project_name: string };
+
+/** The user's rows for the month on every project, the target project first with the unsaved form
+ * value. A user has at most one row per project and month, so the target's saved row is replaced. */
 export function buildUserRows(
   userMonthRows: ProjectMonthlyAssignment[],
-  editing: ProjectMonthlyAssignment,
-  editingPercentage: number,
+  target: TargetProject,
+  targetPercentage: number,
 ): UserMonthRow[] {
   const others = userMonthRows
-    .filter((r) => r.id !== editing.id)
+    .filter((r) => r.project !== target.project)
     .map((r) => ({
       projectId: r.project,
       projectName: r.project_name,
@@ -81,13 +85,13 @@ export function buildUserRows(
     .sort(
       (a, b) => b.percentage - a.percentage || a.projectName.localeCompare(b.projectName, "ja"),
     );
-  const edited = {
-    projectId: editing.project,
-    projectName: editing.project_name,
-    percentage: editingPercentage,
+  const targetRow = {
+    projectId: target.project,
+    projectName: target.project_name,
+    percentage: targetPercentage,
     isEditing: true,
   };
-  return [edited, ...others];
+  return [targetRow, ...others];
 }
 
 export const sumPercentages = (rows: ReadonlyArray<{ percentage: number }>) =>
