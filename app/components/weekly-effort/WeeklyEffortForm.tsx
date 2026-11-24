@@ -2,7 +2,8 @@ import { memo, useMemo, type FormEvent } from "react";
 import type { KippoProject } from "~/lib/api/generated/models";
 import { SearchableSelect } from "~/components/searchable-select";
 import type { FormEntry } from "./types";
-import { buildProjectOptions, computeMonthEffortPercents, normalizeDigits } from "./utils";
+import { HoursInput } from "./HoursInput";
+import { buildProjectOptions, computeMonthEffortPercents } from "./utils";
 
 type WeeklyEffortFormProps = {
   entries: FormEntry[];
@@ -106,16 +107,12 @@ function WeeklyEffortFormImpl({
             >
               時間
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+            <HoursInput
               id={`hours-${entry.id}`}
               value={entry.hours === 0 ? "" : String(entry.hours)}
-              onChange={(e) => {
-                const value = normalizeDigits(e.target.value);
-                updateEntry(entry.id, "hours", value === "" ? 0 : parseInt(value, 10));
-              }}
+              onValueChange={(value) =>
+                updateEntry(entry.id, "hours", value === "" ? 0 : parseInt(value, 10))
+              }
               placeholder="0"
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
               disabled={isSubmitting}

@@ -1,7 +1,7 @@
 import { memo, useState, type ReactNode } from "react";
 import type { ProjectWeeklyEffort } from "~/lib/api/generated/models";
 import { personalHolidaysCreate } from "~/lib/api/generated/personal-holidays/personal-holidays";
-import { normalizeDigits } from "./utils";
+import { HoursInput } from "./HoursInput";
 
 type ExistingEntriesListProps = {
   selectedWeekEntries: ProjectWeeklyEffort[];
@@ -278,12 +278,9 @@ function ExistingEntriesListImpl({
               </span>
               {isEditing ? (
                 <>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                  <HoursInput
                     value={editingHours}
-                    onChange={(e) => setEditingHours(normalizeDigits(e.target.value))}
+                    onValueChange={setEditingHours}
                     onClick={(e) => e.stopPropagation()}
                     className="rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm border px-2 py-1 text-right tabular-nums"
                     disabled={isSubmitting}
