@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { createRoot } from "react-dom/client";
-import { SurveyStatusIcon } from "../app/routes/project-status";
+import { SurveyStatusIcon } from "../app/components/project-status";
 import type { SurveyUserInline } from "../app/lib/api/generated";
 
 // Regression tests for issue #33 — when an effort user is not present in
