@@ -5,6 +5,7 @@ import { YearlyEffortTable } from "~/components/weekly-effort/YearlyEffortTable"
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { useYearlyEffort } from "~/hooks/useYearlyEffort";
 import { formatHours } from "~/lib/yearly-effort";
+import { PageError } from "~/components/page-state";
 
 const PAGE_TITLE = "KIPPO 年間稼働実績";
 const PAGER_BUTTON_CLASS =
@@ -78,11 +79,7 @@ export default function YearlyEffort() {
           </Link>
         </div>
 
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-800">{error}</div>
-          </div>
-        )}
+        {error && <PageError message={error} />}
 
         <section className="bg-white shadow rounded-lg p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-4">

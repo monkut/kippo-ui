@@ -31,6 +31,7 @@ import type {
   PhaseEnum,
   PricingBasisEnum,
 } from "~/lib/api/generated/models";
+import { PageLoading } from "~/components/page-state";
 
 // In-SPA KippoProject record edit (kippo#42 — replaces linking out to the Django admin). Covers the
 // project's own fields grouped per KIPPO_PROJECT_FIELDS.md / kippo#41; organization + customer are
@@ -512,9 +513,7 @@ export default function ProjectEdit() {
   if (authLoading || isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }

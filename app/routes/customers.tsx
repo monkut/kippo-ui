@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { CustomerFormModal } from "~/components/customers/CustomerFormModal";
@@ -24,6 +25,7 @@ import type {
   KippoCustomer,
   Organization,
 } from "~/lib/api/generated/models";
+import { PageError, PageLoading } from "~/components/page-state";
 
 export function meta() {
   return [{ title: "顧客一覧 - Kippo要件管理" }];
@@ -40,11 +42,12 @@ function extractOrganizations(data: unknown): Organization[] {
   return [];
 }
 
+const NO_ORGANIZATIONS: Organization[] = [];
+
 export default function Customers() {
   const { user, authLoading } = useAuthGate();
   const [customers, setCustomers] = useState<KippoCustomer[]>([]);
   const [summaries, setSummaries] = useState<FiscalYearSummary[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,17 +65,13 @@ export default function Customers() {
   >({});
 
   // Organizations for the filter (loaded once); the filter only matters with >1 org.
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const response = await organizationsList();
-        setOrganizations(extractOrganizations(response.data));
-      } catch {
-        // non-fatal: the org filter just stays empty
-      }
-    })();
-  }, [user]);
+  // Non-fatal: on failure the org filter just stays empty.
+  const organizationsQuery = useApiQuery(
+    async () => extractOrganizations((await organizationsList()).data),
+    [user?.username],
+    { enabled: !!user, keepPreviousData: true },
+  );
+  const organizations = organizationsQuery.data ?? NO_ORGANIZATIONS;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -164,9 +163,7 @@ export default function Customers() {
   if (authLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -223,18 +220,12 @@ export default function Customers() {
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-800">{error}</div>
-          </div>
-        )}
+        {error && <PageError message={error} />}
 
         {!isLoading && summaries.length > 0 && <FiscalYearSummarySection summaries={summaries} />}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <PageLoading />
         ) : customers.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">顧客がありません</p>

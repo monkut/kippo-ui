@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import type { ProjectWeeklyEffort } from "~/lib/api/generated/models";
 import { fetchAllWeeklyEfforts } from "~/lib/api/pagination";
 import {
@@ -9,6 +10,7 @@ import {
 
 /** kippo's CustomPageNumberPagination max_page_size — one request covers most years. */
 const MAX_PAGE_SIZE = 200;
+const NO_ENTRIES: ProjectWeeklyEffort[] = [];
 
 export type UseYearlyEffortReturn = {
   isLoading: boolean;
@@ -22,37 +24,24 @@ export function useYearlyEffort(
   username: string | undefined,
   enabled: boolean,
 ): UseYearlyEffortReturn {
-  const [entries, setEntries] = useState<ProjectWeeklyEffort[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const active = enabled && !!username;
   // Last request wins: a slow response for a previous year cannot overwrite the current one.
-  const requestSeqRef = useRef(0);
-
-  useEffect(() => {
-    if (!enabled || !username) return;
-    const requestId = ++requestSeqRef.current;
-    const { gte, lte } = yearDateRange(year);
-    setIsLoading(true);
-    setError("");
-    fetchAllWeeklyEfforts({
-      user_username: username,
-      week_start_gte: gte,
-      week_start_lte: lte,
-      page_size: MAX_PAGE_SIZE,
-    })
-      .then((rows) => {
-        if (requestId === requestSeqRef.current) setEntries(rows);
-      })
-      .catch(() => {
-        if (requestId === requestSeqRef.current) {
-          setEntries([]);
-          setError("稼働実績を取得できませんでした。再読み込みしてください。");
-        }
-      })
-      .finally(() => {
-        if (requestId === requestSeqRef.current) setIsLoading(false);
+  const query = useApiQuery(
+    () => {
+      const { gte, lte } = yearDateRange(year);
+      return fetchAllWeeklyEfforts({
+        user_username: username,
+        week_start_gte: gte,
+        week_start_lte: lte,
+        page_size: MAX_PAGE_SIZE,
       });
-  }, [year, username, enabled]);
+    },
+    [year, username, enabled],
+    { enabled: active, keepPreviousData: true },
+  );
+  const entries = query.data ?? NO_ENTRIES;
+  const isLoading = !active || query.isLoading;
+  const error = query.error ? "稼働実績を取得できませんでした。再読み込みしてください。" : "";
 
   const matrix = useMemo(() => buildYearlyEffortMatrix(entries), [entries]);
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Layout } from "~/components/layout";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { type BillingListEntry, fetchAllBillingEntries } from "~/lib/api/billing";
 import {
@@ -20,6 +21,9 @@ import {
 import { formatJpy } from "~/lib/currency";
 import { downloadCsv } from "~/lib/csv";
 import { formatDateKey, formatDisplayDate } from "~/lib/dates";
+import { PageError, PageLoading } from "~/components/page-state";
+
+const NO_ROWS: BillingListEntry[] = [];
 
 export function meta() {
   return [{ title: "プロジェクト請求一覧 - Kippo要件管理" }];
@@ -30,9 +34,10 @@ export default function Billing() {
   // Deep-link support: KippoCustomerAdmin's per-month chart links here with ?month=YYYY-MM.
   const [searchParams] = useSearchParams();
   const urlMonth = searchParams.get("month") ?? "";
-  const [rows, setRows] = useState<BillingListEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const billingQuery = useApiQuery(fetchAllBillingEntries, [user?.username], { enabled: !!user });
+  const rows = billingQuery.data ?? NO_ROWS;
+  const isLoading = billingQuery.isLoading;
+  const error = billingQuery.error ? "請求データの読み込みに失敗しました" : "";
   const [search, setSearch] = useState("");
   const [completedOnly, setCompletedOnly] = useState(false);
   const [received, setReceived] = useState<ReceivedFilter>("all");
@@ -40,27 +45,6 @@ export default function Billing() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Default sort: 契約終了日 (contract end date) ascending.
   const [sort, setSort] = useState<SortState>({ key: "contractEndDate", dir: "asc" });
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      setIsLoading(true);
-      setError("");
-      try {
-        const entries = await fetchAllBillingEntries();
-        if (!cancelled) setRows(entries);
-      } catch (err) {
-        console.error("Failed to load billing entries:", err);
-        if (!cancelled) setError("請求データの読み込みに失敗しました");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   // Keep the month filter in sync with the ?month= URL param when it changes (deep-link nav /
   // back-forward). A manual dropdown change updates state only (not the URL), so this never fights it.
@@ -109,9 +93,7 @@ export default function Billing() {
   if (authLoading) {
     return (
       <Layout title="プロジェクト請求一覧">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -176,18 +158,12 @@ export default function Billing() {
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-800">{error}</div>
-          </div>
-        )}
+        {error && <PageError message={error} />}
 
         <BillingSummaryBar totals={totals} />
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <PageLoading />
         ) : rows.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">請求データがありません</p>

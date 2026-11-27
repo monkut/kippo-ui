@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import type { KippoProject, ProjectMonthlyAssignment } from "~/lib/api/generated/models";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
@@ -18,6 +19,8 @@ export type UseMyAssignmentsReturn = {
 };
 
 const FETCH_ERROR = "データの取得に失敗しました";
+const NO_ASSIGNMENTS: ProjectMonthlyAssignment[] = [];
+const NO_PROJECTS: ReadonlyMap<string, KippoProject> = new Map();
 
 async function fetchProjects(ids: string[]): Promise<Map<string, KippoProject>> {
   // Per-id fetch: closed projects drop out of the active list but still appear in past months.
@@ -38,37 +41,24 @@ export function useMyAssignments(
   startMonth: string,
 ): UseMyAssignmentsReturn {
   const months = useMemo(() => monthRange(startMonth, MY_ASSIGNMENTS_WINDOW_MONTHS), [startMonth]);
-  const [assignments, setAssignments] = useState<ProjectMonthlyAssignment[]>([]);
-  const [projectsById, setProjectsById] = useState<ReadonlyMap<string, KippoProject>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!username) return;
-    let alive = true;
-    setIsLoading(true);
-    setError("");
-    (async () => {
-      try {
-        const all = await fetchAllMonthlyAssignments({
-          month_gte: months[0],
-          month_lte: months[months.length - 1],
-        });
-        const mine = all.filter((a) => a.user_username === username);
-        const projects = await fetchProjects(Array.from(new Set(mine.map((a) => a.project))));
-        if (!alive) return;
-        setAssignments(mine);
-        setProjectsById(projects);
-      } catch {
-        if (alive) setError(FETCH_ERROR);
-      } finally {
-        if (alive) setIsLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [username, months]);
+  const query = useApiQuery(
+    async () => {
+      const all = await fetchAllMonthlyAssignments({
+        month_gte: months[0],
+        month_lte: months[months.length - 1],
+      });
+      const mine = all.filter((a) => a.user_username === username);
+      const projects = await fetchProjects(Array.from(new Set(mine.map((a) => a.project))));
+      return { assignments: mine, projectsById: projects };
+    },
+    [username, months],
+    { enabled: !!username, keepPreviousData: true },
+  );
+  const assignments = query.data?.assignments ?? NO_ASSIGNMENTS;
+  const projectsById = query.data?.projectsById ?? NO_PROJECTS;
+  // Loading until the first fetch for a signed-in user settles (nothing is fetched before that).
+  const isLoading = !username || query.isLoading;
+  const error = query.error ? FETCH_ERROR : "";
 
   const matrix = useMemo(
     () => buildMyAssignmentsMatrix(assignments, months),

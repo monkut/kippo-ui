@@ -13,6 +13,7 @@ import { createEmptyEntry, getPreviousWeekStartDate } from "~/components/weekly-
 import { formatPersonalHolidaySpan } from "~/lib/holidays";
 import type { FormEntry } from "~/components/weekly-effort/types";
 import { useWeeklyEffort } from "~/hooks/useWeeklyEffort";
+import { PageError, PageLoading } from "~/components/page-state";
 
 export function meta() {
   return [{ title: "週間稼働量 - Kippo" }];
@@ -147,16 +148,10 @@ export default function WeeklyEffort() {
           </Link>
         </div>
 
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-800">{error}</div>
-          </div>
-        )}
+        {error && <PageError message={error} />}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <PageLoading />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

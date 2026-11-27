@@ -52,6 +52,7 @@ import type {
   ProjectBusinessRequirement,
   ProjectTechnicalRequirement,
 } from "~/lib/api/generated/models";
+import { PageError, PageLoading } from "~/components/page-state";
 
 // Display font-size levels (0=small/previous, 1=medium/default, 2=large), persisted in the URL (?fs=).
 // Class literals are kept whole so Tailwind's source scanner emits them.
@@ -402,9 +403,7 @@ export default function ProjectDetails() {
   if (authLoading || isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -416,9 +415,7 @@ export default function ProjectDetails() {
   if (error) {
     return (
       <Layout>
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-800">{error}</div>
-        </div>
+        <PageError message={error} />
       </Layout>
     );
   }
