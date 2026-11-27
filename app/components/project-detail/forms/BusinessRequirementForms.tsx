@@ -11,6 +11,14 @@ import type {
 } from "~/lib/api/generated/models";
 import { useEntryList } from "~/hooks/useEntryList";
 import type { BusinessRequirementType } from "../types";
+import {
+  AddEntryButton,
+  createSubmitLabel,
+  EditFormShell,
+  FormActions,
+  InlineCreateShell,
+  RemoveEntryButton,
+} from "./scaffolding";
 
 interface BusinessRequirementInlineFormProps {
   projectId: string;
@@ -123,195 +131,144 @@ export function BusinessRequirementInlineForm({
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-200">
-      <h4 className="text-sm font-medium text-gray-900 mb-3">新規ビジネス要件</h4>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {error && (
-          <div className="rounded-md bg-red-50 p-3">
-            <div className="text-sm text-red-800">{error}</div>
+    <InlineCreateShell title="新規ビジネス要件" error={error} onSubmit={handleSubmit}>
+      {problems.length === 0 && (
+        <div className="rounded-md bg-yellow-50 p-3">
+          <div className="text-sm text-yellow-800">先に課題定義を作成してください</div>
+        </div>
+      )}
+      {entries.map((entry, index) => (
+        <div
+          key={entry.id}
+          className="grid grid-cols-1 md:grid-cols-[1fr_1fr_8rem_1fr_auto] gap-3 items-start"
+        >
+          <div>
+            <MultiSelect
+              id={`business-req-problem-${entry.id}`}
+              label="課題定義"
+              options={problems.map((p) => ({
+                id: p.id,
+                displayId: p.display_id,
+                title: p.title,
+              }))}
+              value={entry.problemIds}
+              onChange={(ids) =>
+                setEntries(
+                  entries.map((ent) => (ent.id === entry.id ? { ...ent, problemIds: ids } : ent)),
+                )
+              }
+              disabled={isSubmitting || problems.length === 0}
+              placeholder="課題を選択..."
+            />
           </div>
-        )}
-        {problems.length === 0 && (
-          <div className="rounded-md bg-yellow-50 p-3">
-            <div className="text-sm text-yellow-800">先に課題定義を作成してください</div>
+          <div>
+            <label
+              htmlFor={`business-req-title-${entry.id}`}
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              タイトル
+            </label>
+            <input
+              type="text"
+              id={`business-req-title-${entry.id}`}
+              value={entry.title}
+              onChange={(e) => updateEntry(entry.id, "title", e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+              placeholder="ビジネス要件のタイトル"
+              disabled={isSubmitting}
+              autoFocus={index === 0}
+            />
           </div>
-        )}
-        {entries.map((entry, index) => (
-          <div
-            key={entry.id}
-            className="grid grid-cols-1 md:grid-cols-[1fr_1fr_8rem_1fr_auto] gap-3 items-start"
-          >
-            <div>
-              <MultiSelect
-                id={`business-req-problem-${entry.id}`}
-                label="課題定義"
-                options={problems.map((p) => ({
-                  id: p.id,
-                  displayId: p.display_id,
-                  title: p.title,
-                }))}
-                value={entry.problemIds}
-                onChange={(ids) =>
-                  setEntries(
-                    entries.map((ent) => (ent.id === entry.id ? { ...ent, problemIds: ids } : ent)),
+          <div>
+            <label
+              htmlFor={`business-req-category-${entry.id}`}
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              カテゴリ
+            </label>
+            {entry.categoryId === "new" ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id={`business-req-category-${entry.id}`}
+                  value={entry.newCategoryName}
+                  onChange={(e) => updateEntry(entry.id, "newCategoryName", e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+                  placeholder="新規カテゴリ名"
+                  disabled={isSubmitting}
+                  autoFocus
+                />
+                {categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateEntry(entry.id, "categoryId", categories[0].id);
+                      updateEntry(entry.id, "newCategoryName", "");
+                    }}
+                    className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                    title="既存カテゴリから選択"
+                  >
+                    取消
+                  </button>
+                )}
+              </div>
+            ) : (
+              <select
+                id={`business-req-category-${entry.id}`}
+                value={entry.categoryId}
+                onChange={(e) =>
+                  updateEntry(
+                    entry.id,
+                    "categoryId",
+                    e.target.value === "new" ? "new" : Number.parseInt(e.target.value, 10),
                   )
                 }
-                disabled={isSubmitting || problems.length === 0}
-                placeholder="課題を選択..."
-              />
-            </div>
-            <div>
-              <label
-                htmlFor={`business-req-title-${entry.id}`}
-                className="block text-xs font-medium text-gray-700 mb-1"
-              >
-                タイトル
-              </label>
-              <input
-                type="text"
-                id={`business-req-title-${entry.id}`}
-                value={entry.title}
-                onChange={(e) => updateEntry(entry.id, "title", e.target.value)}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                placeholder="ビジネス要件のタイトル"
-                disabled={isSubmitting}
-                autoFocus={index === 0}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor={`business-req-category-${entry.id}`}
-                className="block text-xs font-medium text-gray-700 mb-1"
-              >
-                カテゴリ
-              </label>
-              {entry.categoryId === "new" ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    id={`business-req-category-${entry.id}`}
-                    value={entry.newCategoryName}
-                    onChange={(e) => updateEntry(entry.id, "newCategoryName", e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                    placeholder="新規カテゴリ名"
-                    disabled={isSubmitting}
-                    autoFocus
-                  />
-                  {categories.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateEntry(entry.id, "categoryId", categories[0].id);
-                        updateEntry(entry.id, "newCategoryName", "");
-                      }}
-                      className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
-                      title="既存カテゴリから選択"
-                    >
-                      取消
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <select
-                  id={`business-req-category-${entry.id}`}
-                  value={entry.categoryId}
-                  onChange={(e) =>
-                    updateEntry(
-                      entry.id,
-                      "categoryId",
-                      e.target.value === "new" ? "new" : Number.parseInt(e.target.value, 10),
-                    )
-                  }
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
-                  disabled={isSubmitting}
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                  <option value="new">+ 新規カテゴリ</option>
-                </select>
-              )}
-            </div>
-            <div>
-              <label
-                htmlFor={`business-req-details-${entry.id}`}
-                className="block text-xs font-medium text-gray-700 mb-1"
-              >
-                詳細（任意）
-              </label>
-              <textarea
-                id={`business-req-details-${entry.id}`}
-                value={entry.details}
-                onChange={(e) => updateEntry(entry.id, "details", e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2 resize-y"
-                placeholder="詳細"
-                disabled={isSubmitting}
-                rows={2}
-              />
-            </div>
-            {entries.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeEntry(entry.id)}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-                title="削除"
                 disabled={isSubmitting}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+                <option value="new">+ 新規カテゴリ</option>
+              </select>
             )}
           </div>
-        ))}
-        <button
-          type="button"
-          onClick={addEntry}
-          className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
-          disabled={isSubmitting || problems.length === 0}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-4 h-4"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          追加
-        </button>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </button>
-          <button
-            type="submit"
-            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            disabled={isSubmitting || !hasValidEntry || problems.length === 0}
-          >
-            {isSubmitting
-              ? "作成中..."
-              : `作成${entries.filter((e) => e.title.trim() && e.problemIds.length > 0).length > 1 ? ` (${entries.filter((e) => e.title.trim() && e.problemIds.length > 0).length}件)` : ""}`}
-          </button>
+          <div>
+            <label
+              htmlFor={`business-req-details-${entry.id}`}
+              className="block text-xs font-medium text-gray-700 mb-1"
+            >
+              詳細（任意）
+            </label>
+            <textarea
+              id={`business-req-details-${entry.id}`}
+              value={entry.details}
+              onChange={(e) => updateEntry(entry.id, "details", e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2 resize-y"
+              placeholder="詳細"
+              disabled={isSubmitting}
+              rows={2}
+            />
+          </div>
+          {entries.length > 1 && (
+            <RemoveEntryButton onClick={() => removeEntry(entry.id)} disabled={isSubmitting} />
+          )}
         </div>
-      </form>
-    </div>
+      ))}
+      <AddEntryButton onClick={addEntry} disabled={isSubmitting || problems.length === 0} />
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        submitDisabled={isSubmitting || !hasValidEntry || problems.length === 0}
+      >
+        {createSubmitLabel(
+          isSubmitting,
+          entries.filter((e) => e.title.trim() && e.problemIds.length > 0).length,
+        )}
+      </FormActions>
+    </InlineCreateShell>
   );
 }
 
@@ -360,18 +317,7 @@ export function BusinessRequirementEditForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 bg-indigo-50 p-3 rounded-md">
-      {error && (
-        <div className="rounded-md bg-red-50 p-3">
-          <div className="text-sm text-red-800">{error}</div>
-        </div>
-      )}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-          {requirement.display_id}
-        </span>
-        <span className="text-xs text-gray-500">を編集中</span>
-      </div>
+    <EditFormShell displayId={requirement.display_id} error={error} onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <MultiSelect
@@ -439,23 +385,13 @@ export function BusinessRequirementEditForm({
           />
         </div>
       </div>
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-          disabled={isSubmitting}
-        >
-          キャンセル
-        </button>
-        <button
-          type="submit"
-          className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
-          disabled={isSubmitting || !title.trim() || problemIds.length === 0}
-        >
-          {isSubmitting ? "更新中..." : "更新"}
-        </button>
-      </div>
-    </form>
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        submitDisabled={isSubmitting || !title.trim() || problemIds.length === 0}
+      >
+        {isSubmitting ? "更新中..." : "更新"}
+      </FormActions>
+    </EditFormShell>
   );
 }
