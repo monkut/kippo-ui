@@ -8,6 +8,7 @@ import { createRoot } from "react-dom/client";
 const auth = vi.hoisted(() => ({
   state: { user: null as { username: string } | null, isLoading: true },
 }));
+const route = vi.hoisted(() => ({ id: "p1" }));
 const api = vi.hoisted(() => ({
   projectsRetrieve: vi.fn(),
   requirementsAssumptionsDestroy: vi.fn(),
@@ -29,7 +30,7 @@ vi.mock("react-router", async () => {
   const React = await import("react");
   return {
     useNavigate: () => () => {},
-    useParams: () => ({ id: "p1" }),
+    useParams: () => ({ id: route.id }),
     useLocation: () => ({ pathname: "/projects/p1" }),
     useSearchParams: () => {
       const [params, setParams] = React.useState(() => new URLSearchParams());
@@ -98,12 +99,14 @@ describe("ProjectDetails route", () => {
 
   beforeEach(() => {
     auth.state = { user: { username: "me" }, isLoading: false };
+    route.id = "p1";
     for (const mock of Object.values(api)) mock.mockReset();
     api.projectsRetrieve.mockResolvedValue({
       status: 200,
       data: { id: "p1", name: "Project One", customer_name: "Acme" },
     });
     api.requirementsAssumptionsList.mockResolvedValue({
+      status: 200,
       data: {
         results: [
           {
@@ -117,6 +120,7 @@ describe("ProjectDetails route", () => {
       },
     });
     api.requirementsProblemDefinitionsList.mockResolvedValue({
+      status: 200,
       data: {
         results: [
           { id: 5, display_id: "P-1", title: "Problem One" },
@@ -125,6 +129,7 @@ describe("ProjectDetails route", () => {
       },
     });
     api.requirementsBusinessRequirementsList.mockResolvedValue({
+      status: 200,
       data: {
         results: [
           { id: 10, display_id: "B-1", title: "Business One", category: 3, problems: [5] },
@@ -133,6 +138,7 @@ describe("ProjectDetails route", () => {
       },
     });
     api.requirementsTechnicalRequirementsList.mockResolvedValue({
+      status: 200,
       data: {
         results: [
           {
@@ -148,12 +154,15 @@ describe("ProjectDetails route", () => {
       },
     });
     api.requirementsAssumptionsCategoriesRetrieve.mockResolvedValue({
+      status: 200,
       data: [{ value: "assumption", label: "前提" }],
     });
     api.requirementsBusinessRequirementCategoriesList.mockResolvedValue({
+      status: 200,
       data: { results: [{ id: 3, name: "Sales" }] },
     });
     api.requirementsTechnicalRequirementCategoriesList.mockResolvedValue({
+      status: 200,
       data: { results: [{ id: 4, name: "Backend" }] },
     });
     api.requirementsBusinessRequirementsRetrieve.mockResolvedValue({
@@ -265,6 +274,110 @@ describe("ProjectDetails route", () => {
     clickTitled(rowOf(container, "Assumption One"), "削除");
     await waitFor(() => hasText(container, "前提条件の削除に失敗しました"));
     expect(container.textContent).toContain("前提条件の削除に失敗しました");
+  });
+
+  // customFetch resolves on 4xx/5xx: a rejected delete must not be reported as done.
+  test("a delete the API rejects shows the error and keeps the row", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.requirementsAssumptionsDestroy.mockResolvedValue({
+      status: 403,
+      data: { detail: "この操作を実行する権限がありません。" },
+    });
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "Assumption One"));
+
+    clickTitled(rowOf(container, "Assumption One"), "削除");
+    await waitFor(() => hasText(container, "前提条件の削除に失敗しました"), 3000);
+    expect(container.textContent).toContain("前提条件の削除に失敗しました");
+    expect(container.textContent).toContain("Assumption One");
+    expect(api.requirementsAssumptionsList).toHaveBeenCalledTimes(1);
+  });
+
+  test("a delete error clears when the lists reload", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.requirementsAssumptionsDestroy.mockRejectedValueOnce(new Error("nope"));
+    api.requirementsAssumptionsDestroy.mockResolvedValue({ status: 204 });
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "Assumption One"));
+
+    clickTitled(rowOf(container, "Assumption One"), "削除");
+    await waitFor(() => hasText(container, "前提条件の削除に失敗しました"), 3000);
+    expect(container.textContent).toContain("前提条件の削除に失敗しました");
+
+    // The retry succeeds and reloads: the earlier error must not outlive that reload.
+    clickTitled(rowOf(container, "Assumption One"), "削除");
+    await waitFor(
+      () => (api.requirementsAssumptionsList.mock.calls.length >= 2 ? true : null),
+      3000,
+    );
+    await waitFor(() => hasText(container, "Assumption One"));
+    expect(api.requirementsAssumptionsList).toHaveBeenCalledTimes(2);
+    expect(container.textContent).not.toContain("前提条件の削除に失敗しました");
+  });
+
+  test("a delete error does not follow the viewer to another project", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.requirementsAssumptionsDestroy.mockRejectedValue(new Error("nope"));
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "Assumption One"));
+    clickTitled(rowOf(container, "Assumption One"), "削除");
+    await waitFor(() => hasText(container, "前提条件の削除に失敗しました"), 3000);
+    expect(container.textContent).toContain("前提条件の削除に失敗しました");
+
+    route.id = "p2";
+    root.render(<ProjectDetails />);
+    await waitFor(() => (api.projectsRetrieve.mock.calls.some((c) => c[0] === "p2") ? true : null));
+    await waitFor(() => hasText(container, "Technical One"));
+    expect(api.projectsRetrieve).toHaveBeenCalledWith("p2");
+    expect(container.textContent).toContain("Technical One");
+    expect(container.textContent).not.toContain("前提条件の削除に失敗しました");
+  });
+
+  test("a 404 project renders the not-found state, not the 404 body as a project", async () => {
+    api.projectsRetrieve.mockResolvedValue({
+      status: 404,
+      data: { detail: "見つかりませんでした。" },
+    });
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "プロジェクトが見つかりません"), 3000);
+    expect(container.textContent).toContain("プロジェクトが見つかりません");
+    expect(container.textContent).not.toContain("前提条件と制約事項");
+  });
+
+  test("a 5xx project response is a load error", async () => {
+    api.projectsRetrieve.mockResolvedValue({ status: 500, data: "Server Error" });
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "プロジェクトの読み込みに失敗しました"), 3000);
+    expect(container.textContent).toContain("プロジェクトの読み込みに失敗しました");
+  });
+
+  // Opening A then B: A's slower response must not replace B's comments.
+  test("a slow comment response for another requirement is ignored", async () => {
+    const pending = new Map<number, (value: unknown) => void>();
+    api.requirementsBusinessRequirementsRetrieve.mockImplementation(
+      (id: number) => new Promise((resolve) => pending.set(id, resolve)),
+    );
+    const commentsFor = (id: number) => ({
+      status: 200,
+      data: {
+        comments: [{ id, comment: `Comment for ${id}`, created_by_name: "me", replies: [] }],
+      },
+    });
+    root.render(<ProjectDetails />);
+    await waitFor(() => hasText(container, "Business Orphan"));
+
+    clickTitled(rowOf(container, "Business One"), "コメント");
+    await waitFor(() => (pending.has(10) ? true : null));
+    clickTitled(rowOf(container, "Business Orphan"), "コメント");
+    await waitFor(() => (pending.has(11) ? true : null));
+
+    pending.get(11)?.(commentsFor(11));
+    await waitFor(() => hasText(container, "Comment for 11"));
+    pending.get(10)?.(commentsFor(10));
+    await new Promise((r) => setTimeout(r, 150));
+
+    expect(container.textContent).toContain("Comment for 11");
+    expect(container.textContent).not.toContain("Comment for 10");
   });
 
   test("コンパクト switches a section to the compact grid and back", async () => {

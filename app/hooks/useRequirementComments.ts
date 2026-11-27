@@ -27,14 +27,22 @@ export function useRequirementComments(retrieve: RetrieveRequirement): Requireme
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const retrieveRef = useRef(retrieve);
   retrieveRef.current = retrieve;
+  // The open panel and the newest request, read when a response arrives: a response is applied
+  // only if it is the newest one for the requirement whose panel is still open.
+  const expandedIdRef = useRef<number | null>(null);
+  const requestSeqRef = useRef(0);
 
   const reload = useCallback(async (requirementId: number) => {
+    if (expandedIdRef.current !== requirementId) return;
+    const requestSeq = ++requestSeqRef.current;
+    const isCurrent = () =>
+      requestSeq === requestSeqRef.current && expandedIdRef.current === requirementId;
     try {
       const response = await retrieveRef.current(requirementId);
-      setComments((response.data?.comments as CommentData[] | undefined) ?? []);
+      if (isCurrent()) setComments((response.data?.comments as CommentData[] | undefined) ?? []);
     } catch (err) {
       console.error("Failed to load comments:", err);
-      setComments([]);
+      if (isCurrent()) setComments([]);
     }
   }, []);
 
@@ -51,11 +59,15 @@ export function useRequirementComments(retrieve: RetrieveRequirement): Requireme
   const toggle = async (requirementId: number) => {
     closeForm();
     if (expandedId === requirementId) {
+      expandedIdRef.current = null;
       setExpandedId(null);
       setComments([]);
       return;
     }
+    expandedIdRef.current = requirementId;
     setExpandedId(requirementId);
+    // Opening B while A is shown: drop A's comments now, not when B's response arrives.
+    setComments([]);
     await reload(requirementId);
   };
 

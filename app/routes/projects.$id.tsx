@@ -20,6 +20,7 @@ import { useAuthGate } from "~/hooks/useAuthGate";
 import { useRequirementComments } from "~/hooks/useRequirementComments";
 import { useSectionForm } from "~/hooks/useSectionForm";
 import type {
+  KippoProject,
   ProjectAssumption,
   ProjectBusinessRequirement,
   ProjectBusinessRequirementCategory,
@@ -27,6 +28,7 @@ import type {
   ProjectTechnicalRequirement,
   ProjectTechnicalRequirementCategory,
 } from "~/lib/api/generated/models";
+import { ApiError, throwOnError } from "~/lib/api/api-error";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
   requirementsAssumptionsCategoriesRetrieve,
@@ -65,19 +67,30 @@ const NO_ASSUMPTION_CATEGORIES: AssumptionCategoryChoice[] = [];
 const NO_BUSINESS_CATEGORIES: ProjectBusinessRequirementCategory[] = [];
 const NO_TECHNICAL_CATEGORIES: ProjectTechnicalRequirementCategory[] = [];
 
+// customFetch resolves on 4xx / 5xx, so every response below goes through throwOnError: an error
+// body must never be read as the project or as a list.
+
+/** The project, or null when it does not exist or is outside the viewer's organizations (404). */
+async function fetchProjectOrNull(projectId: string): Promise<KippoProject | null> {
+  try {
+    return throwOnError(await projectsRetrieve(projectId)).data ?? null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 /** The project and its four requirement lists, fetched in parallel. */
 async function fetchProjectDetail(projectId: string) {
-  const [projectRes, assumptionsRes, problemsRes, businessReqsRes, techReqsRes] = await Promise.all(
-    [
-      projectsRetrieve(projectId),
-      requirementsAssumptionsList({ project: projectId }),
-      requirementsProblemDefinitionsList({ project: projectId }),
-      requirementsBusinessRequirementsList({ project: projectId }),
-      requirementsTechnicalRequirementsList({ project: projectId }),
-    ],
-  );
+  const [project, assumptionsRes, problemsRes, businessReqsRes, techReqsRes] = await Promise.all([
+    fetchProjectOrNull(projectId),
+    requirementsAssumptionsList({ project: projectId }).then(throwOnError),
+    requirementsProblemDefinitionsList({ project: projectId }).then(throwOnError),
+    requirementsBusinessRequirementsList({ project: projectId }).then(throwOnError),
+    requirementsTechnicalRequirementsList({ project: projectId }).then(throwOnError),
+  ]);
   return {
-    project: projectRes.data ?? null,
+    project,
     assumptions: readList<ProjectAssumption>(assumptionsRes.data),
     problems: readList<ProjectProblemDefinition>(problemsRes.data),
     businessRequirements: readList<ProjectBusinessRequirement>(businessReqsRes.data),
@@ -88,10 +101,10 @@ async function fetchProjectDetail(projectId: string) {
 /** Category choices (and the problem list) offered by the create / edit forms. */
 async function fetchFormChoices(projectId: string) {
   const [assumptionCats, businessReqCats, techReqCats, problemsRes] = await Promise.all([
-    requirementsAssumptionsCategoriesRetrieve(),
-    requirementsBusinessRequirementCategoriesList({ project: projectId }),
-    requirementsTechnicalRequirementCategoriesList({ project: projectId }),
-    requirementsProblemDefinitionsList({ project: projectId }),
+    requirementsAssumptionsCategoriesRetrieve().then(throwOnError),
+    requirementsBusinessRequirementCategoriesList({ project: projectId }).then(throwOnError),
+    requirementsTechnicalRequirementCategoriesList({ project: projectId }).then(throwOnError),
+    requirementsProblemDefinitionsList({ project: projectId }).then(throwOnError),
   ]);
   return {
     // Assumption categories are enum-based choices returned as array
@@ -113,8 +126,13 @@ export function meta() {
 export default function ProjectDetails() {
   const { id: projectId } = useParams();
   const { user, authLoading } = useAuthGate();
-  // A failed delete replaces the page with its error, like a failed load.
-  const [actionError, setActionError] = useState("");
+  // A failed delete, shown above the sections of the project it happened on. Scoped to that
+  // project (so it does not follow the viewer to another one) and cleared when the lists reload.
+  const [actionError, setActionError] = useState<{ projectId: string; message: string } | null>(
+    null,
+  );
+  const actionErrorMessage =
+    actionError && actionError.projectId === projectId ? actionError.message : "";
 
   const enabled = !!user && !!projectId;
   const detailQuery = useApiQuery(
@@ -142,11 +160,12 @@ export default function ProjectDetails() {
   const problemDefinitions = choicesQuery.data?.problemDefinitions ?? NO_PROBLEMS;
   // Without a project id nothing is ever fetched: stay on the loading placeholder.
   const isLoading = detailQuery.isLoading || !projectId;
-  const error = actionError || (detailQuery.error ? "プロジェクトの読み込みに失敗しました" : "");
+  const error = detailQuery.error ? "プロジェクトの読み込みに失敗しました" : "";
 
   const reloadDetail = detailQuery.reload;
   const reloadChoices = choicesQuery.reload;
   const handleChanged = useCallback(() => {
+    setActionError(null);
     reloadDetail();
     reloadChoices();
   }, [reloadDetail, reloadChoices]);
@@ -155,9 +174,11 @@ export default function ProjectDetails() {
     async (kind: DeletableKind, id: number, title: string) => {
       const result = await confirmAndDelete(kind, id, title);
       if (result.status === "deleted") handleChanged();
-      if (result.status === "failed") setActionError(result.message);
+      if (result.status === "failed" && projectId) {
+        setActionError({ projectId, message: result.message });
+      }
     },
-    [handleChanged],
+    [handleChanged, projectId],
   );
 
   const assumptionForm = useSectionForm<AssumptionType>();
@@ -294,6 +315,7 @@ export default function ProjectDetails() {
       projectId={projectId}
     >
       <div className="space-y-6">
+        {actionErrorMessage && <PageError message={actionErrorMessage} />}
         {/* Display controls (font size) */}
         <div className="flex items-center justify-end gap-2">
           <span className="text-sm text-gray-500">文字サイズ</span>

@@ -1,3 +1,4 @@
+import { throwOnError } from "~/lib/api/api-error";
 import {
   requirementsAssumptionsDestroy,
   requirementsBusinessRequirementsDestroy,
@@ -7,7 +8,7 @@ import {
 
 type DeleteAction = {
   confirmMessage: (title: string) => string;
-  destroy: (id: number) => Promise<unknown>;
+  destroy: (id: number) => Promise<{ status: number; data: unknown }>;
   errorMessage: string;
 };
 
@@ -43,7 +44,8 @@ export type DeleteResult =
   | { status: "deleted" }
   | { status: "failed"; message: string };
 
-/** Ask for confirmation, then delete the requirement element of `kind`. */
+/** Ask for confirmation, then delete the requirement element of `kind`. A response the API
+ * rejects (4xx / 5xx — customFetch resolves on those) is a failure, like a network error. */
 export async function confirmAndDelete(
   kind: DeletableKind,
   id: number,
@@ -52,7 +54,7 @@ export async function confirmAndDelete(
   const action: DeleteAction = DELETE_ACTIONS[kind];
   if (!window.confirm(action.confirmMessage(title))) return { status: "cancelled" };
   try {
-    await action.destroy(id);
+    throwOnError(await action.destroy(id));
     return { status: "deleted" };
   } catch (err) {
     console.error(action.errorMessage, err);
