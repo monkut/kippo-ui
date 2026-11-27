@@ -22,8 +22,13 @@ vi.mock("react-router", () => ({
   useLocation: () => ({ pathname: "/projects/proj-1/edit" }),
   Link: ({ children }: { children: unknown }) => children,
 }));
+// A fresh `user` object per render (harsher than the real auth context, whose user is stable):
+// the route must not refetch or reset the form just because the object identity changed.
+const auth = vi.hoisted(() => ({
+  state: { user: { username: "u" } as { username: string } | null, isLoading: false },
+}));
 vi.mock("~/lib/auth-context", () => ({
-  useAuth: () => ({ user: { username: "u" }, isLoading: false }),
+  useAuth: () => ({ ...auth.state, user: auth.state.user && { ...auth.state.user } }),
 }));
 vi.mock("~/lib/api/generated/projects/projects", () => ({
   projectsRetrieve: (...a: unknown[]) => projectsRetrieve(...a),
@@ -107,6 +112,7 @@ describe("ProjectEdit route", () => {
   let root: ReturnType<typeof createRoot>;
 
   beforeEach(() => {
+    auth.state = { user: { username: "u" }, isLoading: false };
     navigateSpy.mockReset();
     projectsRetrieve.mockReset();
     projectsPartialUpdate.mockReset();
@@ -213,6 +219,79 @@ describe("ProjectEdit route", () => {
     });
     await waitFor(() => (navigateSpy.mock.calls.length > 0 ? true : null));
     expect(navigateSpy).toHaveBeenCalledWith(-1);
+  });
+
+  // React #310 guard: every hook must run on the authLoading render too.
+  test("renders through loading → authenticated without a hooks-order crash", async () => {
+    auth.state = { user: null, isLoading: true };
+    root.render(<ProjectEdit />);
+    await waitFor(() => (container.textContent?.includes("読み込み中") ? true : null));
+    expect(projectsRetrieve).not.toHaveBeenCalled();
+    expect(projectsContractList).not.toHaveBeenCalled();
+
+    auth.state = { user: { username: "u" }, isLoading: false };
+    root.render(<ProjectEdit />);
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    expect(container.querySelector<HTMLInputElement>("#p-name")?.value).toBe("Old Name");
+    expect(projectsContractList).toHaveBeenCalledWith("proj-1");
+  });
+
+  // The signed-in user object changing identity must not refetch the project (which would reset
+  // unsaved edits).
+  test("an edit survives re-renders: the project is fetched once", async () => {
+    root.render(<ProjectEdit />);
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    setInputValue(container.querySelector("#p-name") as HTMLInputElement, "Edited");
+    root.render(<ProjectEdit />);
+    await new Promise((r) => setTimeout(r, 150));
+    expect(container.querySelector<HTMLInputElement>("#p-name")?.value).toBe("Edited");
+    expect(projectsRetrieve).toHaveBeenCalledTimes(1);
+  });
+
+  // kippo#49 copy-on-create: `GET /project-categories/?organization=<id>` returns the organization's
+  // OWN rows (`organization` set), never the global template (`organization: null`). The picker
+  // must offer those rows, and the save must carry the selected key.
+  test("lists the organization's own categories and sends category on save", async () => {
+    projectCategoriesList.mockResolvedValue({
+      status: 200,
+      data: {
+        results: [
+          {
+            key: "ai-development",
+            label: "AI開発",
+            organization: "org-1",
+            sort_order: 0,
+            is_active: true,
+          },
+          { key: "sunx", label: "SUNX", organization: "org-1", sort_order: 1, is_active: true },
+        ],
+      },
+    });
+    root.render(<ProjectEdit />);
+    await waitFor(() =>
+      container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+    );
+    await waitFor(() => (projectCategoriesList.mock.calls.length > 0 ? true : null));
+    expect(projectCategoriesList).toHaveBeenCalledWith({ organization: "org-1" });
+
+    const select = await waitFor(() => {
+      const s = container.querySelector<HTMLSelectElement>("#p-category");
+      return s && s.querySelectorAll("option").length > 1 ? s : null;
+    }, 3000);
+    const labels = Array.from(
+      container.querySelectorAll<HTMLOptionElement>("#p-category option"),
+    ).map((o) => o.textContent);
+    expect(labels).toContain("AI開発");
+    expect(labels).toContain("SUNX");
+    expect(select?.value).toBe("ai-development");
+
+    findButton(container, "保存")?.click();
+    await waitFor(() => (projectsPartialUpdate.mock.calls.length > 0 ? true : null));
+    expect(projectsPartialUpdate.mock.calls[0][1].category).toBe("ai-development");
   });
 
   test("loads lead_source (リード) and round-trips it in the PATCH", async () => {
