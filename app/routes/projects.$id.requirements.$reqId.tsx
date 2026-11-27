@@ -8,6 +8,7 @@ import { CommentInlineForm } from "~/components/project-detail/CommentInlineForm
 import { CommentList } from "~/components/project-detail/CommentList";
 import { TechnicalRequirementInlineForm } from "~/components/project-detail/forms/TechnicalRequirementForms";
 import type { CommentData } from "~/components/project-detail/types";
+import { ApiError, throwOnError } from "~/lib/api/api-error";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
   requirementsBusinessRequirementsRetrieve,
@@ -27,6 +28,19 @@ export function meta() {
 
 const NO_CATEGORIES: ProjectTechnicalRequirementCategory[] = [];
 
+// customFetch resolves on 4xx / 5xx, so responses go through throwOnError: an error body must
+// never be rendered as the requirement.
+
+/** The requirement, or null when it does not exist or is outside the viewer's organizations (404). */
+async function fetchRequirementOrNull(requirementId: number) {
+  try {
+    return throwOnError(await requirementsBusinessRequirementsRetrieve(requirementId)).data ?? null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 export default function BusinessRequirementDetails() {
   const { id: projectId, reqId } = useParams();
   const { user, authLoading } = useAuthGate();
@@ -41,12 +55,12 @@ export default function BusinessRequirementDetails() {
   const enabled = !!user && !!requirementId;
   // The project and the categories are decoration: a failed fetch leaves them empty.
   const projectQuery = useApiQuery(
-    async () => (projectId ? (await projectsRetrieve(projectId)).data : null),
+    async () => (projectId ? throwOnError(await projectsRetrieve(projectId)).data : null),
     [user?.username, requirementId, projectId],
     { enabled },
   );
   const requirementQuery = useApiQuery(
-    async () => (await requirementsBusinessRequirementsRetrieve(requirementId)).data,
+    () => fetchRequirementOrNull(requirementId),
     [user?.username, requirementId],
     { enabled },
   );
@@ -54,7 +68,9 @@ export default function BusinessRequirementDetails() {
     async () =>
       projectId
         ? readList<ProjectTechnicalRequirementCategory>(
-            (await requirementsTechnicalRequirementCategoriesList({ project: projectId })).data,
+            throwOnError(
+              await requirementsTechnicalRequirementCategoriesList({ project: projectId }),
+            ).data,
           )
         : NO_CATEGORIES,
     [user?.username, requirementId, projectId],

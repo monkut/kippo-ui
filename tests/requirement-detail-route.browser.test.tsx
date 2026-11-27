@@ -169,6 +169,28 @@ describe("BusinessRequirementDetails route", () => {
     expect(container.textContent).not.toContain("Business One");
   });
 
+  // customFetch resolves on 4xx / 5xx: an error body must not be rendered as the requirement.
+  test("a 404 requirement renders the not-found state", async () => {
+    api.requirementsBusinessRequirementsRetrieve.mockResolvedValue({
+      status: 404,
+      data: { detail: "見つかりませんでした。" },
+    });
+    root.render(<BusinessRequirementDetails />);
+    await waitFor(() => hasText(container, "ビジネス要件が見つかりません"), 3000);
+    expect(container.textContent).toContain("ビジネス要件が見つかりません");
+    expect(container.textContent).not.toContain("技術要件");
+  });
+
+  test("a 5xx requirement response is a load error", async () => {
+    api.requirementsBusinessRequirementsRetrieve.mockResolvedValue({
+      status: 500,
+      data: "Server Error",
+    });
+    root.render(<BusinessRequirementDetails />);
+    await waitFor(() => hasText(container, "ビジネス要件の読み込みに失敗しました"), 3000);
+    expect(container.textContent).toContain("ビジネス要件の読み込みに失敗しました");
+  });
+
   test("the project and category fetches are decoration: their failure does not block the page", async () => {
     api.projectsRetrieve.mockRejectedValue(new Error("boom"));
     api.requirementsTechnicalRequirementCategoriesList.mockRejectedValue(new Error("boom"));
