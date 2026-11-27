@@ -10,14 +10,14 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "lint": "oxlint --silent",
+    "lint": "oxlint --quiet",
     "lint:strict": "oxlint --deny-warnings",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "typecheck": "react-router typegen && tsc",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm test && pnpm format:check",
+    "check": "pnpm typecheck && pnpm test && pnpm format:check && pnpm lint",
     "prepare": "husky"
   },
   "dependencies": {

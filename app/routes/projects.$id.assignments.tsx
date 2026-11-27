@@ -87,7 +87,6 @@ function Body({ state, month, onMonthChange }: BodyProps) {
           <AssignmentsTable
             assignments={state.assignments}
             month={month}
-            isSaving={state.isSaving}
             onCellClick={setEditTarget}
           />
         </>

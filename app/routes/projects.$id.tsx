@@ -438,7 +438,6 @@ export default function ProjectDetails() {
 
   // Cast state data to component types for rendering
   const problemsList = problems as unknown as ProblemType[];
-  const assumptionsList = assumptions as unknown as AssumptionType[];
   const businessReqsList = businessRequirements as unknown as BusinessRequirementType[];
   const techReqsList = technicalRequirements as unknown as TechnicalRequirementType[];
 
@@ -459,12 +458,6 @@ export default function ProjectDetails() {
       ? businessReqsList?.find((b) => b.id === hoveredBusinessReqId)?.problems || []
       : [],
   );
-
-  // Alias for template compatibility
-  const problemsData = problemsList;
-  const assumptionsData = assumptionsList;
-  const businessRequirementsData = businessReqsList;
-  const technicalRequirementsData = techReqsList;
 
   // Get business requirement IDs highlighted based on hovered technical requirement
   const highlightedBusinessReqIds = new Set(

@@ -6,16 +6,10 @@ import { assignmentDisplayName, ASSIGNMENT_CELL, MAX_PERCENTAGE_PER_MONTH } from
 type AssignmentsTableProps = {
   assignments: ProjectMonthlyAssignment[];
   month: string; // first-of-month ISO date "YYYY-MM-01"
-  isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
-function AssignmentsTableImpl({
-  assignments,
-  month,
-  isSaving,
-  onCellClick,
-}: AssignmentsTableProps) {
+function AssignmentsTableImpl({ assignments, month, onCellClick }: AssignmentsTableProps) {
   const monthAssignments = useMemo(
     () =>
       assignments
@@ -28,36 +22,21 @@ function AssignmentsTableImpl({
     return <EmptyState month={month} />;
   }
   return (
-    <PopulatedSection
-      month={month}
-      monthAssignments={monthAssignments}
-      isSaving={isSaving}
-      onCellClick={onCellClick}
-    />
+    <PopulatedSection month={month} monthAssignments={monthAssignments} onCellClick={onCellClick} />
   );
 }
 
 type PopulatedSectionProps = {
   month: string;
   monthAssignments: ProjectMonthlyAssignment[];
-  isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
-function PopulatedSection({
-  month,
-  monthAssignments,
-  isSaving,
-  onCellClick,
-}: PopulatedSectionProps) {
+function PopulatedSection({ month, monthAssignments, onCellClick }: PopulatedSectionProps) {
   return (
     <section className="bg-white shadow rounded-lg p-6 overflow-x-auto">
       <h2 className="text-lg font-medium text-gray-900 mb-4">{formatMonth(month)} の割当</h2>
-      <AssignmentsBodyTable
-        monthAssignments={monthAssignments}
-        isSaving={isSaving}
-        onCellClick={onCellClick}
-      />
+      <AssignmentsBodyTable monthAssignments={monthAssignments} onCellClick={onCellClick} />
       <Legend />
     </section>
   );
@@ -65,15 +44,10 @@ function PopulatedSection({
 
 type AssignmentsBodyTableProps = {
   monthAssignments: ProjectMonthlyAssignment[];
-  isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 };
 
-function AssignmentsBodyTable({
-  monthAssignments,
-  isSaving,
-  onCellClick,
-}: AssignmentsBodyTableProps) {
+function AssignmentsBodyTable({ monthAssignments, onCellClick }: AssignmentsBodyTableProps) {
   const monthTotal = monthAssignments.reduce((sum, a) => sum + a.percentage, 0);
   return (
     <table className="w-full text-sm">
@@ -85,12 +59,7 @@ function AssignmentsBodyTable({
       </thead>
       <tbody>
         {monthAssignments.map((assignment) => (
-          <UserRow
-            key={assignment.id}
-            assignment={assignment}
-            isSaving={isSaving}
-            onCellClick={onCellClick}
-          />
+          <UserRow key={assignment.id} assignment={assignment} onCellClick={onCellClick} />
         ))}
       </tbody>
       <tfoot>
@@ -114,11 +83,9 @@ function EmptyState({ month }: { month: string }) {
 
 function UserRow({
   assignment,
-  isSaving,
   onCellClick,
 }: {
   assignment: ProjectMonthlyAssignment;
-  isSaving: boolean;
   onCellClick?: (assignment: ProjectMonthlyAssignment) => void;
 }) {
   return (
