@@ -82,6 +82,7 @@ kippo-ui/
 | `pnpm test`                | テストを実行                |
 | `pnpm test:cov`            | カバレッジレポート付きでテストを実行    |
 | `pnpm check`               | 型チェック、テスト、フォーマットを一括実行 |
+| `pnpm smoke`               | デプロイ済み環境のスモークテスト（読み取り専用） |
 
 ## 🛠️ 技術スタック
 
@@ -248,6 +249,27 @@ pnpm vitest --project=browser  # ブラウザテストのみ
 - リンクとSVGアイコンの表示
 - CSSクラスの適用
 - ホバー効果の動作
+
+## 🔎 デプロイ後のスモークテスト
+
+`pnpm smoke` は、デプロイ済みの kippo（API）と kippo-ui を読み取り専用で確認します。データは変更しません。
+
+```bash
+pnpm smoke --base-url https://<host>/<stage> --credentials-file ../kippo/.env
+```
+
+| 対象 | 確認内容 |
+|---|---|
+| API | 未認証リクエストが 401 になること。`docs/openapi.yaml` の全パスがデプロイ済みスキーマに存在すること。パスパラメータのない GET エンドポイントが 5xx / 404 を返さないこと |
+| リリース | デプロイ済みシェルの `manifest-*.js` が最新 GitHub リリースの tarball と一致すること（`update_ui` 後の `collectstatic` 漏れを検出） |
+| UI | 各ルートをヘッドレス Chromium で表示し、ログインへのリダイレクト、`読み込み中` の残留、エラーメッセージ、4xx / 5xx、コンソールエラー、未捕捉例外がないこと |
+
+- **読み取り専用の保証:** ブラウザは GET / HEAD / OPTIONS と JWT リフレッシュ以外のリクエストを送信前に遮断し、そのルートを FAIL にします。
+- **認証情報:** `SMOKE_USERNAME` / `SMOKE_PASSWORD`、なければ `DEPLOYED_API_USERNAME` / `DEPLOYED_API_PASSWORD`（環境変数または `--credentials-file`）。
+- **WARN（失敗扱いにしない）:** 1 ルートあたりの API リクエスト数が 30 を超える場合、同一リクエストが重複する場合。
+- **既知の 403:** `GET /api/token/from-session/` は JWT のみのセッションでは 403 になります（想定どおり）。
+- **計測:** `--route project-status --repeat 3` で同じルートを複数回マウントできます。ルートごとのネットワーク表・テキスト・スクリーンショットは `--out` に保存されます。ルーティングを有効にすると HTTP キャッシュが無効になるため、時間にはアセットの再取得が含まれます。
+- 終了コード: FAIL があれば 1。オプション一覧は `pnpm smoke --help`。
 
 ## 🚀 デプロイメント
 
