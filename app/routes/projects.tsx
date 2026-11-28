@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { projectsList } from "~/lib/api/generated/projects/projects";
@@ -7,8 +8,10 @@ import type { KippoProject } from "~/lib/api/generated/models";
 import { readList } from "~/lib/api/read-list";
 import { formatJpy } from "~/lib/currency";
 import { useHiddenProjectCategories } from "~/hooks/useHiddenProjectCategories";
+import { PageError, PageLoading } from "~/components/page-state";
 
 const UNCATEGORIZED_LABEL = "未分類";
+const NO_PROJECTS: KippoProject[] = [];
 
 // Billing-type key -> Japanese label (請求方法; kippo#39 / T15). Mirrors VALID_BILLING_TYPES.
 const BILLING_TYPE_LABELS: Record<string, string> = {
@@ -37,33 +40,17 @@ export function meta() {
 
 export default function Projects() {
   const { user, authLoading } = useAuthGate();
-  const [projects, setProjects] = useState<KippoProject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const projectsQuery = useApiQuery(
+    async () => readList<KippoProject>((await projectsList({ is_active: true })).data),
+    [user?.username],
+    { enabled: !!user },
+  );
+  const projects = projectsQuery.data ?? NO_PROJECTS;
+  const isLoading = projectsQuery.isLoading;
+  const error = projectsQuery.error ? "プロジェクトの読み込みに失敗しました" : "";
   const [hiddenCategories, setHiddenCategories] = useHiddenProjectCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("start_date");
-
-  useEffect(() => {
-    if (user) {
-      loadProjects();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  const loadProjects = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const response = await projectsList({ is_active: true });
-      setProjects(readList<KippoProject>(response.data));
-    } catch (err) {
-      console.error("Failed to load projects:", err);
-      setError("プロジェクトの読み込みに失敗しました");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // All distinct categories present across the loaded projects (sorted), used to
   // populate the "hide category" control.
@@ -143,9 +130,7 @@ export default function Projects() {
   if (authLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -193,16 +178,10 @@ export default function Projects() {
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-800">{error}</div>
-          </div>
-        )}
+        {error && <PageError message={error} />}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <PageLoading />
         ) : projects.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">プロジェクトがありません</p>

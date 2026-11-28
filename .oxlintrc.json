@@ -1,5 +1,5 @@
 {
-  "plugins": ["promise", "import", "node"],
+  "plugins": ["promise", "import", "node", "react"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -8,9 +8,19 @@
   "rules": {
     "no-console": "warn",
     "eslint/max-depth": ["error", { "max": 10 }],
-    "eslint/max-lines-per-function": ["error", { "max": 50 }],
+    "eslint/max-lines-per-function": ["warn", { "max": 50 }],
     "eslint/max-nested-callbacks": ["error", { "max": 20 }],
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/react-in-jsx-scope": "off"
   },
-  "ignorePatterns": ["node_modules", "dist", "build", "coverage", "*.min.js"]
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "*.min.js",
+    "app/lib/api/generated"
+  ]
 }

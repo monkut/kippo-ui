@@ -27,6 +27,7 @@ import type {
   ProjectBusinessRequirement,
   ProjectProblemDefinition,
 } from "~/lib/api/generated/models";
+import { PageError, PageLoading } from "~/components/page-state";
 
 export function meta() {
   return [{ title: "プロジェクトサマリー - Kippo要件管理" }];
@@ -258,9 +259,7 @@ export default function ProjectSummary() {
   if (authLoading || isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -272,9 +271,7 @@ export default function ProjectSummary() {
   if (error) {
     return (
       <Layout>
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-800">{error}</div>
-        </div>
+        <PageError message={error} />
       </Layout>
     );
   }

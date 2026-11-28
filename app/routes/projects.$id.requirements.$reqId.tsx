@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { Layout } from "~/components/layout";
 import { ChevronIcon } from "~/components/icons";
@@ -7,6 +8,7 @@ import { CommentInlineForm } from "~/components/project-detail/CommentInlineForm
 import { CommentList } from "~/components/project-detail/CommentList";
 import { TechnicalRequirementInlineForm } from "~/components/project-detail/forms/TechnicalRequirementForms";
 import type { CommentData } from "~/components/project-detail/types";
+import { ApiError, throwOnError } from "~/lib/api/api-error";
 import { projectsRetrieve } from "~/lib/api/generated/projects/projects";
 import {
   requirementsBusinessRequirementsRetrieve,
@@ -15,25 +17,33 @@ import {
 } from "~/lib/api/generated/requirements/requirements";
 import { readList } from "~/lib/api/read-list";
 import type {
-  KippoProject,
-  ProjectBusinessRequirementDetail,
   ProjectTechnicalRequirementCategory,
   ProjectTechnicalRequirement,
 } from "~/lib/api/generated/models";
+import { PageError, PageLoading } from "~/components/page-state";
 
 export function meta() {
   return [{ title: "ビジネス要件詳細 - Kippo要件管理" }];
 }
 
+const NO_CATEGORIES: ProjectTechnicalRequirementCategory[] = [];
+
+// customFetch resolves on 4xx / 5xx, so responses go through throwOnError: an error body must
+// never be rendered as the requirement.
+
+/** The requirement, or null when it does not exist or is outside the viewer's organizations (404). */
+async function fetchRequirementOrNull(requirementId: number) {
+  try {
+    return throwOnError(await requirementsBusinessRequirementsRetrieve(requirementId)).data ?? null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 export default function BusinessRequirementDetails() {
   const { id: projectId, reqId } = useParams();
   const { user, authLoading } = useAuthGate();
-  const [project, setProject] = useState<KippoProject | null>(null);
-  const [requirement, setRequirement] = useState<ProjectBusinessRequirementDetail | null>(null);
-  const [techCategories, setTechCategories] = useState<ProjectTechnicalRequirementCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
   const [showTechReqForm, setShowTechReqForm] = useState(false);
   const [techReqsCompact, setTechReqsCompact] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
@@ -42,59 +52,43 @@ export default function BusinessRequirementDetails() {
 
   const requirementId = reqId ? Number.parseInt(reqId, 10) : 0;
 
-  const loadProject = useCallback(async () => {
-    if (!projectId) return;
-    try {
-      const response = await projectsRetrieve(projectId);
-      if (response.data) {
-        setProject(response.data);
-      }
-    } catch (err) {
-      console.error("Failed to load project:", err);
-    }
-  }, [projectId]);
-
-  const loadRequirement = useCallback(async () => {
-    if (!requirementId) return;
-    setIsLoading(true);
-    setError("");
-    try {
-      const response = await requirementsBusinessRequirementsRetrieve(requirementId);
-      if (response.data) {
-        setRequirement(response.data);
-      }
-    } catch (err) {
-      console.error("Failed to load requirement:", err);
-      setError("ビジネス要件の読み込みに失敗しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [requirementId]);
-
-  const loadCategories = useCallback(async () => {
-    if (!projectId) return;
-    try {
-      const response = await requirementsTechnicalRequirementCategoriesList({ project: projectId });
-      setTechCategories(readList<ProjectTechnicalRequirementCategory>(response.data));
-    } catch (err) {
-      console.error("Failed to load categories:", err);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    if (user && requirementId) {
-      loadProject();
-      loadRequirement();
-      loadCategories();
-    }
-  }, [user, requirementId, loadProject, loadRequirement, loadCategories]);
+  const enabled = !!user && !!requirementId;
+  // The project and the categories are decoration: a failed fetch leaves them empty.
+  const projectQuery = useApiQuery(
+    async () => (projectId ? throwOnError(await projectsRetrieve(projectId)).data : null),
+    [user?.username, requirementId, projectId],
+    { enabled },
+  );
+  const requirementQuery = useApiQuery(
+    () => fetchRequirementOrNull(requirementId),
+    [user?.username, requirementId],
+    { enabled },
+  );
+  const categoriesQuery = useApiQuery(
+    async () =>
+      projectId
+        ? readList<ProjectTechnicalRequirementCategory>(
+            throwOnError(
+              await requirementsTechnicalRequirementCategoriesList({ project: projectId }),
+            ).data,
+          )
+        : NO_CATEGORIES,
+    [user?.username, requirementId, projectId],
+    { enabled, keepPreviousData: true },
+  );
+  const project = projectQuery.data ?? null;
+  const requirement = requirementQuery.data ?? null;
+  const techCategories = categoriesQuery.data ?? NO_CATEGORIES;
+  // Without a requirement id nothing is ever fetched: stay on the loading placeholder.
+  const isLoading = requirementQuery.isLoading || !requirementId;
+  const error = requirementQuery.error ? "ビジネス要件の読み込みに失敗しました" : "";
+  const loadRequirement = requirementQuery.reload;
+  const loadCategories = categoriesQuery.reload;
 
   if (authLoading || isLoading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
+        <PageLoading />
       </Layout>
     );
   }
@@ -106,9 +100,7 @@ export default function BusinessRequirementDetails() {
   if (error) {
     return (
       <Layout>
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-800">{error}</div>
-        </div>
+        <PageError message={error} />
       </Layout>
     );
   }

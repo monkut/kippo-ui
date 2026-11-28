@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import type { ProjectMonthlyAssignment, ProjectParticipant } from "~/lib/api/generated/models";
 import { projectsParticipantsList } from "~/lib/api/generated/projects/projects";
 import { fetchAllMonthlyAssignments } from "~/lib/api/pagination";
@@ -14,13 +14,8 @@ export type AssignmentEditContext = {
   userMonthRows: ProjectMonthlyAssignment[];
 };
 
-const EMPTY: AssignmentEditContext = {
-  isLoading: false,
-  error: "",
-  participants: [],
-  projectMonthRows: [],
-  userMonthRows: [],
-};
+const NO_PARTICIPANTS: ProjectParticipant[] = [];
+const NO_ROWS: ProjectMonthlyAssignment[] = [];
 
 const FETCH_ERROR = "参加者・割当の取得に失敗しました";
 
@@ -29,43 +24,32 @@ const FETCH_ERROR = "参加者・割当の取得に失敗しました";
 export function useAssignmentEditContext(
   assignment: ProjectMonthlyAssignment | null,
 ): AssignmentEditContext {
-  const [context, setContext] = useState<AssignmentEditContext>(EMPTY);
   const projectId = assignment?.project;
   const userId = assignment?.user;
   const month = assignment?.month;
 
-  useEffect(() => {
-    if (!projectId || !userId || !month) {
-      setContext(EMPTY);
-      return;
-    }
-    let alive = true;
-    setContext({ ...EMPTY, isLoading: true });
-    (async () => {
-      try {
-        const [participantsRes, monthRows] = await Promise.all([
-          projectsParticipantsList(projectId),
-          fetchAllMonthlyAssignments({ month }),
-        ]);
-        if (!alive) return;
-        setContext({
-          isLoading: false,
-          error: "",
-          participants:
-            participantsRes.status === 200
-              ? readList<ProjectParticipant>(participantsRes.data)
-              : [],
-          projectMonthRows: monthRows.filter((r) => r.project === projectId),
-          userMonthRows: monthRows.filter((r) => r.user === userId),
-        });
-      } catch {
-        if (alive) setContext({ ...EMPTY, error: FETCH_ERROR });
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [projectId, userId, month]);
+  const query = useApiQuery(
+    async () => {
+      const [participantsRes, monthRows] = await Promise.all([
+        projectsParticipantsList(projectId ?? ""),
+        fetchAllMonthlyAssignments({ month: month ?? undefined }),
+      ]);
+      return {
+        participants:
+          participantsRes.status === 200 ? readList<ProjectParticipant>(participantsRes.data) : [],
+        projectMonthRows: monthRows.filter((r) => r.project === projectId),
+        userMonthRows: monthRows.filter((r) => r.user === userId),
+      };
+    },
+    [projectId, userId, month],
+    { enabled: !!projectId && !!userId && !!month },
+  );
 
-  return context;
+  return {
+    isLoading: query.isLoading,
+    error: query.error ? FETCH_ERROR : "",
+    participants: query.data?.participants ?? NO_PARTICIPANTS,
+    projectMonthRows: query.data?.projectMonthRows ?? NO_ROWS,
+    userMonthRows: query.data?.userMonthRows ?? NO_ROWS,
+  };
 }

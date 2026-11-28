@@ -67,6 +67,11 @@ jobs:
       - name: Run format check
         run: pnpm format:check
 
+      # Errors only (oxlint --quiet). react/rules-of-hooks is an error: a hook placed after an
+      # early return passes typecheck + tests and crashes prod with React #310.
+      - name: Run lint
+        run: pnpm lint
+
       - name: Build per-stage tarballs
         run: |
           set -euo pipefail

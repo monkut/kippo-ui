@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useApiQuery } from "~/hooks/useApiQuery";
 import type {
   KippoProject,
   OrganizationMemberDetail,
@@ -27,6 +28,7 @@ export type UseMonthlyAssignmentsState = {
 };
 
 const FETCH_ERROR = "データの取得に失敗しました";
+const NO_PROJECTS: KippoProject[] = [];
 
 /** Fetch members across every organization spanning the given projects, with
  * `available_work_days` populated for the displayed month so the matrix can
@@ -51,29 +53,12 @@ async function fetchOrgMembersForProjects(
 }
 
 function useProjects(): { projects: KippoProject[]; isLoading: boolean; error: string } {
-  const [projects, setProjects] = useState<KippoProject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let alive = true;
-    setIsLoading(true);
-    (async () => {
-      try {
-        const projectData = await fetchAllProjects({ is_active: true });
-        if (alive) setProjects(projectData);
-      } catch {
-        if (alive) setError(FETCH_ERROR);
-      } finally {
-        if (alive) setIsLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return { projects, isLoading, error };
+  const query = useApiQuery(() => fetchAllProjects({ is_active: true }), []);
+  return {
+    projects: query.data ?? NO_PROJECTS,
+    isLoading: query.isLoading,
+    error: query.error ? FETCH_ERROR : "",
+  };
 }
 
 /** Re-fetches members whenever `month` changes so `available_work_days` reflects

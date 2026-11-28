@@ -330,13 +330,15 @@ describe("getProjectEffortSpentDays", () => {
     const p = makeProj({
       allocated_staff_days: 10,
       allocated_effort_hours: 80,
+      // Cast like makeProj's own literal: the generated type gains required fields with kippo
+      // releases, and this test reads only the effort hours.
       projectstatus_display: {
         current_effort_hours: 40,
         expected_effort_hours: null,
         allocated_effort_hours: 80,
         is_estimated_allocated_effort_hours: false,
         difference_percentage: null,
-      },
+      } as unknown as KippoProject["projectstatus_display"],
     });
     expect(getProjectEffortSpentDays(p)).toBe(5);
   });

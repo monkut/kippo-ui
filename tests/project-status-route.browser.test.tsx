@@ -37,7 +37,7 @@ vi.mock("~/lib/api/generated/organizations/organizations", () => ({
     Promise.resolve({ status: 200, data: { organizations: orgs.organizations } }),
 }));
 
-import ProjectStatus, {
+import {
   allocatedEffortHoursTitle,
   ESTIMATED_MARKER,
   formatContractAmount,
@@ -45,7 +45,8 @@ import ProjectStatus, {
   LISTENER_CLOSE_LABEL,
   LISTENER_SYNC_LABELS,
   meterFillPercentage,
-} from "../app/routes/project-status";
+} from "../app/components/project-status";
+import ProjectStatus from "../app/routes/project-status";
 import { LISTENER_FOCUS_DEBOUNCE_MS } from "../app/hooks/useListenerFocusSync";
 import { LISTENER_FOCUS_SYNC_STORAGE_KEY } from "../app/lib/listener";
 
