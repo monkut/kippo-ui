@@ -145,6 +145,7 @@ describe("project-status route", () => {
           allocated_effort_hours: 80,
           is_estimated_allocated_effort_hours: true,
           difference_percentage: -33.3,
+          level: "success",
         },
       } as unknown as KippoProject,
     ];
@@ -175,6 +176,7 @@ describe("project-status route", () => {
           allocated_effort_hours: 80,
           is_estimated_allocated_effort_hours: false,
           difference_percentage: -33.3,
+          level: "success",
         },
       } as unknown as KippoProject,
     ];

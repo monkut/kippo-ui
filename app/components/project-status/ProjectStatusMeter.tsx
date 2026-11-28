@@ -1,9 +1,21 @@
-import type { ProjectProgressStatusInline } from "~/lib/api/generated";
+import type { LevelEnum, ProjectProgressStatusInline } from "~/lib/api/generated";
 
-// Threshold for "exceeding expected" status (same as backend PROJECT_STATUS_REPORT_EXCEEDING_THRESHOLD)
-// TODO: read the meter level from the API (projectstatus_display.level) once the kippo release
-// that adds it is out, and drop this mirrored constant (kiconiaworks/kippo#78).
-export const EXCEEDING_THRESHOLD = 15;
+// 稼働状況 colours per API `level`. The backend derives the level from difference_percentage
+// (effort vs. schedule): neutral = no comparison, success = at or under expected, warning = over
+// expected, danger = over by more than its exceeding threshold.
+// Class literals are kept whole so Tailwind's source scanner emits them.
+const LEVEL_TEXT_CLASS: Record<LevelEnum, string> = {
+  neutral: "text-gray-600",
+  success: "text-green-600",
+  warning: "text-yellow-600",
+  danger: "text-red-600",
+};
+const LEVEL_METER_CLASS: Record<LevelEnum, string> = {
+  neutral: "bg-gray-400",
+  success: "bg-green-500",
+  warning: "bg-yellow-500",
+  danger: "bg-red-500",
+};
 
 /**
  * Bar fill for the 稼働状況 meter: consumed effort over max(予算, consumed) — i.e. the budget
@@ -58,6 +70,7 @@ export function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
     allocated_effort_hours,
     is_estimated_allocated_effort_hours,
     difference_percentage,
+    level,
   } = status;
 
   // If no expected hours, just show the current hours
@@ -68,25 +81,8 @@ export function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
     return <div className="text-gray-400">-</div>;
   }
 
-  // Determine color based on difference percentage
-  const getTextColor = () => {
-    if (difference_percentage === null || difference_percentage === undefined) {
-      return "text-gray-600";
-    }
-    if (difference_percentage > EXCEEDING_THRESHOLD) return "text-red-600";
-    if (difference_percentage > 0) return "text-yellow-600";
-    return "text-green-600";
-  };
-
-  // Get background color for meter (matches text color)
-  const getMeterColor = () => {
-    if (difference_percentage === null || difference_percentage === undefined) {
-      return "bg-gray-400";
-    }
-    if (difference_percentage > EXCEEDING_THRESHOLD) return "bg-red-500";
-    if (difference_percentage > 0) return "bg-yellow-500";
-    return "bg-green-500";
-  };
+  const textColor = LEVEL_TEXT_CLASS[level];
+  const meterColor = LEVEL_METER_CLASS[level];
 
   const formatDifferencePercentage = () => {
     if (difference_percentage === null || difference_percentage === undefined) {
@@ -99,19 +95,19 @@ export function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
   return (
     <div className="space-y-2">
       {/* Hours display */}
-      <div className={`text-2xl font-semibold ${getTextColor()}`}>{current_effort_hours ?? 0}h</div>
+      <div className={`text-2xl font-semibold ${textColor}`}>{current_effort_hours ?? 0}h</div>
 
       {/* Difference percentage */}
       {formatDifferencePercentage() && (
-        <div className={`text-sm ${getTextColor()}`}>{formatDifferencePercentage()}</div>
+        <div className={`text-sm ${textColor}`}>{formatDifferencePercentage()}</div>
       )}
 
       {/* Progress bar — consumed effort, matching the admin's
           <meter value=current max=max(allocated, current)>. Because max grows to current once
           effort exceeds 予算, the fill is effectively min(current/予算, 1): an over-budget project
           renders the same full bar as one exactly on budget. What distinguishes the two is the
-          colour and the ±% above, both driven by difference_percentage (effort vs. SCHEDULE) —
-          not by this fill, whose denominator is the budget. */}
+          colour (the API `level`) and the ±% above, both derived from difference_percentage
+          (effort vs. SCHEDULE) — not from this fill, whose denominator is the budget. */}
       <div className="flex justify-center">
         <div
           className={`w-48 h-6 bg-gray-200 rounded-full overflow-hidden ${
@@ -119,7 +115,7 @@ export function ProjectStatusMeter({ status }: ProjectStatusMeterProps) {
           }`}
         >
           <div
-            className={`h-full ${getMeterColor()} transition-all duration-300`}
+            className={`h-full ${meterColor} transition-all duration-300`}
             style={{
               width: `${meterFillPercentage(current_effort_hours, allocated_effort_hours)}%`,
             }}

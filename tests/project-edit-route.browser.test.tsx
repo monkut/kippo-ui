@@ -252,6 +252,169 @@ describe("ProjectEdit route", () => {
     expect(projectsRetrieve).toHaveBeenCalledTimes(1);
   });
 
+  // フェーズ・確度変更履歴 (kippo#81): read-only log from project.phase_confidence_changes.
+  describe("フェーズ・確度変更履歴", () => {
+    const HISTORY_TITLE = "フェーズ・確度変更履歴";
+    const historySection = () =>
+      Array.from(container.querySelectorAll<HTMLDetailsElement>("details")).find((d) =>
+        d.querySelector("summary")?.textContent?.includes(HISTORY_TITLE),
+      ) ?? null;
+    const historyRows = () =>
+      Array.from(historySection()?.querySelectorAll("tbody tr") ?? []).map((row) =>
+        Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent),
+      );
+    const waitForLoaded = () =>
+      waitFor(() =>
+        container.querySelector<HTMLInputElement>("#p-name")?.value === "Old Name" ? true : null,
+      );
+    // Newest first, as the API returns them.
+    const CHANGES = [
+      {
+        id: 3,
+        previous_phase: "proposing-high",
+        previous_phase_display: "提案(高)",
+        new_phase: "verbal-order",
+        new_phase_display: "口頭受注",
+        previous_confidence: 70,
+        new_confidence: 99,
+        changed_by_username: "pm",
+        changed_by_display_name: "PM Taro",
+        changed_datetime: "2026-11-27T15:30:00Z",
+      },
+      {
+        id: 2,
+        previous_phase: "proposing-high",
+        previous_phase_display: "提案(高)",
+        new_phase: "proposing-high",
+        new_phase_display: "提案(高)",
+        previous_confidence: 50,
+        new_confidence: 70,
+        changed_by_username: "sales",
+        changed_by_display_name: null,
+        changed_datetime: "2026-11-01T01:05:00Z",
+      },
+      {
+        id: 1,
+        previous_phase: "keep-in-touch",
+        previous_phase_display: "KIT",
+        new_phase: "proposing-low",
+        new_phase_display: "提案(低)",
+        previous_confidence: 10,
+        new_confidence: 10,
+        changed_by_username: null,
+        changed_by_display_name: null,
+        changed_datetime: "2026-10-01T00:00:00Z",
+      },
+    ];
+
+    test("is collapsed by default, after 契約 and before 詳細, and says so when empty", async () => {
+      projectsRetrieve.mockResolvedValue({
+        status: 200,
+        data: { ...defaultProject, phase_confidence_changes: [] },
+      });
+      root.render(<ProjectEdit />);
+      await waitForLoaded();
+
+      const section = historySection();
+      expect(section).not.toBeNull();
+      expect(section?.open).toBe(false);
+      expect(section?.textContent).toContain("変更履歴はありません");
+      expect(section?.querySelector("table")).toBeNull();
+
+      const collapsibleTitles = Array.from(container.querySelectorAll("details summary")).map(
+        (summary) => summary.textContent?.replace("▸", ""),
+      );
+      expect(collapsibleTitles).toEqual([HISTORY_TITLE, "詳細", "その他"]);
+      const contractHeading = Array.from(container.querySelectorAll("h2")).find(
+        (h) => h.textContent === "契約",
+      );
+      expect(contractHeading).toBeDefined();
+      expect(
+        (contractHeading as HTMLElement).compareDocumentPosition(section as HTMLElement) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    test("lists the changes in API order with JST datetime, author fallbacks and old → new cells", async () => {
+      projectsRetrieve.mockResolvedValue({
+        status: 200,
+        data: { ...defaultProject, phase_confidence_changes: CHANGES },
+      });
+      root.render(<ProjectEdit />);
+      await waitForLoaded();
+
+      expect(
+        Array.from(historySection()?.querySelectorAll("thead th") ?? []).map(
+          (th) => th.textContent,
+        ),
+      ).toEqual(["変更日時", "変更者", "フェーズ", "確度"]);
+      expect(historyRows()).toEqual([
+        // 15:30 UTC is 00:30 the next day in JST; phase and 確度 both changed.
+        ["2026/11/28 00:30", "PM Taro", "提案(高) → 口頭受注", "70% → 99%"],
+        // No display name → username; same phase → single value.
+        ["2026/11/01 10:05", "sales", "提案(高)", "50% → 70%"],
+        // No user recorded → "-"; same 確度 → single value.
+        ["2026/10/01 09:00", "-", "KIT → 提案(低)", "10%"],
+      ]);
+      expect(historySection()?.textContent).not.toContain("変更履歴はありません");
+    });
+
+    test("a save shows the new row from the PATCH response without a reload", async () => {
+      projectsRetrieve.mockResolvedValue({
+        status: 200,
+        data: { ...defaultProject, phase_confidence_changes: [] },
+      });
+      projectsPartialUpdate.mockResolvedValue({
+        status: 200,
+        data: {
+          ...defaultProject,
+          phase: "proposing-mid",
+          phase_confidence_changes: [
+            {
+              id: 9,
+              previous_phase: "proposing-low",
+              previous_phase_display: "提案(低)",
+              new_phase: "proposing-mid",
+              new_phase_display: "提案(中)",
+              previous_confidence: 30,
+              new_confidence: 50,
+              changed_by_username: "u",
+              changed_by_display_name: null,
+              changed_datetime: "2026-11-28T02:14:00Z",
+            },
+          ],
+        },
+      });
+      root.render(<ProjectEdit />);
+      await waitForLoaded();
+      expect(historySection()?.textContent).toContain("変更履歴はありません");
+
+      await waitFor(() => {
+        setSelectValue(container.querySelector("#p-phase") as HTMLSelectElement, "proposing-mid");
+        findButton(container, "保存")?.click();
+        return projectsPartialUpdate.mock.calls.some((c) => c[1]?.phase === "proposing-mid")
+          ? true
+          : null;
+      });
+      await waitFor(() => (historyRows().length > 0 ? true : null));
+
+      expect(historyRows()).toEqual([
+        ["2026/11/28 11:14", "u", "提案(低) → 提案(中)", "30% → 50%"],
+      ]);
+      expect(historySection()?.textContent).not.toContain("変更履歴はありません");
+      expect(projectsRetrieve).toHaveBeenCalledTimes(1);
+    });
+
+    test("a record without the list (failed load) shows the empty state", async () => {
+      projectsRetrieve.mockRejectedValue(new Error("boom"));
+      root.render(<ProjectEdit />);
+      await waitFor(() =>
+        container.textContent?.includes("プロジェクトの読み込みに失敗しました") ? true : null,
+      );
+      expect(historySection()?.textContent).toContain("変更履歴はありません");
+    });
+  });
+
   // kippo#49 copy-on-create: `GET /project-categories/?organization=<id>` returns the organization's
   // OWN rows (`organization` set), never the global template (`organization: null`). The picker
   // must offer those rows, and the save must carry the selected key.

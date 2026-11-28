@@ -30,6 +30,10 @@ export interface OrganizationMemberDetail {
   slack_username: string;
   slack_user_id: string;
   slack_image_url: string;
+  /** KippoUser.timezone_name: the IANA timezone set on the user. Blank when not set (kippo#80). */
+  timezone_name?: string;
+  /** IANA timezone the member works in: timezone_name, else the holiday country's timezone (when the whole country keeps one time), else this organization's, else Asia/Tokyo (kippo#80). */
+  effective_timezone_name?: string;
   /**
      * Workdays this member is available in the calendar month requested via the `month` query parameter (committed weekdays minus public/personal holidays). Null/absent when `month` is not provided.
      * @nullable

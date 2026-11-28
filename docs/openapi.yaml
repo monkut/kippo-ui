@@ -285,6 +285,16 @@ paths:
                     type: string
                   is_staff:
                     type: boolean
+                  timezone_name:
+                    type: string
+                    description: 'KippoUser.timezone_name: the IANA timezone set on
+                      the user. Blank when not set (kippo#80).'
+                  effective_timezone_name:
+                    type: string
+                    description: 'IANA timezone the user works in: timezone_name,
+                      else the holiday country''s timezone (when the whole country
+                      keeps one time), else the user''s first organization''s, else
+                      Asia/Tokyo (kippo#80).'
           description: ''
   /api/billing/:
     get:
@@ -8949,6 +8959,11 @@ components:
           - $ref: '#/components/schemas/LatestCommentInline'
           nullable: true
           readOnly: true
+        phase_confidence_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/KippoProjectPhaseConfidenceChange'
+          readOnly: true
         weekly_effort_users:
           type: array
           items:
@@ -8989,6 +9004,7 @@ components:
       - organization
       - organization_name
       - parent_project_name
+      - phase_confidence_changes
       - phase_display
       - project_manager_username
       - projectstatus_display
@@ -9339,6 +9355,67 @@ components:
       required:
       - key
       - label
+    KippoProjectPhaseConfidenceChange:
+      type: object
+      description: |-
+        One フェーズ / 確度 change on a project (``KippoProjectPhaseConfidenceChange``, kippo#77), embedded
+        in the project response as ``phase_confidence_changes``. Read-only: KippoProject.save() writes the rows.
+
+        ``*_phase`` is the phase key and ``*_phase_display`` its label. The ``changed_by_*`` fields
+        follow the status-comment author fields; both are null when no user is recorded (the project
+        was saved with ``updated_by`` unset, or the user has since been deleted).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        previous_phase:
+          allOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          readOnly: true
+          title: 変更前フェーズ
+        previous_phase_display:
+          type: string
+          readOnly: true
+        new_phase:
+          allOf:
+          - $ref: '#/components/schemas/PhaseEnum'
+          readOnly: true
+          title: 変更後フェーズ
+        new_phase_display:
+          type: string
+          readOnly: true
+        previous_confidence:
+          type: integer
+          readOnly: true
+          title: 変更前確度
+        new_confidence:
+          type: integer
+          readOnly: true
+          title: 変更後確度
+        changed_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        changed_by_display_name:
+          type: string
+          nullable: true
+          readOnly: true
+        changed_datetime:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 変更日時
+      required:
+      - changed_by_display_name
+      - changed_by_username
+      - changed_datetime
+      - id
+      - new_confidence
+      - new_phase
+      - new_phase_display
+      - previous_confidence
+      - previous_phase
+      - previous_phase_display
     KippoProjectRequest:
       type: object
       description: Serializer for KippoProject model.
@@ -9665,6 +9742,18 @@ components:
         * `customer-referral` - 顧客紹介
         * `partner-introduction` - パートナー紹介
         * `continuation` - 継続
+    LevelEnum:
+      enum:
+      - neutral
+      - success
+      - warning
+      - danger
+      type: string
+      description: |-
+        * `neutral` - neutral
+        * `success` - success
+        * `warning` - warning
+        * `danger` - danger
     MonthlyBillingScheduleEntry:
       type: object
       description: 'One planned monthly billing row (kippo#39 / T15): month-end date
@@ -9789,6 +9878,15 @@ components:
           type: string
         slack_image_url:
           type: string
+        timezone_name:
+          type: string
+          description: 'KippoUser.timezone_name: the IANA timezone set on the user.
+            Blank when not set (kippo#80).'
+        effective_timezone_name:
+          type: string
+          description: 'IANA timezone the member works in: timezone_name, else the
+            holiday country''s timezone (when the whole country keeps one time), else
+            this organization''s, else Asia/Tokyo (kippo#80).'
         available_work_days:
           type: integer
           nullable: true
@@ -12311,12 +12409,23 @@ components:
           type: number
           format: double
           nullable: true
+        level:
+          allOf:
+          - $ref: '#/components/schemas/LevelEnum'
+          description: |-
+            稼働状況 level from difference_percentage: neutral (no comparison), success (at or under expected), warning (over expected), danger (over by more than the exceeding threshold).
+
+            * `neutral` - neutral
+            * `success` - success
+            * `warning` - warning
+            * `danger` - danger
       required:
       - allocated_effort_hours
       - current_effort_hours
       - difference_percentage
       - expected_effort_hours
       - is_estimated_allocated_effort_hours
+      - level
     ProjectTechnicalRequirement:
       type: object
       properties:

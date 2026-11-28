@@ -10,6 +10,29 @@ export function formatDisplayDate(value: string | null | undefined): string {
   return value ? new Date(value).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }) : "-";
 }
 
+const JST_DATE_TIME_FORMAT = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Format a datetime as "YYYY/MM/DD HH:mm" in JST, or "-" when empty or unparseable. Pinned to
+ * JST like formatDisplayDate, so a UTC instant shows the Japan-local date and time. */
+export function formatDisplayDateTime(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  // Assembled from parts: the locale's own separators and midnight hour vary between engines.
+  const parts = Object.fromEntries(
+    JST_DATE_TIME_FORMAT.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+}
+
 // Format a Date as YYYY-MM-DD using local-time components.
 // `toISOString()` would return the UTC date, which is one day earlier than
 // the local date for any time before 09:00 in JST (UTC+9) — see issue #52.
