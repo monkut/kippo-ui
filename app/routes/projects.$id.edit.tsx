@@ -13,6 +13,7 @@ import {
   TextArea,
 } from "~/components/project-form/PageFields";
 import { ParentProjectField } from "~/components/project-form/ParentProjectField";
+import { PhaseConfidenceHistory } from "~/components/project-form/PhaseConfidenceHistory";
 import {
   buildProjectPatch,
   EMPTY_PROJECT_EDIT_FORM,
@@ -23,7 +24,12 @@ import { useOrgMembers, useProjectCategories } from "~/components/project-form/u
 import { useAuthGate } from "~/hooks/useAuthGate";
 import { useProjectContract } from "~/hooks/useProjectContract";
 import { apiErrorMessage, throwOnError } from "~/lib/api/api-error";
-import type { KippoProject, KippoProjectContract, PhaseEnum } from "~/lib/api/generated/models";
+import type {
+  KippoProject,
+  KippoProjectContract,
+  KippoProjectPhaseConfidenceChange,
+  PhaseEnum,
+} from "~/lib/api/generated/models";
 import {
   projectsForecastRetrieve,
   projectsPartialUpdate,
@@ -36,6 +42,8 @@ import {
 export function meta() {
   return [{ title: "プロジェクト編集 - Kippo" }];
 }
+
+const NO_PHASE_CONFIDENCE_CHANGES: readonly KippoProjectPhaseConfidenceChange[] = [];
 
 export default function ProjectEdit() {
   const { id = "" } = useParams();
@@ -140,9 +148,13 @@ export default function ProjectEdit() {
       // custom-fetch resolves (does not throw) on 4xx, so a 400 would otherwise navigate away as if
       // saved — throwOnError turns it into a catch, and apiErrorMessage surfaces the field detail
       // (e.g. the contract-period phase gate) instead of a generic banner.
-      throwOnError(
+      const response = throwOnError(
         await projectsPartialUpdate(id, buildProjectPatch(form, { categories, hasContract })),
       );
+      // The response is the saved record: keep it, so the read-only values (the フェーズ・確度
+      // change log gains a row on a phase change) are current if the page stays open — navigate(-1)
+      // goes nowhere when the page was opened directly.
+      setProject(response.data);
       navigate(-1);
     } catch (err) {
       setError(apiErrorMessage(err) ?? "プロジェクトの更新に失敗しました");
@@ -316,6 +328,10 @@ export default function ProjectEdit() {
           customerId={customerId}
           customerName={customerName}
           isClosed={isClosed}
+        />
+
+        <PhaseConfidenceHistory
+          changes={project?.phase_confidence_changes ?? NO_PHASE_CONFIDENCE_CHANGES}
         />
 
         <CollapsibleSection title="詳細">

@@ -6,6 +6,7 @@ import {
   monthFromParam,
   formatDateKey,
   formatDisplayDate,
+  formatDisplayDateTime,
   formatMonth,
   lastOfMonth,
   remainingPeriod,
@@ -16,6 +17,29 @@ import {
 describe("lib/dates", () => {
   beforeAll(() => {
     expect(new Date().getTimezoneOffset()).toBe(-540);
+  });
+
+  describe("formatDisplayDateTime", () => {
+    test("renders a UTC instant as zero-padded JST date and time", () => {
+      expect(formatDisplayDateTime("2026-01-05T00:07:00Z")).toBe("2026/01/05 09:07");
+    });
+
+    test("an instant after 15:00 UTC is the next day in JST, with hour 00 at midnight", () => {
+      expect(formatDisplayDateTime("2026-11-27T15:00:00Z")).toBe("2026/11/28 00:00");
+      expect(formatDisplayDateTime("2026-12-31T15:30:00Z")).toBe("2027/01/01 00:30");
+    });
+
+    test("an offset datetime is converted, not read as-is", () => {
+      expect(formatDisplayDateTime("2026-11-28T10:15:00+09:00")).toBe("2026/11/28 10:15");
+      expect(formatDisplayDateTime("2026-11-28T10:15:00-05:00")).toBe("2026/11/29 00:15");
+    });
+
+    test("empty or unparseable values render a dash", () => {
+      expect(formatDisplayDateTime(null)).toBe("-");
+      expect(formatDisplayDateTime(undefined)).toBe("-");
+      expect(formatDisplayDateTime("")).toBe("-");
+      expect(formatDisplayDateTime("not a date")).toBe("-");
+    });
   });
 
   describe("formatDateKey", () => {
