@@ -7,6 +7,7 @@
  */
 import type { GithubRepositoryInline } from './githubRepositoryInline';
 import type { KippoProjectLeadSource } from './kippoProjectLeadSource';
+import type { KippoProjectPhaseConfidenceChange } from './kippoProjectPhaseConfidenceChange';
 import type { LatestCommentInline } from './latestCommentInline';
 import type { MonthlyBillingScheduleEntry } from './monthlyBillingScheduleEntry';
 import type { PhaseEnum } from './phaseEnum';
@@ -157,6 +158,7 @@ export interface KippoProject {
   readonly has_requirements: boolean;
   readonly projectstatus_display: ProjectProgressStatusInline | null;
   readonly latest_comment: LatestCommentInline | null;
+  readonly phase_confidence_changes: readonly KippoProjectPhaseConfidenceChange[];
   readonly weekly_effort_users: readonly WeeklyEffortUserInline[];
   readonly survey_users: readonly SurveyUserInline[];
   readonly created_datetime: string;

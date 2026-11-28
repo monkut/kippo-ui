@@ -12,4 +12,8 @@ export type AuthMeRetrieve200 = {
   first_name?: string;
   last_name?: string;
   is_staff?: boolean;
+  /** KippoUser.timezone_name: the IANA timezone set on the user. Blank when not set (kippo#80). */
+  timezone_name?: string;
+  /** IANA timezone the user works in: timezone_name, else the holiday country's timezone (when the whole country keeps one time), else the user's first organization's, else Asia/Tokyo (kippo#80). */
+  effective_timezone_name?: string;
 };

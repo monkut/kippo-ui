@@ -5,6 +5,7 @@
  * REST API for managing Kippo projects, tasks, and effort tracking
  * OpenAPI spec version: 1.1.0
  */
+import type { LevelEnum } from './levelEnum';
 
 /**
  * Inline serializer for project progress status in OpenAPI schema.
@@ -19,4 +20,11 @@ export interface ProjectProgressStatusInline {
   is_estimated_allocated_effort_hours: boolean;
   /** @nullable */
   difference_percentage: number | null;
+  /** 稼働状況 level from difference_percentage: neutral (no comparison), success (at or under expected), warning (over expected), danger (over by more than the exceeding threshold).
+
+  * `neutral` - neutral
+  * `success` - success
+  * `warning` - warning
+  * `danger` - danger */
+  level: LevelEnum;
 }
