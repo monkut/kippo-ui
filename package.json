@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "check": "pnpm typecheck && pnpm test && pnpm format:check && pnpm lint",
+    "smoke": "tsx scripts/smoke/run.ts",
     "prepare": "husky"
   },
   "dependencies": {
