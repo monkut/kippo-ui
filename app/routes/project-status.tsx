@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  fetchAllMonthlyCostsForProject,
+  fetchMonthlyCostsByProject,
   type ProjectMonthlyCost,
 } from "~/components/infra-cost-display";
 import { Layout } from "~/components/layout";
@@ -55,7 +55,7 @@ export default function ProjectStatus() {
       // Rows, filters and ordering all mirror ActiveKippoProjectAdmin — see active-projects.ts.
       const filteredProjects = await fetchActiveProjects();
       setProjects(filteredProjects);
-      loadMonthlyCosts(filteredProjects);
+      loadMonthlyCosts();
       loadListenerConfigs();
     } catch (err) {
       console.error("Failed to load projects:", err);
@@ -75,13 +75,8 @@ export default function ProjectStatus() {
     }
   };
 
-  const loadMonthlyCosts = async (projectList: KippoProject[]) => {
-    const results = await Promise.all(
-      projectList.map(
-        async (project) => [project.id, await fetchAllMonthlyCostsForProject(project.id)] as const,
-      ),
-    );
-    setMonthlyCostsByProject(Object.fromEntries(results));
+  const loadMonthlyCosts = async () => {
+    setMonthlyCostsByProject(await fetchMonthlyCostsByProject());
   };
 
   const currentProject = useMemo(() => {
