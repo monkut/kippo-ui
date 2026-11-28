@@ -25,9 +25,9 @@ const data = vi.hoisted(() => ({ projects: [] as unknown[] }));
 vi.mock("~/lib/active-projects", () => ({
   fetchActiveProjects: () => Promise.resolve(data.projects),
 }));
-// The slide fetches per-project infra costs on mount; stub it out so the test stays offline.
+// The route fetches infra costs on mount; stub it out so the test stays offline.
 vi.mock("~/components/infra-cost-display", () => ({
-  fetchAllMonthlyCostsForProject: () => Promise.resolve([]),
+  fetchMonthlyCostsByProject: () => Promise.resolve({}),
   InfraCostDisplay: () => null,
 }));
 // Organizations carry the listener URL + key (kiconiaworks/kippo#66); empty by default.

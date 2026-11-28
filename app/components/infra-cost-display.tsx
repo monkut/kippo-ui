@@ -4,22 +4,32 @@ import { readList } from "~/lib/api/read-list";
 
 export type { ProjectMonthlyCost };
 
-export async function fetchAllMonthlyCostsForProject(
-  projectId: string,
-): Promise<ProjectMonthlyCost[]> {
-  const rows: ProjectMonthlyCost[] = [];
+// The API caps page_size at 200 (kippo: commons.pagination.CustomPageNumberPagination).
+const MAX_PAGE_SIZE = 200;
+
+/**
+ * project id → that project's monthly cost rows, for every project the user can see.
+ *
+ * One request per page of rows, however many projects there are: a request per project made
+ * the project-status mount fan out to one call per slide (kiconiaworks/kippo#82). Costs are
+ * optional on the slide, so a failed page keeps the rows already read.
+ */
+export async function fetchMonthlyCostsByProject(): Promise<Record<string, ProjectMonthlyCost[]>> {
+  const costsByProject: Record<string, ProjectMonthlyCost[]> = {};
   let page = 1;
   while (true) {
     try {
-      const resp = await monthlyCostsList({ project: projectId, page });
-      rows.push(...readList<ProjectMonthlyCost>(resp.data));
+      const resp = await monthlyCostsList({ page, page_size: MAX_PAGE_SIZE });
+      for (const row of readList<ProjectMonthlyCost>(resp.data)) {
+        (costsByProject[row.project] ??= []).push(row);
+      }
       if (!resp.data?.next) break;
       page += 1;
     } catch {
       break;
     }
   }
-  return rows;
+  return costsByProject;
 }
 
 interface InfraCostDisplayProps {
