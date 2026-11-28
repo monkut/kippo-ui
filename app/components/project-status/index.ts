@@ -10,7 +10,6 @@ export { formatContractAmount, githubProjectLabel, ProjectSlide } from "./Projec
 export {
   allocatedEffortHoursTitle,
   ESTIMATED_MARKER,
-  EXCEEDING_THRESHOLD,
   meterFillPercentage,
   ProjectStatusMeter,
 } from "./ProjectStatusMeter";
